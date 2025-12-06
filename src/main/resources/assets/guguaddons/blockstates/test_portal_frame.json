@@ -1,0 +1,7 @@
+{
+    "variants": {
+        "": {
+            "model": "guguaddons:block/test_portal_frame"
+        }
+    }
+}

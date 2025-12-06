@@ -3,5 +3,7 @@
     "item.guguaddons.gem_blank": "宝珠胚子",
     "itemGroup.guguaddons": "GuGuAddons",
     "tooltip.guguaddons.gem_attributes": "宝珠属性:",
-    "tooltip.guguaddons.socketed_gems": "镶嵌宝珠:"
+    "tooltip.guguaddons.socketed_gems": "镶嵌宝珠:",
+    "block.guguaddons.test_portal_frame": "测试传送门方块",
+    "block.guguaddons.test_portal": "测试传送门"
 }

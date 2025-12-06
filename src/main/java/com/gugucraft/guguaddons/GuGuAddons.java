@@ -15,6 +15,8 @@ import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import com.gugucraft.guguaddons.registry.ModBlocks;
 import com.gugucraft.guguaddons.registry.ModCreativeModeTabs;
 import com.gugucraft.guguaddons.registry.ModItems;
+import com.gugucraft.guguaddons.registry.ModDimensions;
+import com.gugucraft.guguaddons.registry.ModPOIs;
 
 @Mod(GuGuAddons.MODID)
 public class GuGuAddons {
@@ -32,6 +34,10 @@ public class GuGuAddons {
         ModItems.register(modEventBus);
 
         ModCreativeModeTabs.register(modEventBus);
+
+        ModDimensions.register();
+
+        ModPOIs.register(modEventBus);
 
         NeoForge.EVENT_BUS.register(this);
 
