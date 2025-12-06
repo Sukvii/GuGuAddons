@@ -100,7 +100,7 @@ dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
 
     // EMI
-    implementation "dev.emi:emi-neoforge:1.1.21+1.21.1"
+    implementation "dev.emi:emi-neoforge:1.1.22+1.21.1"
 
     // Create
     implementation("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
