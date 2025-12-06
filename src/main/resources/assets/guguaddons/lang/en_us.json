@@ -1,0 +1,7 @@
+{
+  "item.guguaddons.gem": "Gem",
+  "item.guguaddons.gem_blank": "Gem Blank",
+  "itemGroup.guguaddons": "GuGuAddons",
+  "tooltip.guguaddons.gem_attributes": "Gem Attributes:",
+  "tooltip.guguaddons.socketed_gems": "Socketed Gems:"
+}

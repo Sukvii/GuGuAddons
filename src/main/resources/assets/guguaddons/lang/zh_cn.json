@@ -1,0 +1,7 @@
+{
+    "item.guguaddons.gem": "宝珠",
+    "item.guguaddons.gem_blank": "宝珠胚子",
+    "itemGroup.guguaddons": "GuGuAddons",
+    "tooltip.guguaddons.gem_attributes": "宝珠属性:",
+    "tooltip.guguaddons.socketed_gems": "镶嵌宝珠:"
+}
