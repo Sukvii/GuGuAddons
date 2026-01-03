@@ -104,6 +104,33 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
         };
     }
 
+    private static final java.util.Map<Character, java.util.function.Predicate<BlockState>> PALETTE = java.util.Map.of(
+        'S', state -> state.is(net.minecraft.world.level.block.Blocks.STONE),
+        'I', state -> state.getBlock() instanceof com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock,
+        ' ', state -> true
+    );
+
+    private static final String[][] PATTERN = {
+        // Depth 0 (Front)
+        {
+            "SSS", // y=1 (Top)
+            "SIS", // y=0 (Center)
+            "SSS"  // y=-1 (Bottom)
+        },
+        // Depth 1
+        {
+            "SSS",
+            "SSS",
+            "SSS"
+        },
+        // Depth 2
+        {
+            "SSS",
+            "SSS",
+            "SSS"
+        }
+    };
+
     public boolean isStructureFormed() {
         if (level == null) return false;
         BlockState state = level.getBlockState(this.getBlockPos());
@@ -116,20 +143,29 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
 
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
 
-        for (int d = 0; d < 3; d++) {
-            for (int h = -1; h <= 1; h++) {
-                for (int v = -1; v <= 1; v++) {
+        for (int d = 0; d < PATTERN.length; d++) {
+            String[] layer = PATTERN[d];
+            for (int row = 0; row < layer.length; row++) {
+                String rowStr = layer[row];
+                for (int col = 0; col < rowStr.length(); col++) {
+                    char key = rowStr.charAt(col);
+                    if (key == ' ') continue;
+
+                    // Row 0 is Top (v=1), Row 2 is Bottom (v=-1)
+                    int v = 1 - row;
+                    // Col 0 is Left (h=1), Col 2 is Right (h=-1)
+                    int h = 1 - col;
+
                     mutablePos.set(this.getBlockPos());
                     mutablePos.move(backwards, d);
                     mutablePos.move(left, h);
                     mutablePos.move(up, v);
 
-                    if (d == 0 && h == 0 && v == 0) {
-                        if (!mutablePos.equals(this.getBlockPos())) return false;
-                    } else {
-                        if (!level.getBlockState(mutablePos).is(net.minecraft.world.level.block.Blocks.STONE)) {
-                            return false;
-                        }
+                    BlockState targetState = level.getBlockState(mutablePos);
+                    java.util.function.Predicate<BlockState> predicate = PALETTE.get(key);
+                    
+                    if (predicate == null || !predicate.test(targetState)) {
+                        return false;
                     }
                 }
             }
@@ -149,13 +185,19 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
 
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
 
-        for (int d = 0; d < 3; d++) {
-            for (int h = -1; h <= 1; h++) {
-                for (int v = -1; v <= 1; v++) {
+        for (int d = 0; d < PATTERN.length; d++) {
+            String[] layer = PATTERN[d];
+            for (int row = 0; row < layer.length; row++) {
+                String rowStr = layer[row];
+                for (int col = 0; col < rowStr.length(); col++) {
+                    int v = 1 - row;
+                    int h = 1 - col;
+
                     mutablePos.set(this.getBlockPos());
                     mutablePos.move(backwards, d);
                     mutablePos.move(left, h);
                     mutablePos.move(up, v);
+                    
                     if (mutablePos.equals(pos)) return true;
                 }
             }
