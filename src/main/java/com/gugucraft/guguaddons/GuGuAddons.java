@@ -12,11 +12,13 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModBlocks;
 import com.gugucraft.guguaddons.registry.ModCreativeModeTabs;
 import com.gugucraft.guguaddons.registry.ModItems;
 import com.gugucraft.guguaddons.registry.ModDimensions;
-import com.gugucraft.guguaddons.registry.ModPOIs;
+
+import com.gugucraft.guguaddons.registry.ModChunkGenerators;
 
 @Mod(GuGuAddons.MODID)
 public class GuGuAddons {
@@ -30,14 +32,14 @@ public class GuGuAddons {
         modEventBus.addListener(this::commonSetup);
 
         ModBlocks.register(modEventBus);
-
         ModItems.register(modEventBus);
+        ModBlockEntities.register(modEventBus);
 
-        ModCreativeModeTabs.register(modEventBus);
+        // ModCreativeModeTabs.register(modEventBus); // Postponed to next version
 
-        ModDimensions.register();
+        // ModDimensions.register(); // Postponed to next version
 
-        ModPOIs.register(modEventBus);
+        // ModChunkGenerators.register(modEventBus); // Postponed to next version
 
         NeoForge.EVENT_BUS.register(this);
 
@@ -46,7 +48,6 @@ public class GuGuAddons {
 
     private void commonSetup(FMLCommonSetupEvent event) {
 
-        LOGGER.info("HELLO FROM COMMON SETUP");
 
         LOGGER.info("HELLO FROM COMMON SETUP");
     }

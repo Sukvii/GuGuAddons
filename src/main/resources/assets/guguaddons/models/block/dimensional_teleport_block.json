@@ -1,6 +1,6 @@
 {
     "parent": "minecraft:block/cube_all",
     "textures": {
-        "all": "guguaddons:block/test_portal_frame"
+        "all": "guguaddons:block/dimensional_teleport_block"
     }
 }

@@ -14,6 +14,7 @@ public class ModCreativeModeTabs {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS = DeferredRegister
             .create(Registries.CREATIVE_MODE_TAB, GuGuAddons.MODID);
 
+    /*
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> GUGUADDONS_TAB = CREATIVE_MODE_TABS
             .register("guguaddons_tab", () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.guguaddons"))
@@ -21,6 +22,7 @@ public class ModCreativeModeTabs {
                     .displayItems((parameters, output) -> {
                         ModItems.ITEMS.getEntries().forEach(item -> output.accept(item.get()));
                     }).build());
+    */
 
     public static void register(IEventBus eventBus) {
         CREATIVE_MODE_TABS.register(eventBus);

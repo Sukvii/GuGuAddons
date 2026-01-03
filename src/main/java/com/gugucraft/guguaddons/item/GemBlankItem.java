@@ -34,6 +34,7 @@ public class GemBlankItem extends Item {
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
         if (!level.isClientSide && entity instanceof Player player) {
+            /*
             // Create the Gem Item
             ItemStack gemStack = new ItemStack(ModItems.GEM_ITEM.get());
 
@@ -68,6 +69,7 @@ public class GemBlankItem extends Item {
                 level.playSound(null, player.getX(), player.getY(), player.getZ(),
                         SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.5f, 1.0f);
             }
+            */
         }
     }
 
