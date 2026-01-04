@@ -88,7 +88,7 @@ public class QuestInterfaceBlock extends BaseEntityBlock {
                 if (questInterface.isStructureFormed()) {
                     float currentSpeed = questInterface.getStructureSpeed();
                     if (Math.abs(currentSpeed) < 256.0f) {
-                        player.displayClientMessage(Component.translatable("message.guguaddons.interface_speed_fail" + currentSpeed), true);
+                        player.displayClientMessage(Component.translatable("message.guguaddons.interface_speed_fail", currentSpeed), true);
                         return InteractionResult.FAIL;
                     }
 

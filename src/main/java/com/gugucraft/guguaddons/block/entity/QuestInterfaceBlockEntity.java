@@ -50,7 +50,7 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
 
             // [逻辑] 检查结构转速，如果绝对值小于 16 RPM 则不工作
             // 使用 QuestInterfaceBlockEntity.this 访问外部类方法
-            if (Math.abs(QuestInterfaceBlockEntity.this.getStructureSpeed()) < 16.0f) return stack;
+            if (Math.abs(QuestInterfaceBlockEntity.this.getStructureSpeed()) < 256.0f) return stack;
 
             // 检查团队数据
             if (level == null) return stack;
