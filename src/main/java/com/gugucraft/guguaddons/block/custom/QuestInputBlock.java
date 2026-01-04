@@ -48,4 +48,5 @@ public class QuestInputBlock extends DirectionalKineticBlock implements EntityBl
         }
         return null;
     }
+
 }

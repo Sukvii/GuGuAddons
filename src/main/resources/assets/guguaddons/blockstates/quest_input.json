@@ -1,0 +1,22 @@
+{
+    "variants": {
+        "facing=north": {
+            "model": "guguaddons:block/quest_input"
+        },
+        "facing=east": {
+            "model": "guguaddons:block/quest_input"
+        },
+        "facing=south": {
+            "model": "guguaddons:block/quest_input"
+        },
+        "facing=west": {
+            "model": "guguaddons:block/quest_input"
+        },
+        "facing=up": {
+            "model": "guguaddons:block/quest_input"
+        },
+        "facing=down": {
+            "model": "guguaddons:block/quest_input"
+        }
+    }
+}
