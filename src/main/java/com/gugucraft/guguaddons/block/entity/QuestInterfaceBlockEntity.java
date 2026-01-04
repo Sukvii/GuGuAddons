@@ -90,6 +90,8 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
                  Task t = getTask();
                  if (t == null || !(t instanceof ItemTask itemTask)) return stack;
 
+                 if (Math.abs(QuestInterfaceBlockEntity.this.getStructureSpeed()) < 16.0f) return stack;
+
                  TeamData data = FTBQuestsAPI.api().getQuestFile(level.isClientSide).getNullableTeamData(teamId);
                  if (data == null || !data.canStartTasks(t.getQuest())) {
                      return stack;
@@ -116,7 +118,7 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
     }
 
     private static final java.util.Map<Character, java.util.function.Predicate<BlockState>> PALETTE = java.util.Map.of(
-        'S', state -> state.is(net.minecraft.world.level.block.Blocks.STONE),
+        'S', state -> state.is(net.minecraft.world.level.block.Blocks.STONE) || state.getBlock() instanceof com.gugucraft.guguaddons.block.custom.QuestInputBlock,
         'I', state -> state.getBlock() instanceof com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock,
         ' ', state -> true
     );
@@ -240,5 +242,47 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
 
         Component questTxt = Component.literal(" [").append(task.getQuest().getTitle()).append("]").withStyle(ChatFormatting.GREEN);
         return ConfigQuestObject.formatEntry(task).copy().append(questTxt);
+    }
+
+    public float getStructureSpeed() {
+        if (level == null) return 0;
+        BlockState state = level.getBlockState(this.getBlockPos());
+        if (!state.hasProperty(com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock.FACING)) return 0;
+
+        net.minecraft.core.Direction facing = state.getValue(com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock.FACING);
+        net.minecraft.core.Direction backwards = facing.getOpposite();
+        net.minecraft.core.Direction left = facing.getClockWise();
+        net.minecraft.core.Direction up = net.minecraft.core.Direction.UP;
+
+        BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
+
+        for (int d = 0; d < PATTERN.length; d++) {
+            String[] layer = PATTERN[d];
+            for (int row = 0; row < layer.length; row++) {
+                String rowStr = layer[row];
+                for (int col = 0; col < rowStr.length(); col++) {
+                    char key = rowStr.charAt(col);
+                    if (key != 'S') continue;
+
+                    int v = 1 - row;
+                    int h = 1 - col;
+
+                    mutablePos.set(this.getBlockPos());
+                    mutablePos.move(backwards, d);
+                    mutablePos.move(left, h);
+                    mutablePos.move(up, v);
+
+                    BlockEntity be = level.getBlockEntity(mutablePos);
+                    // System.out.println("Scanning pos: " + mutablePos + " found BE: " + (be == null ? "null" : be.getClass().getSimpleName()));
+                    
+                    if (be instanceof com.gugucraft.guguaddons.block.entity.QuestInputBlockEntity inputBE) {
+                        float speed = inputBE.getSpeed();
+                        // System.out.println("Found QuestInputBlockEntity at " + mutablePos + " with speed: " + speed);
+                        if (Math.abs(speed) >= 16.0f) return speed;
+                    }
+                }
+            }
+        }
+        return 0;
     }
 }

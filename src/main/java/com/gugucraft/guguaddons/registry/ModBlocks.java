@@ -21,6 +21,9 @@ public class ModBlocks {
     public static final DeferredBlock<Block> QUEST_INTERFACE_BLOCK = BLOCKS.register("quest_interface",
             () -> new QuestInterfaceBlock(BlockBehaviour.Properties.of().strength(3.0F).sound(SoundType.METAL).noOcclusion()));
 
+    public static final DeferredBlock<Block> QUEST_INPUT = BLOCKS.register("quest_input",
+            () -> new com.gugucraft.guguaddons.block.custom.QuestInputBlock(BlockBehaviour.Properties.of().strength(3.0F).sound(SoundType.METAL).noOcclusion()));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

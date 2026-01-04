@@ -86,6 +86,12 @@ public class QuestInterfaceBlock extends BaseEntityBlock {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof QuestInterfaceBlockEntity questInterface && player instanceof ServerPlayer sp) {
                 if (questInterface.isStructureFormed()) {
+                    float currentSpeed = questInterface.getStructureSpeed();
+                    if (Math.abs(currentSpeed) < 16.0f) {
+                        player.displayClientMessage(Component.literal("Insufficient speed! Need |16| RPM. Current: " + currentSpeed), true);
+                        return InteractionResult.FAIL;
+                    }
+
                     dev.architectury.networking.NetworkManager.sendToPlayer(sp, new dev.ftb.mods.ftbquests.net.BlockConfigRequestMessage(pos, dev.ftb.mods.ftbquests.net.BlockConfigRequestMessage.BlockType.TASK_SCREEN));
                     return InteractionResult.SUCCESS;
                 } else {

@@ -14,7 +14,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
-@EventBusSubscriber(modid = GuGuAddons.MODID, bus = EventBusSubscriber.Bus.GAME)
+@EventBusSubscriber(modid = GuGuAddons.MODID)
 public class QuestStructureEvents {
 
     @SubscribeEvent

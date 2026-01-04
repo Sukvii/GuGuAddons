@@ -30,6 +30,12 @@ public class ModItems {
         public static final DeferredItem<Item> QUEST_INTERFACE_ITEM = ITEMS.register("quest_interface",
                 () -> new BlockItem(ModBlocks.QUEST_INTERFACE_BLOCK.get(), new Item.Properties()));
 
+        public static final DeferredItem<Item> QUEST_INPUT_ITEM = ITEMS.register("quest_input",
+                () -> new BlockItem(ModBlocks.QUEST_INPUT.get(), new Item.Properties()));
+
+        public static final DeferredItem<Item> TAB_ICON = ITEMS.register("tab_icon",
+                () -> new Item(new Item.Properties()));
+
         public static void register(IEventBus eventBus) {
                 ITEMS.register(eventBus);
         }

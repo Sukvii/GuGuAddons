@@ -12,6 +12,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import com.gugucraft.guguaddons.event.ModCapabilities;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModBlocks;
 import com.gugucraft.guguaddons.registry.ModCreativeModeTabs;
@@ -34,8 +35,9 @@ public class GuGuAddons {
         ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
+        modEventBus.addListener(ModCapabilities::registerCapabilities);
 
-        // ModCreativeModeTabs.register(modEventBus); // Postponed to next version
+        ModCreativeModeTabs.register(modEventBus); // Postponed to next version
 
         // ModDimensions.register(); // Postponed to next version
 
