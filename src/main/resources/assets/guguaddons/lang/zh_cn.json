@@ -1,9 +1,9 @@
 {
-    "item.guguaddons.gem": "宝珠",
-    "item.guguaddons.gem_blank": "宝珠胚子",
-    "itemGroup.guguaddons": "GuGuAddons",
-    "tooltip.guguaddons.gem_attributes": "宝珠属性:",
-    "tooltip.guguaddons.socketed_gems": "镶嵌宝珠:",
-    "block.guguaddons.test_portal_frame": "测试传送门方块",
-    "block.guguaddons.test_portal": "测试传送门"
+  "block.guguaddons.dimensional_teleport_block": "维度传送方块",
+  "item.guguaddons.dimensional_teleport_block": "维度传送方块",
+  "block.guguaddons.quest_interface": "任务接口",
+  "block.guguaddons.quest_input": "应力输入接口",
+  "message.guguaddons.interface_speed_fail": "转速不足！需要 |256| RPM。当前: %s",
+  "message.guguaddons.structure_not_formed": "多方块结构未成形！",
+  "tooltip.guguaddons.gem_gui_hint": "右键点击打开宝石界面"
 }

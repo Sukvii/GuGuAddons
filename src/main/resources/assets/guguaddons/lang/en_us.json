@@ -1,9 +1,9 @@
 {
-  "item.guguaddons.gem": "Gem",
-  "item.guguaddons.gem_blank": "Gem Blank",
-  "itemGroup.guguaddons": "GuGuAddons",
-  "tooltip.guguaddons.gem_attributes": "Gem Attributes:",
-  "tooltip.guguaddons.socketed_gems": "Socketed Gems:",
-  "block.guguaddons.test_portal_frame": "Test Portal Frame",
-  "block.guguaddons.test_portal": "Test Portal"
+  "block.guguaddons.dimensional_teleport_block": "Dimensional Teleport Block",
+  "item.guguaddons.dimensional_teleport_block": "Dimensional Teleport Block",
+  "block.guguaddons.quest_interface": "Quest Interface",
+  "block.guguaddons.quest_input": "Kinetic Input Interface",
+  "message.guguaddons.interface_speed_fail": "Insufficient speed! Need |256| RPM. Current: %s",
+  "message.guguaddons.structure_not_formed": "Structure not formed!",
+  "tooltip.guguaddons.gem_gui_hint": "Right click to open the gem GUI"
 }

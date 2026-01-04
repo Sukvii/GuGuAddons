@@ -87,15 +87,15 @@ public class QuestInterfaceBlock extends BaseEntityBlock {
             if (be instanceof QuestInterfaceBlockEntity questInterface && player instanceof ServerPlayer sp) {
                 if (questInterface.isStructureFormed()) {
                     float currentSpeed = questInterface.getStructureSpeed();
-                    if (Math.abs(currentSpeed) < 16.0f) {
-                        player.displayClientMessage(Component.literal("Insufficient speed! Need |16| RPM. Current: " + currentSpeed), true);
+                    if (Math.abs(currentSpeed) < 256.0f) {
+                        player.displayClientMessage(Component.translatable("message.guguaddons.interface_speed_fail" + currentSpeed), true);
                         return InteractionResult.FAIL;
                     }
 
                     dev.architectury.networking.NetworkManager.sendToPlayer(sp, new dev.ftb.mods.ftbquests.net.BlockConfigRequestMessage(pos, dev.ftb.mods.ftbquests.net.BlockConfigRequestMessage.BlockType.TASK_SCREEN));
                     return InteractionResult.SUCCESS;
                 } else {
-                    player.displayClientMessage(Component.literal("Structure not formed!"), true);
+                    player.displayClientMessage(Component.translatable("message.guguaddons.structure_not_formed"), true);
                     return InteractionResult.FAIL;
                 }
             }
