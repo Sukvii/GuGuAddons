@@ -18,7 +18,18 @@ import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.Optional;
+
 import java.util.UUID;
+
+import dev.architectury.networking.NetworkManager;
+import dev.ftb.mods.ftblibrary.config.ConfigGroup;
+import dev.ftb.mods.ftbquests.client.FTBQuestsClient;
+import dev.ftb.mods.ftbquests.net.BlockConfigResponseMessage;
+import dev.ftb.mods.ftbquests.quest.QuestObjectBase;
+import dev.ftb.mods.ftbquests.util.ConfigQuestObject;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+
 
 public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
     public QuestInterfaceBlockEntity(BlockPos pos, BlockState state) {
@@ -203,5 +214,31 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
             }
         }
         return false;
+    }
+
+    @Override
+    public ConfigGroup fillConfigGroup(TeamData data) {
+        ConfigGroup cg0 = new ConfigGroup("task_screen", accepted -> {
+            if (accepted) {
+                NetworkManager.sendToServer(new BlockConfigResponseMessage(getBlockPos(), saveWithoutMetadata(getLevel().registryAccess())));
+            }
+        });
+
+        cg0.setNameKey(getBlockState().getBlock().getDescriptionId());
+        ConfigGroup cg = cg0.getOrCreateSubgroup("screen");
+        cg.add("task", new ConfigQuestObject<>(o -> isSuitableTask(data, o), this::formatLine), getTask(), this::setTask, null).setNameKey("ftbquests.task");
+
+        return cg0;
+    }
+
+    private boolean isSuitableTask(TeamData data, QuestObjectBase o) {
+        return o instanceof dev.ftb.mods.ftbquests.quest.task.Task t && (data.getCanEdit(FTBQuestsClient.getClientPlayer()) || data.canStartTasks(t.getQuest())) && t.consumesResources();
+    }
+
+    private Component formatLine(dev.ftb.mods.ftbquests.quest.task.Task task) {
+        if (task == null) return Component.empty();
+
+        Component questTxt = Component.literal(" [").append(task.getQuest().getTitle()).append("]").withStyle(ChatFormatting.GREEN);
+        return ConfigQuestObject.formatEntry(task).copy().append(questTxt);
     }
 }
