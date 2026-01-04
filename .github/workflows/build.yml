@@ -29,8 +29,14 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
 
+      - name: Rename Artifacts
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          cd build/libs
+          for f in *.jar; do mv "$f" "${f%.jar}-$SHORT_SHA-nightly.jar"; done
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: artifacts
+          name: GuGuAddons-nightly
           path: build/libs/
