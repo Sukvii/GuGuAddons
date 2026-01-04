@@ -27,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
+
 import com.mojang.serialization.MapCodec;
 
 public class QuestInterfaceBlock extends BaseEntityBlock {
