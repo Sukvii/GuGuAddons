@@ -23,6 +23,7 @@ repositories {
     maven { url = "https://maven.terraformersmc.com/releases/" } // EMI
     maven { url = "https://maven.architectury.dev/" }
     maven { url = "https://maven.ftb.dev/releases" }
+    maven { url = "https://api.modrinth.com/maven" } // Jade
 }
 
 base {
@@ -116,6 +117,9 @@ dependencies {
     implementation "dev.ftb.mods:ftb-library-neoforge:${ftb_library_version}"
     implementation "dev.ftb.mods:ftb-teams-neoforge:${ftb_teams_version}"
     implementation "dev.ftb.mods:ftb-quests-neoforge:${ftb_quests_version}"
+
+    // Jade
+    implementation "maven.modrinth:jade:15.10.3+neoforge"
 
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
