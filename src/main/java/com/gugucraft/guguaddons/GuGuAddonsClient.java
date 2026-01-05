@@ -8,8 +8,10 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import com.gugucraft.guguaddons.registry.ModBlocks;
+import com.simibubi.create.AllPartialModels;
 import com.simibubi.create.AllSpriteShifts;
 import com.simibubi.create.CreateClient;
+import com.simibubi.create.content.kinetics.base.OrientedRotatingVisual;
 import com.simibubi.create.content.decoration.encasing.EncasedCTBehaviour;
 import com.simibubi.create.foundation.block.connected.*;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -40,6 +42,10 @@ public class GuGuAddonsClient {
         GuGuAddons.LOGGER.info("HELLO FROM CLIENT SETUP");
         GuGuAddons.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
 
+        dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer.builder(ModBlockEntities.QUEST_INPUT.get())
+                .factory(OrientedRotatingVisual.of(AllPartialModels.SHAFT_HALF))
+                .skipVanillaRender(be -> true)
+                .apply();
     }
 
     public static void registerRenderers(net.neoforged.neoforge.client.event.EntityRenderersEvent.RegisterRenderers event) {

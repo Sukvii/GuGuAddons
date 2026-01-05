@@ -10,6 +10,8 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 
+import dev.engine_room.flywheel.api.visualization.VisualizationManager;
+
 public class QuestInputRenderer extends KineticBlockEntityRenderer<QuestInputBlockEntity> {
 
     public QuestInputRenderer(BlockEntityRendererProvider.Context context) {
@@ -23,6 +25,8 @@ public class QuestInputRenderer extends KineticBlockEntityRenderer<QuestInputBlo
 
     @Override
     protected void renderSafe(QuestInputBlockEntity be, float partialTicks, com.mojang.blaze3d.vertex.PoseStack ms, net.minecraft.client.renderer.MultiBufferSource buffer, int light, int overlay) {
+        if (VisualizationManager.supportsVisualization(be.getLevel())) return;
+
         SuperByteBuffer superByteBuffer = getRotatedModel(be, be.getBlockState());
         if (superByteBuffer != null) {
             standardKineticRotationTransform(superByteBuffer, be, light).renderInto(ms, buffer.getBuffer(net.minecraft.client.renderer.RenderType.solid()));
