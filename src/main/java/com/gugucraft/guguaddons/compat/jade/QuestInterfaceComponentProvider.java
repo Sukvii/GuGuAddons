@@ -8,12 +8,15 @@ import net.minecraft.resources.ResourceLocation;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
+import snownee.jade.api.ui.BoxStyle;
+import snownee.jade.api.ui.IElementHelper;
 import snownee.jade.api.config.IPluginConfig;
 import java.lang.Math;
 import dev.ftb.mods.ftbquests.api.FTBQuestsAPI;
 import dev.ftb.mods.ftbquests.quest.task.Task;
 import dev.ftb.mods.ftbquests.quest.TeamData;
 import java.util.UUID;
+import net.minecraft.client.gui.screens.Screen;
 
 public enum QuestInterfaceComponentProvider implements IBlockComponentProvider {
     INSTANCE;
@@ -40,8 +43,15 @@ public enum QuestInterfaceComponentProvider implements IBlockComponentProvider {
                         long progress = data.getProgress(task);
                         long max = task.getMaxProgress();
                         if (max > 0) {
-                            int percent = (int) ((progress * 100) / max);
-                            tooltip.add(Component.translatable("jade.guguaddons.task_progress", percent));
+                            float ratio = (float) progress / max;
+                            int percent = (int) (ratio * 100);
+                            Component text = Component.translatable("jade.guguaddons.task_progress", percent);
+                            if (Screen.hasShiftDown()) {
+                                IElementHelper helper = IElementHelper.get();
+                                tooltip.add(helper.progress(ratio, text, helper.progressStyle(), BoxStyle.getTransparent(), false));
+                            } else {
+                                tooltip.add(text);
+                            }
                         }
                     }
                 }
