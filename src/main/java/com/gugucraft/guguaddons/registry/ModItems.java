@@ -33,6 +33,9 @@ public class ModItems {
         public static final DeferredItem<Item> QUEST_INPUT_ITEM = ITEMS.register("quest_input",
                 () -> new BlockItem(ModBlocks.QUEST_INPUT.get(), new Item.Properties()));
 
+        public static final DeferredItem<Item> QUEST_SUBMISSION_ITEM = ITEMS.register("quest_submission",
+                () -> new BlockItem(ModBlocks.QUEST_SUBMISSION.get(), new Item.Properties()));
+
         public static final DeferredItem<Item> TAB_ICON = ITEMS.register("tab_icon",
                 () -> new Item(new Item.Properties()));
 

@@ -24,6 +24,9 @@ public class ModBlocks {
     public static final DeferredBlock<Block> QUEST_INPUT = BLOCKS.register("quest_input",
             () -> new com.gugucraft.guguaddons.block.custom.QuestInputBlock(BlockBehaviour.Properties.of().strength(3.0F).sound(SoundType.METAL).noOcclusion()));
 
+    public static final DeferredBlock<Block> QUEST_SUBMISSION = BLOCKS.register("quest_submission",
+            () -> new com.gugucraft.guguaddons.block.custom.QuestSubmissionBlock(BlockBehaviour.Properties.of().strength(3.0F).sound(SoundType.METAL).noOcclusion()));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

@@ -23,6 +23,11 @@ public class ModBlockEntities {
                     BlockEntityType.Builder.of(com.gugucraft.guguaddons.block.entity.QuestInputBlockEntity::new,
                             ModBlocks.QUEST_INPUT.get()).build(null));
 
+    public static final Supplier<BlockEntityType<com.gugucraft.guguaddons.block.entity.QuestSubmissionBlockEntity>> QUEST_SUBMISSION =
+            BLOCK_ENTITIES.register("quest_submission", () ->
+                    BlockEntityType.Builder.of(com.gugucraft.guguaddons.block.entity.QuestSubmissionBlockEntity::new,
+                            ModBlocks.QUEST_SUBMISSION.get()).build(null));
+
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
     }

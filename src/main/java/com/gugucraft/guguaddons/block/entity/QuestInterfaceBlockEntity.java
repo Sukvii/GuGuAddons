@@ -39,28 +39,8 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
 
         @Override
         public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
-            // 获取团队 ID
-            UUID teamId = QuestInterfaceBlockEntity.this.getTeamId();
-            if (teamId == null) return stack;
-
-            // 获取绑定的任务
-            Task t = QuestInterfaceBlockEntity.this.getTask();
-            // 确保任务有效且是物品提交任务
-            if (t == null || !(t instanceof ItemTask itemTask)) return stack;
-
-            // [逻辑] 检查结构转速，如果绝对值小于 16 RPM 则不工作
-            // 使用 QuestInterfaceBlockEntity.this 访问外部类方法
-            if (Math.abs(QuestInterfaceBlockEntity.this.getStructureSpeed()) < 256.0f) return stack;
-
-            // 检查团队数据
-            if (level == null) return stack;
-            TeamData data = FTBQuestsAPI.api().getQuestFile(level.isClientSide).getNullableTeamData(teamId);
-            if (data == null || !data.canStartTasks(t.getQuest())) {
-                return stack;
-            }
-
-            // 尝试提交物品到任务
-            return itemTask.insert(data, stack, simulate);
+            // 主方块不再接受直接输入，强制使用专用提交接口
+            return stack;
         }
 
         @Override
@@ -78,6 +58,33 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
             return true;
         }
     };
+
+    /**
+     * 专用的物品提交逻辑，由 QuestSubmissionBlock 调用
+     */
+    public ItemStack submitItem(ItemStack stack, boolean simulate) {
+        // 获取团队 ID
+        UUID teamId = this.getTeamId();
+        if (teamId == null) return stack;
+
+        // 获取绑定的任务
+        Task t = this.getTask();
+        // 确保任务有效且是物品提交任务
+        if (t == null || !(t instanceof ItemTask itemTask)) return stack;
+
+        // [逻辑] 检查结构转速，如果绝对值小于 256 RPM 则不工作
+        if (Math.abs(this.getStructureSpeed()) < 256.0f) return stack;
+
+        // 检查团队数据
+        if (level == null) return stack;
+        TeamData data = FTBQuestsAPI.api().getQuestFile(level.isClientSide).getNullableTeamData(teamId);
+        if (data == null || !data.canStartTasks(t.getQuest())) {
+            return stack;
+        }
+
+        // 尝试提交物品到任务
+        return itemTask.insert(data, stack, simulate);
+    }
 
     public QuestInterfaceBlockEntity(BlockPos pos, BlockState state) {
         super(pos, state);
@@ -110,7 +117,9 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
     // --- 结构检测逻辑 ---
 
     private static final java.util.Map<Character, java.util.function.Predicate<BlockState>> PALETTE = java.util.Map.of(
-            'S', state -> state.is(net.minecraft.world.level.block.Blocks.STONE) || state.getBlock() instanceof com.gugucraft.guguaddons.block.custom.QuestInputBlock,
+            'S', state -> state.is(net.minecraft.world.level.block.Blocks.STONE) || 
+                          state.getBlock() instanceof com.gugucraft.guguaddons.block.custom.QuestInputBlock || 
+                          state.getBlock() instanceof com.gugucraft.guguaddons.block.custom.QuestSubmissionBlock,
             'I', state -> state.getBlock() instanceof com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock,
             ' ', state -> true
     );
