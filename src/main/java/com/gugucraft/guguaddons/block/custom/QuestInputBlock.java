@@ -6,6 +6,7 @@ import com.simibubi.create.content.kinetics.base.DirectionalKineticBlock;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.EntityBlock;
@@ -47,5 +48,7 @@ public class QuestInputBlock extends DirectionalKineticBlock implements EntityBl
         }
         return null;
     }
+
+
 
 }
