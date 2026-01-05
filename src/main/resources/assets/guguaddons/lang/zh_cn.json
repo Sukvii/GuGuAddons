@@ -4,7 +4,7 @@
   "block.guguaddons.quest_interface": "任务接口",
   "block.guguaddons.quest_input": "应力输入接口",
   "message.guguaddons.interface_speed_fail": "转速不足！需要 |256| RPM。当前: %s",
-  "message.guguaddons.structure_not_formed": "多方块结构未成形！",
+  "message.guguaddons.structure_not_formed": "结构未成型",
   "tooltip.guguaddons.gem_gui_hint": "右键点击打开宝石界面",
   "block.guguaddons.quest_interface.tooltip.summary": "用于提交任务物品的多方块结构核心。",
   "block.guguaddons.quest_interface.tooltip.condition1": "结构组成",
@@ -12,7 +12,6 @@
   "block.guguaddons.quest_interface.tooltip.condition2": "应力影响",
   "block.guguaddons.quest_interface.tooltip.behaviour2": "每 1 RPM 消耗 32su (总量取决于输入端口转速)。",
   "tooltip.guguaddons.hold_for_description": "按住 [Shift] 查看信息",
-  "jade.guguaddons.structure_formed": "多方块结构",
   "jade.guguaddons.stress_consumption": "当前应力消耗: %s su",
   "jade.guguaddons.task_progress": "当前进度: %s%%"
 }

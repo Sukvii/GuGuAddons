@@ -26,12 +26,11 @@ public enum QuestInterfaceComponentProvider implements IBlockComponentProvider {
         if (accessor.getBlockEntity() instanceof QuestInterfaceBlockEntity be) {
             boolean formed = be.isStructureFormed();
             if (formed) {
-                tooltip.add(Component.translatable("jade.guguaddons.structure_formed").append(Component.literal(": ")).append(Component.translatable("gui.yes")));
                 float speed = be.getStructureSpeed();
                 float stress = Math.abs(speed) * 32;
                 tooltip.add(Component.translatable("jade.guguaddons.stress_consumption", String.format("%.0f", stress)));
             } else {
-                tooltip.add(Component.translatable("jade.guguaddons.structure_formed").append(Component.literal(": ")).append(Component.translatable("gui.no")));
+                tooltip.add(Component.translatable("message.guguaddons.structure_not_formed").withStyle(net.minecraft.ChatFormatting.RED));
             }
 
             if (be.getLevel() != null && be.getLevel().isClientSide) {
@@ -48,7 +47,8 @@ public enum QuestInterfaceComponentProvider implements IBlockComponentProvider {
                             Component text = Component.translatable("jade.guguaddons.task_progress", percent);
                             if (Screen.hasShiftDown()) {
                                 IElementHelper helper = IElementHelper.get();
-                                tooltip.add(helper.progress(ratio, text, helper.progressStyle(), BoxStyle.getTransparent(), false));
+                                // Green gradient: 0xFF28A828 to 0xFF1D7D1D
+                                tooltip.add(helper.progress(ratio, text, helper.progressStyle().color(0xFF28A828, 0xFF1D7D1D).textColor(0xFFFFFFFF), BoxStyle.getTransparent(), false));
                             } else {
                                 tooltip.add(text);
                             }
