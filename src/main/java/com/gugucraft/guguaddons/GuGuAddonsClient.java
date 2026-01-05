@@ -16,17 +16,23 @@ import com.simibubi.create.content.decoration.encasing.EncasedCTBehaviour;
 import com.simibubi.create.foundation.block.connected.*;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.BlockAndTintGetter;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.world.level.block.state.BlockState;
+
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+
+import com.simibubi.create.foundation.block.connected.AllCTTypes;
+import com.simibubi.create.foundation.block.connected.CTSpriteShiftEntry;
+import com.simibubi.create.foundation.block.connected.CTSpriteShifter;
 
 // This class will not load on dedicated servers. Accessing client side code from here is safe.
 @Mod(value = GuGuAddons.MODID, dist = Dist.CLIENT)
 public class GuGuAddonsClient {
+
+    public static final CTSpriteShiftEntry DEDUCTION_CASING_CT = CTSpriteShifter.getCT(
+            AllCTTypes.OMNIDIRECTIONAL,
+            ResourceLocation.fromNamespaceAndPath(GuGuAddons.MODID, "block/deduction_casing"),
+            ResourceLocation.fromNamespaceAndPath(GuGuAddons.MODID, "block/deduction_casing_connected")
+    );
     public GuGuAddonsClient(IEventBus modEventBus, ModContainer container) {
         modEventBus.addListener(GuGuAddonsClient::onClientSetup);
         modEventBus.addListener(GuGuAddonsClient::registerRenderers);
@@ -46,6 +52,10 @@ public class GuGuAddonsClient {
                 .factory(OrientedRotatingVisual.of(AllPartialModels.SHAFT_HALF))
                 .skipVanillaRender(be -> true)
                 .apply();
+
+        // Register Connected Textures
+        CreateClient.MODEL_SWAPPER.getCustomBlockModels().register(ModBlocks.DEDUCTION_CASING.getId(), model -> new CTModel(model, new EncasedCTBehaviour(DEDUCTION_CASING_CT)));
+        CreateClient.CASING_CONNECTIVITY.makeCasing(ModBlocks.DEDUCTION_CASING.get(), DEDUCTION_CASING_CT);
     }
 
     public static void registerRenderers(net.neoforged.neoforge.client.event.EntityRenderersEvent.RegisterRenderers event) {

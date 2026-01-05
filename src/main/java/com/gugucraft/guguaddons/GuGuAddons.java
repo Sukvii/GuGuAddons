@@ -17,9 +17,7 @@ import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModBlocks;
 import com.gugucraft.guguaddons.registry.ModCreativeModeTabs;
 import com.gugucraft.guguaddons.registry.ModItems;
-import com.gugucraft.guguaddons.registry.ModDimensions;
 
-import com.gugucraft.guguaddons.registry.ModChunkGenerators;
 
 @Mod(GuGuAddons.MODID)
 public class GuGuAddons {
@@ -39,9 +37,7 @@ public class GuGuAddons {
 
         ModCreativeModeTabs.register(modEventBus); // Postponed to next version
 
-        // ModDimensions.register(); // Postponed to next version
 
-        // ModChunkGenerators.register(modEventBus); // Postponed to next version
 
         NeoForge.EVENT_BUS.register(this);
 

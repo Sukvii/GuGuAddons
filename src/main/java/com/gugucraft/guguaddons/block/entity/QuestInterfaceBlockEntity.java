@@ -17,15 +17,26 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
+
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandler;
 
 import java.util.UUID;
 
+import com.gugucraft.guguaddons.block.custom.QuestInputBlock;
+import com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock;
+import com.gugucraft.guguaddons.block.custom.QuestSubmissionBlock;
+import com.gugucraft.guguaddons.registry.ModBlocks;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+
 public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
 
-    // [优化] 1. 将 ItemHandler 实例化为成员变量，实现缓存
+    // Instantiate ItemHandler as a member variable to implement caching
     private final IItemHandler itemHandler = new IItemHandler() {
         @Override
         public int getSlots() {
@@ -39,13 +50,13 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
 
         @Override
         public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
-            // 主方块不再接受直接输入，强制使用专用提交接口
+            // The main block no longer accepts direct input, forcing the use of a dedicated submission interface
             return stack;
         }
 
         @Override
         public ItemStack extractItem(int slot, int amount, boolean simulate) {
-            return ItemStack.EMPTY; // 这是一个只进不出的接口
+            return ItemStack.EMPTY; // This is an input-only interface
         }
 
         @Override
@@ -60,29 +71,29 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
     };
 
     /**
-     * 专用的物品提交逻辑，由 QuestSubmissionBlock 调用
+     * Dedicated item submission logic, called by QuestSubmissionBlock
      */
     public ItemStack submitItem(ItemStack stack, boolean simulate) {
-        // 获取团队 ID
+        // Get Team ID
         UUID teamId = this.getTeamId();
         if (teamId == null) return stack;
 
-        // 获取绑定的任务
+        // Get bound task
         Task t = this.getTask();
-        // 确保任务有效且是物品提交任务
+        // Ensure the task is valid and is an item submission task
         if (t == null || !(t instanceof ItemTask itemTask)) return stack;
 
-        // [逻辑] 检查结构转速，如果绝对值小于 256 RPM 则不工作
+        // [Logic] Check structure speed, if absolute value is less than 256 RPM, it does not work
         if (Math.abs(this.getStructureSpeed()) < 256.0f) return stack;
 
-        // 检查团队数据
+        // Check team data
         if (level == null) return stack;
         TeamData data = FTBQuestsAPI.api().getQuestFile(level.isClientSide).getNullableTeamData(teamId);
         if (data == null || !data.canStartTasks(t.getQuest())) {
             return stack;
         }
 
-        // 尝试提交物品到任务
+        // Attempt to submit item to task
         return itemTask.insert(data, stack, simulate);
     }
 
@@ -98,7 +109,7 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
     @Override
     public Task getTask() {
         Task t = super.getTask();
-        // 允许在服务端获取任务，修复可能的同步问题
+        // Allow retrieving task on server side to fix potential synchronization issues
         if (t == null && level != null && !level.isClientSide) {
             return t;
         }
@@ -106,56 +117,55 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
     }
 
     public void tick(Level level, BlockPos pos, BlockState state) {
-        // 如果没有特殊逻辑，建议在 Block 类的 getTicker 中移除注册，以提升 TPS
+        // If there is no special logic, it is recommended to remove registration in the Block class's getTicker to improve TPS
     }
 
-    // [优化] 2. 直接返回缓存的 itemHandler 对象
+    // [Optimization] 2. Directly return the cached itemHandler object
     public IItemHandler getItemHandler() {
         return this.itemHandler;
     }
 
-    // --- 结构检测逻辑 ---
-
-    private static final java.util.Map<Character, java.util.function.Predicate<BlockState>> PALETTE = java.util.Map.of(
-            'S', state -> state.is(net.minecraft.world.level.block.Blocks.STONE) || 
-                          state.getBlock() instanceof com.gugucraft.guguaddons.block.custom.QuestInputBlock || 
-                          state.getBlock() instanceof com.gugucraft.guguaddons.block.custom.QuestSubmissionBlock,
-            'I', state -> state.getBlock() instanceof com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock,
-            ' ', state -> true
-    );
+    // --- Structure Detection Logic ---
 
     private static final String[][] PATTERN = {
             // Depth 0 (Front)
             {
-                    "SSS", // y=1 (Top)
-                    "SIS", // y=0 (Center)
-                    "SSS"  // y=-1 (Bottom)
+                    "DDDDD",
+                    "GGGGG",
+                    "GGIGG",
+                    "DDDDD"
             },
-            // Depth 1
+            // Depth 1 (Middle)
             {
-                    "SSS",
-                    "SSS",
-                    "SSS"
+                    "DDDDD",
+                    "DSCSD",
+                    "DSCSD",
+                    "DDDDD"
             },
-            // Depth 2
+            // Depth 2 (Back)
             {
-                    "SSS",
-                    "SSS",
-                    "SSS"
+                    "DDDDD",
+                    "GGGGG",
+                    "GGGGG",
+                    "DDDDD"
             }
     };
 
     public boolean isStructureFormed() {
         if (level == null) return false;
-        BlockState state = level.getBlockState(this.getBlockPos());
-        if (!state.hasProperty(com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock.FACING)) return false;
+        BlockPos centerPos = this.getBlockPos();
+        BlockState centerState = level.getBlockState(centerPos);
+        if (!centerState.hasProperty(QuestInterfaceBlock.FACING)) return false;
 
-        net.minecraft.core.Direction facing = state.getValue(com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock.FACING);
-        net.minecraft.core.Direction backwards = facing.getOpposite();
-        net.minecraft.core.Direction left = facing.getClockWise();
-        net.minecraft.core.Direction up = net.minecraft.core.Direction.UP;
+        Direction facing = centerState.getValue(QuestInterfaceBlock.FACING);
+        Direction left = facing.getClockWise();
+        Direction up = Direction.UP;
+        Direction backwards = facing.getOpposite();
+        Direction.Axis horizontalAxis = left.getAxis();
 
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
+        int inputCount = 0;
+        int submissionCount = 0;
 
         for (int d = 0; d < PATTERN.length; d++) {
             String[] layer = PATTERN[d];
@@ -163,37 +173,62 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
                 String rowStr = layer[row];
                 for (int col = 0; col < rowStr.length(); col++) {
                     char key = rowStr.charAt(col);
-                    if (key == ' ') continue;
+                    
+                    int v = 2 - row;
+                    int h = 2 - col;
 
-                    int v = 1 - row;
-                    int h = 1 - col;
+                    mutablePos.set(centerPos);
+                    if (d != 0) mutablePos.move(backwards, d);
+                    if (h != 0) mutablePos.move(left, h);
+                    if (v != 0) mutablePos.move(up, v);
 
-                    mutablePos.set(this.getBlockPos());
-                    mutablePos.move(backwards, d);
-                    mutablePos.move(left, h);
-                    mutablePos.move(up, v);
+                    BlockState state = level.getBlockState(mutablePos);
+                    Block block = state.getBlock();
+                    ResourceLocation id = BuiltInRegistries.BLOCK.getKey(block);
 
-                    BlockState targetState = level.getBlockState(mutablePos);
-                    java.util.function.Predicate<BlockState> predicate = PALETTE.get(key);
-
-                    if (predicate == null || !predicate.test(targetState)) {
+                    if (key == 'D') {
+                        if (state.is(ModBlocks.DEDUCTION_CASING.get())) continue;
+                        if (block instanceof QuestInputBlock) {
+                            inputCount++;
+                            continue;
+                        }
+                        if (block instanceof QuestSubmissionBlock) {
+                            submissionCount++;
+                            continue;
+                        }
                         return false;
+                    } else if (key == 'G') {
+                         if (!id.toString().equals("create:framed_glass_pane")) return false;
+                    } else if (key == 'S') {
+                         if (!id.toString().equals("create:shaft")) return false;
+                         if (!state.hasProperty(BlockStateProperties.AXIS) || state.getValue(BlockStateProperties.AXIS) != horizontalAxis) return false;
+                    } else if (key == 'C') {
+                         if (!id.toString().equals("create:cogwheel")) return false;
+                         if (!state.hasProperty(BlockStateProperties.AXIS) || state.getValue(BlockStateProperties.AXIS) != horizontalAxis) return false;
+                    } else if (key == 'I') {
+                        if (!state.is(ModBlocks.QUEST_INTERFACE_BLOCK.get())) return false;
+                    } else if (key == ' ') {
+                        // ignore
+                    } else {
+                        return false; 
                     }
                 }
             }
         }
-        return true;
+
+        return inputCount <= 1 && submissionCount <= 1;
     }
 
     public boolean isBlockInStructure(BlockPos pos) {
         if (level == null) return false;
-        BlockState state = level.getBlockState(this.getBlockPos());
-        if (!state.hasProperty(com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock.FACING)) return false;
+        BlockPos centerPos = this.getBlockPos();
+        BlockState centerState = level.getBlockState(centerPos);
+        if (!centerState.hasProperty(QuestInterfaceBlock.FACING)) return false;
 
-        net.minecraft.core.Direction facing = state.getValue(com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock.FACING);
-        net.minecraft.core.Direction backwards = facing.getOpposite();
-        net.minecraft.core.Direction left = facing.getClockWise();
-        net.minecraft.core.Direction up = net.minecraft.core.Direction.UP;
+        Direction facing = centerState.getValue(QuestInterfaceBlock.FACING);
+        Direction left = facing.getClockWise();
+        Direction up = Direction.UP;
+        Direction backwards = facing.getOpposite();
 
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
 
@@ -202,13 +237,15 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
             for (int row = 0; row < layer.length; row++) {
                 String rowStr = layer[row];
                 for (int col = 0; col < rowStr.length(); col++) {
-                    int v = 1 - row;
-                    int h = 1 - col;
+                    if (rowStr.charAt(col) == ' ') continue;
 
-                    mutablePos.set(this.getBlockPos());
-                    mutablePos.move(backwards, d);
-                    mutablePos.move(left, h);
-                    mutablePos.move(up, v);
+                    int v = 2 - row;
+                    int h = 2 - col;
+
+                    mutablePos.set(centerPos);
+                    if (d != 0) mutablePos.move(backwards, d);
+                    if (h != 0) mutablePos.move(left, h);
+                    if (v != 0) mutablePos.move(up, v);
 
                     if (mutablePos.equals(pos)) return true;
                 }
@@ -217,7 +254,7 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
         return false;
     }
 
-    // --- GUI 配置相关 ---
+    // --- GUI Configuration Related ---
 
     @Override
     public ConfigGroup fillConfigGroup(TeamData data) {
@@ -249,49 +286,44 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
         return ConfigQuestObject.formatEntry(task).copy().append(questTxt);
     }
 
-    // --- 速度检测逻辑 (获取结构中最大的输入速度) ---
+    // --- Speed Detection Logic (Get the maximum input speed in the structure) ---
 
     public float getStructureSpeed() {
         if (level == null) return 0;
-        BlockState state = level.getBlockState(this.getBlockPos());
-        if (!state.hasProperty(com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock.FACING)) return 0;
+        BlockPos centerPos = this.getBlockPos();
+        BlockState centerState = level.getBlockState(centerPos);
+        if (!centerState.hasProperty(QuestInterfaceBlock.FACING)) return 0;
 
-        net.minecraft.core.Direction facing = state.getValue(com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock.FACING);
-        net.minecraft.core.Direction backwards = facing.getOpposite();
-        net.minecraft.core.Direction left = facing.getClockWise();
-        net.minecraft.core.Direction up = net.minecraft.core.Direction.UP;
+        Direction facing = centerState.getValue(QuestInterfaceBlock.FACING);
+        Direction left = facing.getClockWise();
+        Direction up = Direction.UP;
+        Direction backwards = facing.getOpposite();
 
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
-        float maxSpeed = 0.0f; // 用于存储最大速度
 
         for (int d = 0; d < PATTERN.length; d++) {
             String[] layer = PATTERN[d];
             for (int row = 0; row < layer.length; row++) {
                 String rowStr = layer[row];
                 for (int col = 0; col < rowStr.length(); col++) {
-                    char key = rowStr.charAt(col);
-                    if (key != 'S') continue; // 只检查 'S' 位置
+                    if (rowStr.charAt(col) != 'D') continue;
 
-                    int v = 1 - row;
-                    int h = 1 - col;
+                    int v = 2 - row;
+                    int h = 2 - col;
 
-                    mutablePos.set(this.getBlockPos());
-                    mutablePos.move(backwards, d);
-                    mutablePos.move(left, h);
-                    mutablePos.move(up, v);
+                    mutablePos.set(centerPos);
+                    if (d != 0) mutablePos.move(backwards, d);
+                    if (h != 0) mutablePos.move(left, h);
+                    if (v != 0) mutablePos.move(up, v);
 
                     BlockEntity be = level.getBlockEntity(mutablePos);
 
                     if (be instanceof com.gugucraft.guguaddons.block.entity.QuestInputBlockEntity inputBE) {
-                        float speed = inputBE.getSpeed();
-                        // 记录绝对值最大的速度
-                        if (Math.abs(speed) > Math.abs(maxSpeed)) {
-                            maxSpeed = speed;
-                        }
+                        return inputBE.getSpeed();
                     }
                 }
             }
         }
-        return maxSpeed;
+        return 0.0f;
     }
 }

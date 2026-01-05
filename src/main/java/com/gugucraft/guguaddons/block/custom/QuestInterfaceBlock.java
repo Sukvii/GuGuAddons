@@ -2,10 +2,8 @@ package com.gugucraft.guguaddons.block.custom;
 
 import com.gugucraft.guguaddons.block.entity.QuestInterfaceBlockEntity;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
-import dev.ftb.mods.ftbquests.block.entity.TaskScreenBlockEntity;
 import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
-import dev.ftb.mods.ftbteams.api.client.ClientTeamManager;
-import net.minecraft.ChatFormatting;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
