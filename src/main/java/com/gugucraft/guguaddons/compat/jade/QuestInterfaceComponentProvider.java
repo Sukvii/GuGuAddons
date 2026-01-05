@@ -33,7 +33,7 @@ public enum QuestInterfaceComponentProvider implements IBlockComponentProvider {
                 tooltip.add(Component.translatable("message.guguaddons.structure_not_formed").withStyle(net.minecraft.ChatFormatting.RED));
             }
 
-            if (be.getLevel() != null && be.getLevel().isClientSide) {
+            if (formed && be.getLevel() != null && be.getLevel().isClientSide) {
                 Task task = be.getTask();
                 UUID teamId = be.getTeamId();
                 if (task != null && teamId != null) {

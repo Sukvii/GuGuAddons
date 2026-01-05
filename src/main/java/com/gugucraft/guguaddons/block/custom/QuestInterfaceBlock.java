@@ -102,6 +102,17 @@ public class QuestInterfaceBlock extends BaseEntityBlock {
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
+    @Override
+    public void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, BlockPos fromPos, boolean isMoving) {
+        super.neighborChanged(state, level, pos, neighborBlock, fromPos, isMoving);
+        if (!level.isClientSide) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof QuestInterfaceBlockEntity questInterface) {
+                questInterface.setStructureDirty();
+            }
+        }
+    }
+
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
