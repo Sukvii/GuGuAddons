@@ -26,7 +26,7 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 // This class will not load on dedicated servers. Accessing client side code from here is safe.
 @Mod(value = GuGuAddons.MODID, dist = Dist.CLIENT)
 // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
-@EventBusSubscriber(modid = GuGuAddons.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = GuGuAddons.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public class GuGuAddonsClient {
     public GuGuAddonsClient(ModContainer container) {
         // Allows NeoForge to create a config screen for this mod's configs.
@@ -37,31 +37,13 @@ public class GuGuAddonsClient {
 
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {
-        // Register QuestInputBlock connected textures
-        event.enqueueWork(() -> {
-            Block questInput = ModBlocks.QUEST_INPUT.get();
-            // 1. Register Casing Connectivity
-            CreateClient.CASING_CONNECTIVITY.make(questInput, AllSpriteShifts.ANDESITE_CASING);
-
-            // 2. Register Connected Texture Behaviour (Model)
-            ResourceLocation rl = BuiltInRegistries.BLOCK.getKey(questInput);
-            ConnectedTextureBehaviour behavior = new EncasedCTBehaviour(AllSpriteShifts.ANDESITE_CASING) {
-                @Override
-                public boolean connectsTo(BlockState state, BlockState other, BlockAndTintGetter reader, BlockPos pos, BlockPos otherPos, Direction face) {
-                    if (isBeingBlocked(state, reader, pos, otherPos, face)) return false;
-                    if (state.getBlock() == other.getBlock()) return true;
-                    
-                    com.simibubi.create.content.decoration.encasing.CasingConnectivity.Entry otherEntry = CreateClient.CASING_CONNECTIVITY.get(other);
-                    return otherEntry != null && otherEntry.getCasing() == AllSpriteShifts.ANDESITE_CASING;
-                }
-            };
-            CreateClient.MODEL_SWAPPER.getCustomBlockModels().register(rl, model -> new CTModel(model, behavior));
-
-            net.minecraft.client.renderer.blockentity.BlockEntityRenderers.register(ModBlockEntities.QUEST_INPUT.get(), com.gugucraft.guguaddons.client.renderer.QuestInputRenderer::new);
-        });
-
-        // Some client setup code
+        // Client setup code
         GuGuAddons.LOGGER.info("HELLO FROM CLIENT SETUP");
         GuGuAddons.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+    }
+
+    @SubscribeEvent
+    public static void registerRenderers(net.neoforged.neoforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(ModBlockEntities.QUEST_INPUT.get(), com.gugucraft.guguaddons.client.renderer.QuestInputRenderer::new);
     }
 }

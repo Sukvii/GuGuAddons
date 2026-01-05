@@ -37,12 +37,11 @@ public class QuestInputBlock extends DirectionalKineticBlock implements EntityBl
 
     @Override
     public boolean hasShaftTowards(LevelReader world, BlockPos pos, BlockState state, Direction face) {
-        return face.getAxis() == state.getValue(FACING).getAxis();
+        return face == state.getValue(FACING);
     }
 
     @Nullable
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        if (level.isClientSide) return null;
         if (type == ModBlockEntities.QUEST_INPUT.get()) {
             return (l, p, s, be) -> ((QuestInputBlockEntity) be).tick();
         }
