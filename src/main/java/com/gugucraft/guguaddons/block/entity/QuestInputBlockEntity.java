@@ -18,6 +18,6 @@ public class QuestInputBlockEntity extends KineticBlockEntity {
 
     @Override
     public float calculateStressApplied() {
-        return 32.0f; // Stress Impact: 32x RPM
+        return 512.0f; // Stress Impact: 512x RPM
     }
 }

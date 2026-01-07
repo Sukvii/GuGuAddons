@@ -26,7 +26,7 @@ public enum QuestInterfaceComponentProvider implements IBlockComponentProvider {
             boolean formed = be.isStructureFormed();
             if (formed) {
                 float speed = be.getStructureSpeed();
-                float stress = Math.abs(speed) * 32;
+                float stress = Math.abs(speed) * 512;
                 tooltip.add(
                         Component.translatable("jade.guguaddons.stress_consumption", String.format("%.0f", stress)));
             } else {
