@@ -37,6 +37,12 @@ public class GuGuAddonsClient {
                         ResourceLocation.fromNamespaceAndPath(GuGuAddons.MODID,
                                         "block/quest_interface_front_connected"));
 
+        public static final CTSpriteShiftEntry QUEST_SUBMISSION_CT = CTSpriteShifter.getCT(
+                        AllCTTypes.OMNIDIRECTIONAL,
+                        ResourceLocation.fromNamespaceAndPath(GuGuAddons.MODID, "block/quest_submission_front"),
+                        ResourceLocation.fromNamespaceAndPath(GuGuAddons.MODID,
+                                        "block/quest_submission_front_connected"));
+
         public GuGuAddonsClient(IEventBus modEventBus, ModContainer container) {
                 modEventBus.addListener(GuGuAddonsClient::onClientSetup);
                 modEventBus.addListener(GuGuAddonsClient::registerRenderers);
@@ -79,6 +85,21 @@ public class GuGuAddonsClient {
                                         }
                                 }));
                 CreateClient.CASING_CONNECTIVITY.makeCasing(ModBlocks.QUEST_INTERFACE_BLOCK.get(), DEDUCTION_CASING_CT);
+
+                CreateClient.MODEL_SWAPPER.getCustomBlockModels().register(ModBlocks.QUEST_SUBMISSION.getId(),
+                                model -> new CTModel(model, new EncasedCTBehaviour(DEDUCTION_CASING_CT) {
+                                        @Override
+                                        public CTSpriteShiftEntry getShift(
+                                                        net.minecraft.world.level.block.state.BlockState state,
+                                                        net.minecraft.core.Direction direction,
+                                                        @org.jetbrains.annotations.Nullable net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {
+                                                return direction == state.getValue(
+                                                                com.gugucraft.guguaddons.block.custom.QuestSubmissionBlock.FACING)
+                                                                                ? QUEST_SUBMISSION_CT
+                                                                                : DEDUCTION_CASING_CT;
+                                        }
+                                }));
+                CreateClient.CASING_CONNECTIVITY.makeCasing(ModBlocks.QUEST_SUBMISSION.get(), DEDUCTION_CASING_CT);
         }
 
         public static void registerRenderers(

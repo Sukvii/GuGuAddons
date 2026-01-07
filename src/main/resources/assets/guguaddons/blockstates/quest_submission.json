@@ -1,0 +1,32 @@
+{
+    "variants": {
+        "facing=north": {
+            "model": "guguaddons:block/quest_submission"
+        },
+        "facing=south": {
+            "model": "guguaddons:block/quest_submission",
+            "y": 180,
+            "uvlock": true
+        },
+        "facing=west": {
+            "model": "guguaddons:block/quest_submission",
+            "y": 270,
+            "uvlock": true
+        },
+        "facing=east": {
+            "model": "guguaddons:block/quest_submission",
+            "y": 90,
+            "uvlock": true
+        },
+        "facing=up": {
+            "model": "guguaddons:block/quest_submission",
+            "x": 270,
+            "uvlock": true
+        },
+        "facing=down": {
+            "model": "guguaddons:block/quest_submission",
+            "x": 90,
+            "uvlock": true
+        }
+    }
+}
