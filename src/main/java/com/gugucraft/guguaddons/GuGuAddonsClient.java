@@ -21,6 +21,8 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import com.simibubi.create.foundation.block.connected.AllCTTypes;
 import com.simibubi.create.foundation.block.connected.CTSpriteShiftEntry;
 import com.simibubi.create.foundation.block.connected.CTSpriteShifter;
+import net.createmod.ponder.foundation.PonderIndex;
+import com.gugucraft.guguaddons.ponder.GuGuAddonsPonderPlugin;
 
 // This class will not load on dedicated servers. Accessing client side code from here is safe.
 @Mod(value = GuGuAddons.MODID, dist = Dist.CLIENT)
@@ -59,6 +61,8 @@ public class GuGuAddonsClient {
                 // Client setup code
                 GuGuAddons.LOGGER.info("HELLO FROM CLIENT SETUP");
                 GuGuAddons.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+
+                PonderIndex.addPlugin(new GuGuAddonsPonderPlugin());
 
                 dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
                                 .builder(ModBlockEntities.QUEST_INPUT.get())

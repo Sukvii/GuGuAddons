@@ -34,7 +34,13 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
-public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
+import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
+import com.simibubi.create.foundation.utility.CreateLang;
+import com.simibubi.create.foundation.item.TooltipHelper;
+import net.createmod.catnip.lang.FontHelper.Palette;
+import java.util.List;
+
+public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity implements IHaveGoggleInformation {
 
     // Instantiate ItemHandler as a member variable to implement caching
     private final IItemHandler itemHandler = new IItemHandler() {
@@ -50,13 +56,16 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
 
         @Override
         public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
-            // The main block no longer accepts direct input, forcing the use of a dedicated submission interface
+            // The main block no longer accepts direct input, forcing the use of a dedicated
+            // submission interface
             return stack;
         }
 
         @Override
         public ItemStack extractItem(int slot, int amount, boolean simulate) {
-            return ItemStack.EMPTY; // This is an input-only interface
+            return ItemStack.EMPTY; // This is an
+                                    // input-only
+                                    // interface
         }
 
         @Override
@@ -76,18 +85,23 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
     public ItemStack submitItem(ItemStack stack, boolean simulate) {
         // Get Team ID
         UUID teamId = this.getTeamId();
-        if (teamId == null) return stack;
+        if (teamId == null)
+            return stack;
 
         // Get bound task
         Task t = this.getTask();
         // Ensure the task is valid and is an item submission task
-        if (t == null || !(t instanceof ItemTask itemTask)) return stack;
+        if (t == null || !(t instanceof ItemTask itemTask))
+            return stack;
 
-        // [Logic] Check structure speed, if absolute value is less than 256 RPM, it does not work
-        if (Math.abs(this.getStructureSpeed()) < 256.0f) return stack;
+        // [Logic] Check structure speed, if absolute value is less than 256 RPM, it
+        // does not work
+        if (Math.abs(this.getStructureSpeed()) < 256.0f)
+            return stack;
 
         // Check team data
-        if (level == null) return stack;
+        if (level == null)
+            return stack;
         TeamData data = FTBQuestsAPI.api().getQuestFile(level.isClientSide).getNullableTeamData(teamId);
         if (data == null || !data.canStartTasks(t.getQuest())) {
             return stack;
@@ -116,7 +130,8 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
         return t;
     }
 
-    public static final java.util.Set<QuestInterfaceBlockEntity> TRACKED_INTERFACES = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    public static final java.util.Set<QuestInterfaceBlockEntity> TRACKED_INTERFACES = java.util.concurrent.ConcurrentHashMap
+            .newKeySet();
 
     @Override
     public void onLoad() {
@@ -141,9 +156,10 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
             TRACKED_INTERFACES.remove(this);
         }
     }
-    
+
     public void tick(Level level, BlockPos pos, BlockState state) {
-        // If there is no special logic, it is recommended to remove registration in the Block class's getTicker to improve TPS
+        // If there is no special logic, it is recommended to remove registration in the
+        // Block class's getTicker to improve TPS
     }
 
     // [Optimization] 2. Directly return the cached itemHandler object
@@ -188,8 +204,8 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
 
     private void checkStructure() {
         if (level == null || level.isClientSide) {
-             structureDirty = false;
-             return;
+            structureDirty = false;
+            return;
         }
 
         boolean wasFormed = this.isFormed;
@@ -230,15 +246,19 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
                     int h = 2 - col;
 
                     mutablePos.set(centerPos);
-                    if (d != 0) mutablePos.move(backwards, d);
-                    if (h != 0) mutablePos.move(left, h);
-                    if (v != 0) mutablePos.move(up, v);
+                    if (d != 0)
+                        mutablePos.move(backwards, d);
+                    if (h != 0)
+                        mutablePos.move(left, h);
+                    if (v != 0)
+                        mutablePos.move(up, v);
 
                     BlockState state = level.getBlockState(mutablePos);
                     Block block = state.getBlock();
 
                     if (key == 'D') {
-                        if (state.is(ModBlocks.DEDUCTION_CASING.get())) continue;
+                        if (state.is(ModBlocks.DEDUCTION_CASING.get()))
+                            continue;
                         if (block instanceof QuestInputBlock) {
                             inputCount++;
                             BlockEntity be = level.getBlockEntity(mutablePos);
@@ -253,26 +273,37 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
                         }
                         structureValid = false;
                     } else if (key == 'G') {
-                        if (!AllPaletteBlocks.FRAMED_GLASS_PANE.has(state)) structureValid = false;
+                        if (!AllPaletteBlocks.FRAMED_GLASS_PANE.has(state))
+                            structureValid = false;
                     } else if (key == 'S') {
-                        if (!AllBlocks.SHAFT.has(state)) structureValid = false;
-                        else if (!state.hasProperty(BlockStateProperties.AXIS) || state.getValue(BlockStateProperties.AXIS) != horizontalAxis) structureValid = false;
+                        if (!AllBlocks.SHAFT.has(state))
+                            structureValid = false;
+                        else if (!state.hasProperty(BlockStateProperties.AXIS)
+                                || state.getValue(BlockStateProperties.AXIS) != horizontalAxis)
+                            structureValid = false;
                     } else if (key == 'C') {
-                        if (!AllBlocks.COGWHEEL.has(state)) structureValid = false;
-                        else if (!state.hasProperty(BlockStateProperties.AXIS) || state.getValue(BlockStateProperties.AXIS) != horizontalAxis) structureValid = false;
+                        if (!AllBlocks.COGWHEEL.has(state))
+                            structureValid = false;
+                        else if (!state.hasProperty(BlockStateProperties.AXIS)
+                                || state.getValue(BlockStateProperties.AXIS) != horizontalAxis)
+                            structureValid = false;
                     } else if (key == 'I') {
-                        if (!state.is(ModBlocks.QUEST_INTERFACE_BLOCK.get())) structureValid = false;
+                        if (!state.is(ModBlocks.QUEST_INTERFACE_BLOCK.get()))
+                            structureValid = false;
                     } else if (key == ' ') {
                         // ignore
                     } else {
                         structureValid = false;
                     }
 
-                    if (!structureValid) break;
+                    if (!structureValid)
+                        break;
                 }
-                if (!structureValid) break;
+                if (!structureValid)
+                    break;
             }
-            if (!structureValid) break;
+            if (!structureValid)
+                break;
         }
 
         if (structureValid && inputCount <= 1 && submissionCount <= 1) {
@@ -285,7 +316,7 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
             syncedSpeed = 0.0f;
         }
         structureDirty = false;
-        
+
         updateStateIfChanged(wasFormed, oldSpeed);
     }
 
@@ -298,7 +329,8 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
     }
 
     @Override
-    protected void saveAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+    protected void saveAdditional(net.minecraft.nbt.CompoundTag tag,
+            net.minecraft.core.HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putBoolean("IsFormed", isFormed);
         tag.putFloat("StructureSpeed", syncedSpeed);
@@ -319,7 +351,8 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
     }
 
     @Override
-    public void handleUpdateTag(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+    public void handleUpdateTag(net.minecraft.nbt.CompoundTag tag,
+            net.minecraft.core.HolderLookup.Provider registries) {
         super.handleUpdateTag(tag, registries);
         loadAdditional(tag, registries);
     }
@@ -330,10 +363,11 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
     }
 
     @Override
-    public void onDataPacket(net.minecraft.network.Connection net, net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt, net.minecraft.core.HolderLookup.Provider registries) {
+    public void onDataPacket(net.minecraft.network.Connection net,
+            net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket pkt,
+            net.minecraft.core.HolderLookup.Provider registries) {
         handleUpdateTag(pkt.getTag(), registries);
     }
-
 
     public boolean isStructureFormed() {
         if (level != null && !level.isClientSide) {
@@ -345,10 +379,12 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
     }
 
     public boolean isBlockInStructure(BlockPos pos) {
-        if (level == null) return false;
+        if (level == null)
+            return false;
         BlockPos centerPos = this.getBlockPos();
         BlockState centerState = level.getBlockState(centerPos);
-        if (!centerState.hasProperty(QuestInterfaceBlock.FACING)) return false;
+        if (!centerState.hasProperty(QuestInterfaceBlock.FACING))
+            return false;
 
         Direction facing = centerState.getValue(QuestInterfaceBlock.FACING);
         Direction left = facing.getClockWise();
@@ -362,17 +398,22 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
             for (int row = 0; row < layer.length; row++) {
                 String rowStr = layer[row];
                 for (int col = 0; col < rowStr.length(); col++) {
-                    if (rowStr.charAt(col) == ' ') continue;
+                    if (rowStr.charAt(col) == ' ')
+                        continue;
 
                     int v = 2 - row;
                     int h = 2 - col;
 
                     mutablePos.set(centerPos);
-                    if (d != 0) mutablePos.move(backwards, d);
-                    if (h != 0) mutablePos.move(left, h);
-                    if (v != 0) mutablePos.move(up, v);
+                    if (d != 0)
+                        mutablePos.move(backwards, d);
+                    if (h != 0)
+                        mutablePos.move(left, h);
+                    if (v != 0)
+                        mutablePos.move(up, v);
 
-                    if (mutablePos.equals(pos)) return true;
+                    if (mutablePos.equals(pos))
+                        return true;
                 }
             }
         }
@@ -386,14 +427,16 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
         ConfigGroup cg0 = new ConfigGroup("task_screen", accepted -> {
             if (accepted) {
                 if (getLevel() != null) {
-                    NetworkManager.sendToServer(new BlockConfigResponseMessage(getBlockPos(), saveWithoutMetadata(getLevel().registryAccess())));
+                    NetworkManager.sendToServer(new BlockConfigResponseMessage(getBlockPos(),
+                            saveWithoutMetadata(getLevel().registryAccess())));
                 }
             }
         });
 
         cg0.setNameKey(getBlockState().getBlock().getDescriptionId());
         ConfigGroup cg = cg0.getOrCreateSubgroup("screen");
-        cg.add("task", new ConfigQuestObject<>(o -> isSuitableTask(data, o), this::formatLine), getTask(), this::setTask, null).setNameKey("ftbquests.task");
+        cg.add("task", new ConfigQuestObject<>(o -> isSuitableTask(data, o), this::formatLine), getTask(),
+                this::setTask, null).setNameKey("ftbquests.task");
 
         return cg0;
     }
@@ -405,9 +448,11 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
     }
 
     private Component formatLine(dev.ftb.mods.ftbquests.quest.task.Task task) {
-        if (task == null) return Component.empty();
+        if (task == null)
+            return Component.empty();
 
-        Component questTxt = Component.literal(" [").append(task.getQuest().getTitle()).append("]").withStyle(ChatFormatting.GREEN);
+        Component questTxt = Component.literal(" [").append(task.getQuest().getTitle()).append("]")
+                .withStyle(ChatFormatting.GREEN);
         return ConfigQuestObject.formatEntry(task).copy().append(questTxt);
     }
 
@@ -418,16 +463,65 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity {
             if (structureDirty) {
                 checkStructure();
             }
-            // Update speed if input is present (in case speed changed without structure change)
+            // Update speed if input is present (in case speed changed without structure
+            // change)
             if (isFormed && cachedInput != null && !cachedInput.isRemoved()) {
                 float currentInputSpeed = cachedInput.getSpeed();
                 if (Math.abs(currentInputSpeed - syncedSpeed) > 0.01f) {
-                   syncedSpeed = currentInputSpeed;
-                   setChanged();
-                   level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+                    syncedSpeed = currentInputSpeed;
+                    setChanged();
+                    level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
                 }
             }
         }
         return syncedSpeed;
+    }
+
+    @Override
+    public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
+        if (!isStructureFormed())
+            return false;
+
+        CreateLang.translate("gui.goggles.kinetic_stats")
+                .forGoggles(tooltip);
+
+        float speed = Math.abs(getStructureSpeed());
+        float stressAtBase = 0;
+        if (cachedInput != null && !cachedInput.isRemoved()) {
+            stressAtBase = cachedInput.calculateStressApplied();
+        } else {
+            // Fallback if cachedInput not available but structure formed (unlikely but
+            // safe)
+            stressAtBase = 512.0f;
+        }
+
+        float stressTotal = stressAtBase * speed;
+
+        CreateLang.translate("tooltip.stressImpact")
+                .style(ChatFormatting.GRAY)
+                .forGoggles(tooltip);
+
+        CreateLang.number(stressTotal)
+                .translate("generic.unit.stress")
+                .style(ChatFormatting.AQUA)
+                .space()
+                .add(CreateLang.translate("gui.goggles.at_current_speed")
+                        .style(ChatFormatting.DARK_GRAY))
+                .forGoggles(tooltip, 1);
+
+        if (speed < 256.0f) {
+            tooltip.add(Component.empty());
+
+            CreateLang.translate("tooltip.speedRequirement")
+                    .style(ChatFormatting.GOLD)
+                    .forGoggles(tooltip);
+            Component hint = CreateLang.translate("gui.contraptions.not_fast_enough",
+                    Component.translatable(getBlockState().getBlock().getDescriptionId())).component();
+            List<Component> cutString = TooltipHelper.cutTextComponent(hint, Palette.GRAY_AND_WHITE);
+            for (Component c : cutString) {
+                CreateLang.builder().add(c.copy()).forGoggles(tooltip);
+            }
+        }
+        return true;
     }
 }
