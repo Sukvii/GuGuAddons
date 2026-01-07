@@ -3,8 +3,8 @@
     "parent": "block/block",
     "textures": {
         "0": "guguaddons:block/quest_input_output",
-        "1": "guguaddons:block/reactor_casing_top",
-        "2": "guguaddons:block/reactor_casing",
+        "1": "guguaddons:block/quest_input_top",
+        "2": "guguaddons:block/deduction_casing",
         "particle": "guguaddons:block/quest_input_output"
     },
     "elements": [
