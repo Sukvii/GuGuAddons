@@ -5,7 +5,6 @@ import com.gugucraft.guguaddons.block.entity.QuestInterfaceBlockEntity;
 import dev.architectury.networking.NetworkManager;
 import dev.ftb.mods.ftbquests.net.BlockConfigRequestMessage;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -20,16 +19,19 @@ public class QuestStructureEvents {
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         Level level = event.getLevel();
-        if (level.isClientSide) return;
+        if (level.isClientSide)
+            return;
 
-        if (event.getHand() != net.minecraft.world.InteractionHand.MAIN_HAND) return;
+        if (event.getHand() != net.minecraft.world.InteractionHand.MAIN_HAND)
+            return;
 
         if (event.getEntity() instanceof ServerPlayer player) {
             BlockPos pos = event.getPos();
             if (level.getBlockState(pos).is(Blocks.STONE)) {
                 // Search for a QuestInterfaceBlockEntity nearby
                 // Max radius 3 blocks is sufficient given the 3x3x3 size.
-                // The structure center is max 1 block away from stone, controller is max 2 blocks away.
+                // The structure center is max 1 block away from stone, controller is max 2
+                // blocks away.
                 // Let's check a 5x5x5 area centered on the clicked stone.
 
                 BlockPos.MutableBlockPos searchPos = new BlockPos.MutableBlockPos();
@@ -41,7 +43,9 @@ public class QuestStructureEvents {
                             if (be instanceof QuestInterfaceBlockEntity questInterface) {
                                 if (questInterface.isStructureFormed() && questInterface.isBlockInStructure(pos)) {
                                     // Open GUI
-                                    NetworkManager.sendToPlayer(player, new BlockConfigRequestMessage(questInterface.getBlockPos(), BlockConfigRequestMessage.BlockType.TASK_SCREEN));
+                                    NetworkManager.sendToPlayer(player,
+                                            new BlockConfigRequestMessage(questInterface.getBlockPos(),
+                                                    BlockConfigRequestMessage.BlockType.TASK_SCREEN));
                                     player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
                                     event.setCanceled(true);
                                     event.setCancellationResult(net.minecraft.world.InteractionResult.SUCCESS);
@@ -54,6 +58,7 @@ public class QuestStructureEvents {
             }
         }
     }
+
     @SubscribeEvent
     public static void onBlockBreak(net.neoforged.neoforge.event.level.BlockEvent.BreakEvent event) {
         handleBlockChange(event.getLevel(), event.getPos());
@@ -65,7 +70,8 @@ public class QuestStructureEvents {
     }
 
     private static void handleBlockChange(net.minecraft.world.level.LevelAccessor levelAccessor, BlockPos pos) {
-        if (!(levelAccessor instanceof Level level) || level.isClientSide) return;
+        if (!(levelAccessor instanceof Level level) || level.isClientSide)
+            return;
 
         for (QuestInterfaceBlockEntity be : QuestInterfaceBlockEntity.TRACKED_INTERFACES) {
             if (be.getLevel() == level && be.getBlockPos().distSqr(pos) < 64) { // 8 blocks distance check

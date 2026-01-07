@@ -29,7 +29,6 @@ import com.gugucraft.guguaddons.block.custom.QuestSubmissionBlock;
 import com.gugucraft.guguaddons.registry.ModBlocks;
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.content.decoration.palettes.AllPaletteBlocks;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;

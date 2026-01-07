@@ -1,7 +1,6 @@
 package com.gugucraft.guguaddons.compat.jade;
 
 import com.gugucraft.guguaddons.GuGuAddons;
-import com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock;
 import com.gugucraft.guguaddons.block.entity.QuestInterfaceBlockEntity;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -28,9 +27,11 @@ public enum QuestInterfaceComponentProvider implements IBlockComponentProvider {
             if (formed) {
                 float speed = be.getStructureSpeed();
                 float stress = Math.abs(speed) * 32;
-                tooltip.add(Component.translatable("jade.guguaddons.stress_consumption", String.format("%.0f", stress)));
+                tooltip.add(
+                        Component.translatable("jade.guguaddons.stress_consumption", String.format("%.0f", stress)));
             } else {
-                tooltip.add(Component.translatable("message.guguaddons.structure_not_formed").withStyle(net.minecraft.ChatFormatting.RED));
+                tooltip.add(Component.translatable("message.guguaddons.structure_not_formed")
+                        .withStyle(net.minecraft.ChatFormatting.RED));
             }
 
             if (formed && be.getLevel() != null && be.getLevel().isClientSide) {
@@ -48,7 +49,9 @@ public enum QuestInterfaceComponentProvider implements IBlockComponentProvider {
                             if (Screen.hasShiftDown()) {
                                 IElementHelper helper = IElementHelper.get();
                                 // Green gradient: 0xFF28A828 to 0xFF1D7D1D
-                                tooltip.add(helper.progress(ratio, text, helper.progressStyle().color(0xFF28A828, 0xFF1D7D1D).textColor(0xFFFFFFFF), BoxStyle.getTransparent(), false));
+                                tooltip.add(helper.progress(ratio, text,
+                                        helper.progressStyle().color(0xFF28A828, 0xFF1D7D1D).textColor(0xFFFFFFFF),
+                                        BoxStyle.getTransparent(), false));
                             } else {
                                 tooltip.add(text);
                             }
