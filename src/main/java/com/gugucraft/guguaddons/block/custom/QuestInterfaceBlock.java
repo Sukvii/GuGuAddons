@@ -91,7 +91,7 @@ public class QuestInterfaceBlock extends BaseEntityBlock {
                     if (Math.abs(currentSpeed) < 256.0f) {
                         player.displayClientMessage(
                                 Component.translatable("message.guguaddons.interface_speed_fail", currentSpeed), true);
-                        return InteractionResult.FAIL;
+                        return InteractionResult.SUCCESS;
                     }
 
                     dev.architectury.networking.NetworkManager.sendToPlayer(sp,
@@ -101,7 +101,7 @@ public class QuestInterfaceBlock extends BaseEntityBlock {
                 } else {
                     player.displayClientMessage(Component.translatable("message.guguaddons.structure_not_formed"),
                             true);
-                    return InteractionResult.FAIL;
+                    return InteractionResult.SUCCESS;
                 }
             }
         }
