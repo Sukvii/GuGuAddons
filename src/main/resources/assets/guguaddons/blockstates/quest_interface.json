@@ -1,0 +1,22 @@
+{
+    "variants": {
+        "facing=north": {
+            "model": "guguaddons:block/quest_interface"
+        },
+        "facing=south": {
+            "model": "guguaddons:block/quest_interface",
+            "y": 180,
+            "uvlock": true
+        },
+        "facing=west": {
+            "model": "guguaddons:block/quest_interface",
+            "y": 270,
+            "uvlock": true
+        },
+        "facing=east": {
+            "model": "guguaddons:block/quest_interface",
+            "y": 90,
+            "uvlock": true
+        }
+    }
+}
