@@ -1,4 +1,5 @@
 {
+  "itemGroup.guguaddons": "GuGuAddons",
   "block.guguaddons.dimensional_teleport_block": "维度传送方块",
   "item.guguaddons.dimensional_teleport_block": "维度传送方块",
   "block.guguaddons.quest_interface": "演算终端",
