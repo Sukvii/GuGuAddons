@@ -18,7 +18,6 @@ import com.gugucraft.guguaddons.registry.ModBlocks;
 import com.gugucraft.guguaddons.registry.ModCreativeModeTabs;
 import com.gugucraft.guguaddons.registry.ModItems;
 
-
 @Mod(GuGuAddons.MODID)
 public class GuGuAddons {
 
@@ -37,15 +36,12 @@ public class GuGuAddons {
 
         ModCreativeModeTabs.register(modEventBus); // Postponed to next version
 
-
-
         NeoForge.EVENT_BUS.register(this);
 
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
-
 
         LOGGER.info("HELLO FROM COMMON SETUP");
     }

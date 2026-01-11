@@ -307,9 +307,24 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
         }
 
         if (structureValid && inputCount <= 1 && submissionCount <= 1) {
-            isFormed = true;
-            cachedInput = foundInput;
-            syncedSpeed = (cachedInput != null && !cachedInput.isRemoved()) ? cachedInput.getSpeed() : 0.0f;
+            boolean limitReached = false;
+            UUID myTeamId = getTeamId();
+            if (myTeamId != null && !myTeamId.equals(net.minecraft.Util.NIL_UUID)) {
+                limitReached = TRACKED_INTERFACES.stream().anyMatch(be -> be != this &&
+                        be.isFormed &&
+                        !be.isRemoved() &&
+                        myTeamId.equals(be.getTeamId()));
+            }
+
+            if (limitReached) {
+                isFormed = false;
+                cachedInput = null;
+                syncedSpeed = 0.0f;
+            } else {
+                isFormed = true;
+                cachedInput = foundInput;
+                syncedSpeed = (cachedInput != null && !cachedInput.isRemoved()) ? cachedInput.getSpeed() : 0.0f;
+            }
         } else {
             isFormed = false;
             cachedInput = null;
