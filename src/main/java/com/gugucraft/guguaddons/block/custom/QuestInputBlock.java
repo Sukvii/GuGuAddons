@@ -16,7 +16,9 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-public class QuestInputBlock extends DirectionalKineticBlock implements EntityBlock {
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
+
+public class QuestInputBlock extends DirectionalKineticBlock implements EntityBlock, IWrenchable {
 
     public QuestInputBlock(Properties properties) {
         super(properties);
@@ -42,13 +44,12 @@ public class QuestInputBlock extends DirectionalKineticBlock implements EntityBl
     }
 
     @Nullable
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
+            BlockEntityType<T> type) {
         if (type == ModBlockEntities.QUEST_INPUT.get()) {
             return (l, p, s, be) -> ((QuestInputBlockEntity) be).tick();
         }
         return null;
     }
-
-
 
 }

@@ -12,9 +12,11 @@ public class GuGuJadePlugin implements IWailaPlugin {
         // Register common providers here
     }
 
-
     @Override
     public void registerClient(IWailaClientRegistration registration) {
-        registration.registerBlockComponent(QuestInterfaceComponentProvider.INSTANCE, com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock.class);
+        registration.registerBlockComponent(QuestInterfaceComponentProvider.INSTANCE,
+                com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock.class);
+        registration.registerBlockComponent(QuestSubmissionComponentProvider.INSTANCE,
+                com.gugucraft.guguaddons.block.custom.QuestSubmissionBlock.class);
     }
 }

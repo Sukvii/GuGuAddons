@@ -24,9 +24,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
 
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import com.mojang.serialization.MapCodec;
 
-public class QuestInterfaceBlock extends BaseEntityBlock {
+public class QuestInterfaceBlock extends BaseEntityBlock implements IWrenchable {
     public static final MapCodec<QuestInterfaceBlock> CODEC = simpleCodec(QuestInterfaceBlock::new);
 
     @Override
