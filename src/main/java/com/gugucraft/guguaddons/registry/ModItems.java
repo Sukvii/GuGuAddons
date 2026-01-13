@@ -28,13 +28,13 @@ public class ModItems {
         public static final DeferredItem<Item> TAB_ICON = ITEMS.register("tab_icon",
                         () -> new Item(new Item.Properties()));
 
-        public static final DeferredItem<Item> QUEST_GATE_UPGRADE_1 = ITEMS.register("quest_gate_upgrade_1",
+        public static final DeferredItem<Item> INTERFACE_UPGRADE_1 = ITEMS.register("interface_upgrade_1",
                         () -> new Item(new Item.Properties()));
 
-        public static final DeferredItem<Item> QUEST_GATE_UPGRADE_2 = ITEMS.register("quest_gate_upgrade_2",
+        public static final DeferredItem<Item> INTERFACE_UPGRADE_2 = ITEMS.register("interface_upgrade_2",
                         () -> new Item(new Item.Properties()));
 
-        public static final DeferredItem<Item> QUEST_GATE_UPGRADE_3 = ITEMS.register("quest_gate_upgrade_3",
+        public static final DeferredItem<Item> INTERFACE_UPGRADE_3 = ITEMS.register("interface_upgrade_3",
                         () -> new Item(new Item.Properties()));
 
         public static void register(IEventBus eventBus) {

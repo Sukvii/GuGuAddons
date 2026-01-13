@@ -159,7 +159,7 @@ public class QuestSubmissionBlockEntity extends BlockEntity {
         Item item = stack.getItem();
         int newSpeed = -1;
 
-        if (item == ModItems.QUEST_GATE_UPGRADE_1.get()) {
+        if (item == ModItems.INTERFACE_UPGRADE_1.get()) {
             if (processingSpeed == 1)
                 newSpeed = 4;
             else if (processingSpeed >= 4) {
@@ -167,7 +167,7 @@ public class QuestSubmissionBlockEntity extends BlockEntity {
                         Component.translatable("message.guguaddons.submission_upgrade_already_applied"), true);
                 return false;
             }
-        } else if (item == ModItems.QUEST_GATE_UPGRADE_2.get()) {
+        } else if (item == ModItems.INTERFACE_UPGRADE_2.get()) {
             if (processingSpeed == 4)
                 newSpeed = 8;
             else if (processingSpeed < 4) {
@@ -179,7 +179,7 @@ public class QuestSubmissionBlockEntity extends BlockEntity {
                         Component.translatable("message.guguaddons.submission_upgrade_already_applied"), true);
                 return false;
             }
-        } else if (item == ModItems.QUEST_GATE_UPGRADE_3.get()) {
+        } else if (item == ModItems.INTERFACE_UPGRADE_3.get()) {
             if (processingSpeed == 8)
                 newSpeed = 16;
             else if (processingSpeed < 8) {
