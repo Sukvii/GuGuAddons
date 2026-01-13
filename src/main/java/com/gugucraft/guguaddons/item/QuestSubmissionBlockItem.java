@@ -1,6 +1,5 @@
 package com.gugucraft.guguaddons.item;
 
-import com.gugucraft.guguaddons.block.custom.QuestSubmissionBlock;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
@@ -25,13 +24,7 @@ public class QuestSubmissionBlockItem extends BlockItem {
         CustomData customData = stack.get(DataComponents.BLOCK_ENTITY_DATA);
         if (customData != null) {
             int processingSpeed = customData.copyTag().getInt("ProcessingSpeed");
-            // If processingSpeed is 0 (missing), it effectively means 1 (default),
-            // but let's check if it's actually there to display upgrade info.
-            // The default is 1 in the BlockEntity.
 
-            // Only display if effectively > 1 or explicitly upgraded?
-            // The user said "Display NBT data on tooltip".
-            // If the NBT is present, we show it.
             if (customData.contains("ProcessingSpeed")) {
                 // processingSpeed is already defined above
                 int tier = 0;
