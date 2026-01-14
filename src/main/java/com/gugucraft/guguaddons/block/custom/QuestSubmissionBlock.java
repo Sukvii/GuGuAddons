@@ -61,7 +61,7 @@ public class QuestSubmissionBlock extends BaseEntityBlock implements IWrenchable
 
     @Override
     public BlockState mirror(BlockState state, net.minecraft.world.level.block.Mirror mirror) {
-        return state.rotate(mirror.getRotation(state.getValue(FACING)));
+        return state.setValue(FACING, mirror.mirror(state.getValue(FACING)));
     }
 
     @Override

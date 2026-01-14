@@ -43,12 +43,10 @@ public class GuGuAddons {
 
     private void commonSetup(FMLCommonSetupEvent event) {
 
-        LOGGER.info("HELLO FROM COMMON SETUP");
     }
 
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
 
-        LOGGER.info("HELLO from server starting");
     }
 }

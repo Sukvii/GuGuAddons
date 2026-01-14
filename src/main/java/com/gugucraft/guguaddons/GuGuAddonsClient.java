@@ -1,7 +1,6 @@
 package com.gugucraft.guguaddons;
 
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
-import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -12,7 +11,7 @@ import com.simibubi.create.AllPartialModels;
 import com.simibubi.create.CreateClient;
 import com.simibubi.create.content.kinetics.base.OrientedRotatingVisual;
 import com.simibubi.create.content.decoration.encasing.EncasedCTBehaviour;
-import com.simibubi.create.foundation.block.connected.*;
+import com.simibubi.create.foundation.block.connected.CTModel;
 import net.minecraft.resources.ResourceLocation;
 
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
@@ -59,9 +58,6 @@ public class GuGuAddonsClient {
 
         static void onClientSetup(FMLClientSetupEvent event) {
                 // Client setup code
-                GuGuAddons.LOGGER.info("HELLO FROM CLIENT SETUP");
-                GuGuAddons.LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
-
                 PonderIndex.addPlugin(new GuGuAddonsPonderPlugin());
 
                 dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer

@@ -29,14 +29,6 @@ public class QuestInterfaceScenes {
                 scene.world().showSection(util.select().layer(0), Direction.UP);
                 scene.idle(5);
 
-                // Dimensions: 5 Wide (X), 4 High (Y), 3 Deep (Z)
-                // New Base: 9 (X) x 7 (Z)
-                // Center: X=4, Z=3
-                // Structure Position:
-                // X Range: 2 to 6 (Width 5)
-                // Z Range: 2 to 4 (Depth 3)
-                // Y Range: 1 to 4
-
                 // Define BlockStates
                 BlockState deductionCasing = ModBlocks.DEDUCTION_CASING.get().defaultBlockState();
                 BlockState shaft = AllBlocks.SHAFT.get().defaultBlockState().setValue(BlockStateProperties.AXIS,
@@ -204,9 +196,8 @@ public class QuestInterfaceScenes {
                 scene.effects().rotationSpeedIndicator(motorPos);
                 scene.world().setKineticSpeed(util.select().fromTo(7, 2, 3, 8, 2, 3), 256);
                 scene.world().setKineticSpeed(util.select().position(6, 2, 3), 256); // Speed up the input block
-                scene.world().setKineticSpeed(util.select().fromTo(3, 2, 3, 5, 2, 3), 256); // Speed up internal cogs
-                                                                                            // i_s (X=3,4,5)
-                                                                                            // i_s (X=3,4,5)
+                scene.world().setKineticSpeed(util.select().fromTo(3, 2, 3, 5, 2, 3), 256); // Speed up lower internal
+                                                                                            // cogs
                 scene.world().setKineticSpeed(util.select().fromTo(3, 3, 3, 5, 3, 3), -256); // Speed up upper internal
                                                                                              // cogs
                 scene.idle(60);

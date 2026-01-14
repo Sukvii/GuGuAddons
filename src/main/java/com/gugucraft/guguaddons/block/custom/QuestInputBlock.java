@@ -16,9 +16,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-import com.simibubi.create.content.equipment.wrench.IWrenchable;
-
-public class QuestInputBlock extends DirectionalKineticBlock implements EntityBlock, IWrenchable {
+public class QuestInputBlock extends DirectionalKineticBlock implements EntityBlock {
 
     public QuestInputBlock(Properties properties) {
         super(properties);

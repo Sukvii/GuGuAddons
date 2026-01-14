@@ -1,7 +1,5 @@
 {
   "itemGroup.guguaddons": "GuGuAddons",
-  "block.guguaddons.dimensional_teleport_block": "Dimensional Teleport Block",
-  "item.guguaddons.dimensional_teleport_block": "Dimensional Teleport Block",
   "block.guguaddons.quest_interface": "Calculation Terminal",
   "block.guguaddons.quest_input": "Kinetic Input Interface",
   "block.guguaddons.quest_submission": "Submission Interface",
