@@ -1,0 +1,6 @@
+{
+    "parent": "item/generated",
+    "textures": {
+        "layer0": "guguaddons:item/slash_back_terminal"
+    }
+}

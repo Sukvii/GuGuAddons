@@ -37,6 +37,9 @@ public class ModItems {
         public static final DeferredItem<Item> INTERFACE_UPGRADE_3 = ITEMS.register("interface_upgrade_3",
                         () -> new Item(new Item.Properties()));
 
+        public static final DeferredItem<Item> DEATH_RECALL_ITEM = ITEMS.register("slash_back_terminal",
+                        () -> new com.gugucraft.guguaddons.item.DeathRecallItem(new Item.Properties().stacksTo(1)));
+
         public static void register(IEventBus eventBus) {
                 ITEMS.register(eventBus);
         }
