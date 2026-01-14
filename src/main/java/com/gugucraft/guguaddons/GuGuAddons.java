@@ -32,6 +32,7 @@ public class GuGuAddons {
         ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
+        com.gugucraft.guguaddons.registry.ModRecipes.register(modEventBus);
         modEventBus.addListener(ModCapabilities::registerCapabilities);
 
         ModCreativeModeTabs.register(modEventBus); // Postponed to next version

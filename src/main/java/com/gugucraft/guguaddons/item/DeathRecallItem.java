@@ -59,6 +59,18 @@ public class DeathRecallItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand usedHand) {
         ItemStack stack = player.getItemInHand(usedHand);
+        // Check durability (Max Damage - current Damage <= 1 means 0 usable durability
+        // left)
+        if (stack.getDamageValue() >= stack.getMaxDamage() - 1) {
+            if (!level.isClientSide) {
+                player.displayClientMessage(
+                        Component.translatable("message.guguaddons.slash_back_terminal_no_durability")
+                                .withStyle(ChatFormatting.RED),
+                        true);
+            }
+            return InteractionResultHolder.fail(stack);
+        }
+
         if (getDeathLocation(stack) != null) {
             player.startUsingItem(usedHand);
             return InteractionResultHolder.consume(stack);
@@ -88,6 +100,11 @@ public class DeathRecallItem extends Item {
                     level.playSound(null, player.getX(), player.getY(), player.getZ(),
                             net.minecraft.sounds.SoundEvents.ENDERMAN_TELEPORT,
                             net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
+
+                    // Consume durability
+                    if (!player.getAbilities().instabuild) {
+                        stack.setDamageValue(Math.min(stack.getDamageValue() + 1, stack.getMaxDamage() - 1));
+                    }
                 } else {
                     player.displayClientMessage(
                             Component.translatable("message.guguaddons.recall_dimension_not_found")
@@ -131,6 +148,13 @@ public class DeathRecallItem extends Item {
             tooltipComponents.add(Component.translatable("item.guguaddons.slash_back_terminal.tooltip.condition2")
                     .withStyle(ChatFormatting.GRAY));
             tooltipComponents.add(Component.translatable("item.guguaddons.slash_back_terminal.tooltip.behaviour2")
+                    .withStyle(CREATE_GOLD));
+
+            tooltipComponents.add(Component.empty());
+
+            tooltipComponents.add(Component.translatable("item.guguaddons.slash_back_terminal.tooltip.condition3")
+                    .withStyle(ChatFormatting.GRAY));
+            tooltipComponents.add(Component.translatable("item.guguaddons.slash_back_terminal.tooltip.behaviour3")
                     .withStyle(CREATE_GOLD));
 
             tooltipComponents.add(Component.empty());
