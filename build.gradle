@@ -111,6 +111,7 @@ dependencies {
     compileOnly("dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}")
     runtimeOnly("dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}")
     implementation("com.tterrag.registrate:Registrate:${registrate_version}")
+    implementation("maven.modrinth:numismatics:${numismatics_version}")
 
     // FTB Quests & Dependencies
     implementation "dev.architectury:architectury-neoforge:${architectury_version}"
@@ -154,6 +155,7 @@ tasks.withType(ProcessResources).configureEach {
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
             loader_version_range   : loader_version_range,
+            numismatics_version    : numismatics_version,
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,
