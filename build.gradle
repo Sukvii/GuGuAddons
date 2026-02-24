@@ -118,6 +118,7 @@ dependencies {
     implementation "dev.ftb.mods:ftb-library-neoforge:${ftb_library_version}"
     implementation "dev.ftb.mods:ftb-teams-neoforge:${ftb_teams_version}"
     implementation "dev.ftb.mods:ftb-quests-neoforge:${ftb_quests_version}"
+    implementation "dev.ftb.mods:ftb-chunks-neoforge:${ftb_chunks_version}"
 
     // Jade
     implementation "maven.modrinth:jade:15.10.3+neoforge"
@@ -156,6 +157,7 @@ tasks.withType(ProcessResources).configureEach {
             neo_version            : neo_version,
             loader_version_range   : loader_version_range,
             numismatics_version    : numismatics_version,
+            ftb_chunks_version     : ftb_chunks_version,
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,

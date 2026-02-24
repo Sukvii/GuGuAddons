@@ -76,5 +76,19 @@
   "menu.guguaddons.stock.label.lot_size": "交易手数：%s（点击切换）",
   "menu.guguaddons.stock.label.selected": "当前选中：%s %s",
   "menu.guguaddons.stock.label.empty": "无股票",
-  "menu.guguaddons.stock.stock_entry": "%s | %s | %s | 持仓 %s"
+  "menu.guguaddons.stock.stock_entry": "%s | %s | %s | 持仓 %s",
+  "message.guguaddons.chunk_claim_confirmation_required": "认领区块需要确认。",
+  "message.guguaddons.chunk_claim_confirmation_cancelled": "已取消本次区块认领。",
+  "message.guguaddons.chunk_claim_confirmation_timeout": "区块认领确认已超时。",
+  "message.guguaddons.chunk_claim_no_valid_targets": "没有可认领的有效区块。",
+  "message.guguaddons.chunk_claim_team_not_found": "认领所属队伍不存在。",
+  "message.guguaddons.chunk_claim_insufficient_funds": "余额不足，需要 %s。",
+  "message.guguaddons.chunk_claim_result": "区块认领完成：成功 %s/%s，花费 %s。",
+  "message.guguaddons.chunk_unclaim_refund_received": "收到区块取消认领退款：%s。",
+  "toast.guguaddons.chunk_claim.title": "区块认领",
+  "menu.guguaddons.chunk_claim_confirm.title": "区块认领确认",
+  "menu.guguaddons.chunk_claim_confirm.cancel": "取消",
+  "menu.guguaddons.chunk_claim_confirm.confirm": "确认",
+  "menu.guguaddons.chunk_claim_confirm.summary": "认领 %s 个区块，花费 %s",
+  "menu.guguaddons.chunk_claim_confirm.expired": "请求已过期"
 }
