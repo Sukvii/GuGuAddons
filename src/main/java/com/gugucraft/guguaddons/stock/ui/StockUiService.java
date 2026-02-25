@@ -24,6 +24,9 @@ public final class StockUiService {
     public static final int POPUP_KLINE_CANDLES = 24;
     public static final int[] LOT_OPTIONS = { 1, 5, 10, 25, 50, 100 };
     public static final int[] WINDOW_OPTIONS = { 36, 72, 144 };
+    private static final int HOLDING_FEE_BPS_PER_STEP = 1;
+    private static final int MAINTENANCE_RESERVE_BPS = 1_200;
+    private static final int LIQUIDATION_PENALTY_BPS = 80;
 
     private StockUiService() {
     }
@@ -50,6 +53,9 @@ public final class StockUiService {
         StockUiSessionState state = normalizeState(requestedState);
         StockMarketSavedData market = StockMarketSavedData.get(player.serverLevel().getServer());
         market.catchUp(player.serverLevel().getGameTime());
+        UUID playerId = player.getUUID();
+        BankAccount account = Numismatics.BANK.getOrCreateAccount(playerId, BankAccount.Type.PLAYER);
+        settleHoldingFee(player, market, account, true);
 
         switch (action) {
             case PREV_PAGE -> state = state.withPage(state.page() - 1);
@@ -77,15 +83,17 @@ public final class StockUiService {
                         true);
             }
             case LOT_SET -> state = state.withLotIndex(Mth.clamp(targetStock, 0, LOT_OPTIONS.length - 1));
-            case BUY -> buy(player, market, state.selectedStock(), LOT_OPTIONS[state.lotIndex()]);
-            case SELL -> sell(player, market, state.selectedStock(), LOT_OPTIONS[state.lotIndex()]);
-            case SELL_ALL -> sellAll(player, market, state.selectedStock());
+            case BUY -> buy(player, market, account, state.selectedStock(), LOT_OPTIONS[state.lotIndex()]);
+            case SELL -> sell(player, market, account, state.selectedStock(), LOT_OPTIONS[state.lotIndex()]);
+            case SELL_ALL -> sellAll(player, market, account, state.selectedStock());
             case WINDOW_NEXT -> state = state.withWindowIndex((state.windowIndex() + 1) % WINDOW_OPTIONS.length);
             case REFRESH -> player.displayClientMessage(
                     Component.translatable("menu.guguaddons.stock.message.refreshed"), true);
             case CLOSE -> {
             }
         }
+
+        enforceMaintenanceReserve(player, market, account, true);
 
         return normalizeState(state);
     }
@@ -97,6 +105,8 @@ public final class StockUiService {
         market.catchUp(player.serverLevel().getGameTime());
 
         BankAccount account = Numismatics.BANK.getOrCreateAccount(playerId, BankAccount.Type.PLAYER);
+        settleHoldingFee(player, market, account, true);
+        enforceMaintenanceReserve(player, market, account, true);
         int balance = account.getBalance();
         int portfolioValue = market.getPortfolioValue(playerId);
         int totalHeldShares = market.getTotalHeldShares(playerId);
@@ -201,9 +211,13 @@ public final class StockUiService {
         return Math.max(0, (StockCatalog.size() - 1) / PAGE_SIZE);
     }
 
-    private static void buy(ServerPlayer player, StockMarketSavedData market, int stockIndex, int shares) {
+    private static void buy(
+            ServerPlayer player,
+            StockMarketSavedData market,
+            BankAccount account,
+            int stockIndex,
+            int shares) {
         UUID playerId = player.getUUID();
-        BankAccount account = Numismatics.BANK.getOrCreateAccount(playerId, BankAccount.Type.PLAYER);
         int totalCost = market.quoteBuyTotal(stockIndex, shares);
         if (totalCost <= 0) {
             return;
@@ -224,6 +238,7 @@ public final class StockUiService {
             return;
         }
 
+        market.recordExecutedBuy(stockIndex, shares);
         StockDefinition definition = StockCatalog.get(stockIndex);
         player.displayClientMessage(
                 Component.translatable("menu.guguaddons.stock.message.buy_success", shares, definition.ticker(),
@@ -232,7 +247,12 @@ public final class StockUiService {
                 true);
     }
 
-    private static void sell(ServerPlayer player, StockMarketSavedData market, int stockIndex, int shares) {
+    private static void sell(
+            ServerPlayer player,
+            StockMarketSavedData market,
+            BankAccount account,
+            int stockIndex,
+            int shares) {
         UUID playerId = player.getUUID();
         int owned = market.getHolding(playerId, stockIndex);
         int sellShares = Math.min(owned, Math.max(0, shares));
@@ -251,8 +271,8 @@ public final class StockUiService {
             return;
         }
 
-        BankAccount account = Numismatics.BANK.getOrCreateAccount(playerId, BankAccount.Type.PLAYER);
         account.deposit(net);
+        market.recordExecutedSell(stockIndex, sellShares);
 
         StockDefinition definition = StockCatalog.get(stockIndex);
         player.displayClientMessage(
@@ -262,7 +282,11 @@ public final class StockUiService {
                 true);
     }
 
-    private static void sellAll(ServerPlayer player, StockMarketSavedData market, int stockIndex) {
+    private static void sellAll(
+            ServerPlayer player,
+            StockMarketSavedData market,
+            BankAccount account,
+            int stockIndex) {
         UUID playerId = player.getUUID();
         int owned = market.removeAllHoldings(playerId, stockIndex);
         if (owned <= 0) {
@@ -273,8 +297,8 @@ public final class StockUiService {
         }
 
         int net = market.quoteSellNet(stockIndex, owned);
-        BankAccount account = Numismatics.BANK.getOrCreateAccount(playerId, BankAccount.Type.PLAYER);
         account.deposit(net);
+        market.recordExecutedSell(stockIndex, owned);
 
         StockDefinition definition = StockCatalog.get(stockIndex);
         player.displayClientMessage(
@@ -282,6 +306,190 @@ public final class StockUiService {
                         formatSpurs(net))
                         .withStyle(ChatFormatting.GOLD),
                 true);
+    }
+
+    private static void settleHoldingFee(
+            ServerPlayer player,
+            StockMarketSavedData market,
+            BankAccount account,
+            boolean notify) {
+        UUID playerId = player.getUUID();
+        long unsettledSteps = market.consumeUnsettledCarrySteps(playerId, player.serverLevel().getGameTime());
+        if (unsettledSteps <= 0L) {
+            return;
+        }
+
+        int portfolioValue = market.getPortfolioValue(playerId);
+        if (portfolioValue <= 0) {
+            return;
+        }
+
+        long rawFee = (long) portfolioValue * HOLDING_FEE_BPS_PER_STEP * unsettledSteps;
+        int targetFee = (int) Math.min(Integer.MAX_VALUE, rawFee / 10_000L);
+        if (targetFee <= 0) {
+            return;
+        }
+
+        int liquidatedPositions = 0;
+        int liquidatedShares = 0;
+        int liquidatedCash = 0;
+
+        while (account.getBalance() < targetFee) {
+            LiquidationOutcome outcome = liquidateLargestPosition(playerId, market, account, true);
+            if (!outcome.success()) {
+                break;
+            }
+            liquidatedPositions++;
+            liquidatedShares += outcome.shares();
+            liquidatedCash += outcome.netReceived();
+        }
+
+        int chargedFee = Math.min(targetFee, Math.max(0, account.getBalance()));
+        if (chargedFee > 0) {
+            account.deduct(chargedFee);
+        }
+
+        if (!notify) {
+            return;
+        }
+
+        if (liquidatedShares > 0) {
+            player.displayClientMessage(
+                    Component.translatable(
+                            "menu.guguaddons.stock.warning.carry_liquidation",
+                            liquidatedPositions,
+                            liquidatedShares,
+                            formatSpurs(liquidatedCash))
+                            .withStyle(ChatFormatting.RED),
+                    true);
+        }
+
+        if (chargedFee > 0) {
+            player.displayClientMessage(
+                    Component.translatable("menu.guguaddons.stock.message.carry_fee", formatSpurs(chargedFee))
+                            .withStyle(ChatFormatting.GRAY),
+                    true);
+        }
+
+        if (chargedFee < targetFee) {
+            player.displayClientMessage(
+                    Component.translatable(
+                            "menu.guguaddons.stock.warning.carry_fee_unpaid",
+                            formatSpurs(targetFee - chargedFee))
+                            .withStyle(ChatFormatting.RED),
+                    true);
+        }
+    }
+
+    private static void enforceMaintenanceReserve(
+            ServerPlayer player,
+            StockMarketSavedData market,
+            BankAccount account,
+            boolean notify) {
+        UUID playerId = player.getUUID();
+
+        int liquidatedPositions = 0;
+        int liquidatedShares = 0;
+        int liquidatedCash = 0;
+
+        for (int guard = 0; guard < StockCatalog.size(); guard++) {
+            int portfolioValue = market.getPortfolioValue(playerId);
+            if (portfolioValue <= 0) {
+                break;
+            }
+
+            int requiredReserve = (int) Math.min(
+                    Integer.MAX_VALUE,
+                    ((long) portfolioValue * MAINTENANCE_RESERVE_BPS + 9_999L) / 10_000L);
+            if (account.getBalance() >= requiredReserve) {
+                break;
+            }
+
+            LiquidationOutcome outcome = liquidateLargestPosition(playerId, market, account, true);
+            if (!outcome.success()) {
+                break;
+            }
+
+            liquidatedPositions++;
+            liquidatedShares += outcome.shares();
+            liquidatedCash += outcome.netReceived();
+        }
+
+        if (!notify || liquidatedShares <= 0) {
+            return;
+        }
+
+        player.displayClientMessage(
+                Component.translatable(
+                        "menu.guguaddons.stock.warning.maintenance_liquidation",
+                        liquidatedPositions,
+                        liquidatedShares,
+                        formatSpurs(liquidatedCash))
+                        .withStyle(ChatFormatting.RED),
+                true);
+    }
+
+    private static LiquidationOutcome liquidateLargestPosition(
+            UUID playerId,
+            StockMarketSavedData market,
+            BankAccount account,
+            boolean withPenalty) {
+        int stockIndex = findLargestPosition(playerId, market);
+        if (stockIndex < 0) {
+            return LiquidationOutcome.EMPTY;
+        }
+
+        int shares = market.removeAllHoldings(playerId, stockIndex);
+        if (shares <= 0) {
+            return LiquidationOutcome.EMPTY;
+        }
+
+        int net = market.quoteSellNet(stockIndex, shares);
+        int penalty = withPenalty ? computeBpsAmount(net, LIQUIDATION_PENALTY_BPS) : 0;
+        int credited = Math.max(0, net - penalty);
+        account.deposit(credited);
+        market.recordExecutedSell(stockIndex, shares);
+        return new LiquidationOutcome(stockIndex, shares, credited);
+    }
+
+    private static int findLargestPosition(UUID playerId, StockMarketSavedData market) {
+        int bestStock = -1;
+        long bestScore = Long.MIN_VALUE;
+
+        for (int i = 0; i < StockCatalog.size(); i++) {
+            int held = market.getHolding(playerId, i);
+            if (held <= 0) {
+                continue;
+            }
+
+            long notional = (long) held * market.getPrice(i);
+            long volatilityBias = Math.round(StockCatalog.get(i).volatility() * 1_000.0D);
+            long score = (notional * 2L) + volatilityBias;
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestStock = i;
+            }
+        }
+
+        return bestStock;
+    }
+
+    private static int computeBpsAmount(int base, int bps) {
+        if (base <= 0 || bps <= 0) {
+            return 0;
+        }
+        long fee = ((long) base * bps + 9_999L) / 10_000L;
+        fee = Math.max(1L, fee);
+        return (int) Math.min(Integer.MAX_VALUE, fee);
+    }
+
+    private record LiquidationOutcome(int stockIndex, int shares, int netReceived) {
+        private static final LiquidationOutcome EMPTY = new LiquidationOutcome(-1, 0, 0);
+
+        private boolean success() {
+            return shares > 0;
+        }
     }
 
     private static int[] bucketizeSeries(int[] series, int columns) {

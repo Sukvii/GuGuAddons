@@ -21,9 +21,17 @@ public class StockMarketSavedData extends SavedData {
     public static final int TICKS_PER_STEP = 3600;
     public static final int HISTORY_LENGTH = 144;
 
-    public static final int SPREAD_BPS = 25;
-    public static final int BUY_FEE_BPS = 30;
-    public static final int SELL_FEE_BPS = 35;
+    public static final int SPREAD_BPS = 35;
+    public static final int BUY_FEE_BPS = 40;
+    public static final int SELL_FEE_BPS = 45;
+
+    private static final double STRUCTURAL_DRIFT_PENALTY = 0.00003D;
+    private static final double UNDERVALUED_MEAN_REVERSION = 0.015D;
+    private static final double OVERVALUED_MEAN_REVERSION = 0.026D;
+    private static final double MOMENTUM_WEIGHT = 0.15D;
+    private static final int IMPACT_BASE_BPS = 4;
+    private static final double IMPACT_SQRT_SCALE_BPS = 2.0D;
+    private static final int IMPACT_MAX_BPS = 180;
 
     private final int[] prices = new int[STOCK_COUNT];
     private final int[] previousPrices = new int[STOCK_COUNT];
@@ -32,9 +40,12 @@ public class StockMarketSavedData extends SavedData {
     private final int[] historySize = new int[STOCK_COUNT];
     private final double[] momenta = new double[STOCK_COUNT];
     private final Map<UUID, int[]> holdings = new HashMap<>();
+    private final Map<UUID, Long> lastCarrySettlementStep = new HashMap<>();
+    private final int[] stepTradeVolume = new int[STOCK_COUNT];
 
     private long lastUpdateTick = 0L;
     private long rngState = 0x9E3779B97F4A7C15L;
+    private long tradeVolumeStep = -1L;
     private int regimeTicksRemaining = 0;
     private double regimeDrift = 0.0D;
     private double regimeVolatility = 1.0D;
@@ -104,6 +115,15 @@ public class StockMarketSavedData extends SavedData {
             }
         }
 
+        ListTag carrySettlement = tag.getList("CarrySettlement", Tag.TAG_COMPOUND);
+        for (Tag value : carrySettlement) {
+            if (!(value instanceof CompoundTag settlementTag) || !settlementTag.hasUUID("Player")) {
+                continue;
+            }
+            long step = Math.max(0L, settlementTag.getLong("Step"));
+            data.lastCarrySettlementStep.put(settlementTag.getUUID("Player"), step);
+        }
+
         for (int i = 0; i < STOCK_COUNT; i++) {
             if (data.prices[i] <= 0) {
                 data.prices[i] = StockCatalog.get(i).basePrice();
@@ -120,6 +140,8 @@ public class StockMarketSavedData extends SavedData {
                 data.historyCursor[i] = Mth.clamp(data.historyCursor[i], 0, HISTORY_LENGTH - 1);
             }
         }
+
+        data.refreshTradeVolumeWindow();
 
         return data;
     }
@@ -164,23 +186,36 @@ public class StockMarketSavedData extends SavedData {
             playerHoldings.add(playerTag);
         }
         tag.put("Holdings", playerHoldings);
+
+        ListTag carrySettlement = new ListTag();
+        for (Map.Entry<UUID, Long> entry : lastCarrySettlementStep.entrySet()) {
+            CompoundTag settlementTag = new CompoundTag();
+            settlementTag.putUUID("Player", entry.getKey());
+            settlementTag.putLong("Step", Math.max(0L, entry.getValue()));
+            carrySettlement.add(settlementTag);
+        }
+        tag.put("CarrySettlement", carrySettlement);
         return tag;
     }
 
     public void catchUp(long gameTime) {
         if (gameTime < 0L) {
+            refreshTradeVolumeWindow();
             return;
         }
         if (lastUpdateTick == 0L) {
             lastUpdateTick = gameTime;
+            refreshTradeVolumeWindow();
             return;
         }
         if (gameTime <= lastUpdateTick) {
+            refreshTradeVolumeWindow();
             return;
         }
 
         long steps = (gameTime - lastUpdateTick) / TICKS_PER_STEP;
         if (steps <= 0L) {
+            refreshTradeVolumeWindow();
             return;
         }
 
@@ -189,6 +224,7 @@ public class StockMarketSavedData extends SavedData {
             simulateStep();
         }
         lastUpdateTick += steps * TICKS_PER_STEP;
+        refreshTradeVolumeWindow();
         setDirty();
     }
 
@@ -233,7 +269,9 @@ public class StockMarketSavedData extends SavedData {
         if (qty == 0) {
             return 0;
         }
-        long gross = (long) getAskPrice(stockIndex) * qty;
+        int impact = computeImpactBps(stockIndex, qty);
+        int executedAsk = applyBps(getPrice(stockIndex), SPREAD_BPS + impact, true);
+        long gross = (long) executedAsk * qty;
         int fee = computeFee(gross, BUY_FEE_BPS);
         long total = gross + fee;
         return (int) Math.min(Integer.MAX_VALUE, total);
@@ -244,10 +282,34 @@ public class StockMarketSavedData extends SavedData {
         if (qty == 0) {
             return 0;
         }
-        long gross = (long) getBidPrice(stockIndex) * qty;
+        int impact = computeImpactBps(stockIndex, qty);
+        int executedBid = applyBps(getPrice(stockIndex), -(SPREAD_BPS + impact), false);
+        long gross = (long) executedBid * qty;
         int fee = computeFee(gross, SELL_FEE_BPS);
         long net = Math.max(0L, gross - fee);
         return (int) Math.min(Integer.MAX_VALUE, net);
+    }
+
+    public void recordExecutedBuy(int stockIndex, int shares) {
+        recordStepTradeVolume(stockIndex, shares);
+    }
+
+    public void recordExecutedSell(int stockIndex, int shares) {
+        recordStepTradeVolume(stockIndex, shares);
+    }
+
+    public long consumeUnsettledCarrySteps(UUID playerId, long gameTime) {
+        long currentStep = Math.max(0L, gameTime / TICKS_PER_STEP);
+        Long previousStep = lastCarrySettlementStep.get(playerId);
+        long settledFrom = previousStep == null ? currentStep : Math.min(previousStep, currentStep);
+        long unsettled = Math.max(0L, currentStep - settledFrom);
+
+        if (previousStep == null || previousStep != currentStep) {
+            lastCarrySettlementStep.put(playerId, currentStep);
+            setDirty();
+        }
+
+        return unsettled;
     }
 
     public int getHolding(UUID playerId, int stockIndex) {
@@ -294,6 +356,7 @@ public class StockMarketSavedData extends SavedData {
             return false;
         }
         portfolio[idx] = (int) result;
+        lastCarrySettlementStep.putIfAbsent(playerId, Math.max(0L, lastUpdateTick / TICKS_PER_STEP));
         setDirty();
         return true;
     }
@@ -311,6 +374,7 @@ public class StockMarketSavedData extends SavedData {
         portfolio[idx] -= qty;
         if (!hasAnyShares(portfolio)) {
             holdings.remove(playerId);
+            lastCarrySettlementStep.remove(playerId);
         }
         setDirty();
         return true;
@@ -329,6 +393,7 @@ public class StockMarketSavedData extends SavedData {
         portfolio[idx] = 0;
         if (!hasAnyShares(portfolio)) {
             holdings.remove(playerId);
+            lastCarrySettlementStep.remove(playerId);
         }
         setDirty();
         return removed;
@@ -343,8 +408,11 @@ public class StockMarketSavedData extends SavedData {
             Arrays.fill(history[i], initialPrice);
             historyCursor[i] = 1;
             historySize[i] = 1;
+            stepTradeVolume[i] = 0;
         }
         holdings.clear();
+        lastCarrySettlementStep.clear();
+        tradeVolumeStep = -1L;
     }
 
     private void simulateStep() {
@@ -360,11 +428,13 @@ public class StockMarketSavedData extends SavedData {
             int current = Math.max(1, prices[i]);
             double idiosyncraticShock = nextNormal() * def.volatility();
             double anchor = Math.log(current / (double) Math.max(1, def.basePrice()));
-            double meanReversion = -0.022D * anchor;
+            double meanReversionStrength = anchor >= 0.0D ? OVERVALUED_MEAN_REVERSION : UNDERVALUED_MEAN_REVERSION;
+            double meanReversion = -meanReversionStrength * anchor;
+            double structuralDrift = def.drift() - STRUCTURAL_DRIFT_PENALTY;
 
-            double blendedShock = (marketShock * def.beta()) + idiosyncraticShock + def.drift();
+            double blendedShock = (marketShock * def.beta()) + idiosyncraticShock + structuralDrift;
             momenta[i] = momenta[i] * 0.60D + blendedShock * 0.40D;
-            double totalReturn = blendedShock + meanReversion + (momenta[i] * 0.18D);
+            double totalReturn = blendedShock + meanReversion + (momenta[i] * MOMENTUM_WEIGHT);
 
             if (nextDouble() < 0.0025D) {
                 totalReturn += (nextDouble() - 0.5D) * 0.10D;
@@ -385,7 +455,7 @@ public class StockMarketSavedData extends SavedData {
 
     private void rerollRegime() {
         regimeTicksRemaining = 180 + (int) (nextDouble() * 720.0D);
-        regimeDrift = (nextDouble() - 0.5D) * 0.0012D;
+        regimeDrift = (nextDouble() - 0.55D) * 0.0010D;
         regimeVolatility = 0.75D + nextDouble() * 0.90D;
     }
 
@@ -402,6 +472,37 @@ public class StockMarketSavedData extends SavedData {
         double u1 = Math.max(1.0E-12D, nextDouble());
         double u2 = nextDouble();
         return Math.sqrt(-2.0D * Math.log(u1)) * Math.cos(2.0D * Math.PI * u2);
+    }
+
+    private int computeImpactBps(int stockIndex, int shares) {
+        int idx = validateStockIndex(stockIndex);
+        int qty = Math.max(0, shares);
+        if (qty <= 0) {
+            return 0;
+        }
+
+        long effectiveQty = (long) qty + Math.max(0L, stepTradeVolume[idx]);
+        double scaled = IMPACT_BASE_BPS + (Math.sqrt(effectiveQty) * IMPACT_SQRT_SCALE_BPS);
+        return Mth.clamp((int) Math.round(scaled), IMPACT_BASE_BPS, IMPACT_MAX_BPS);
+    }
+
+    private void recordStepTradeVolume(int stockIndex, int shares) {
+        int qty = Math.max(0, shares);
+        if (qty <= 0) {
+            return;
+        }
+        int idx = validateStockIndex(stockIndex);
+        long nextVolume = (long) stepTradeVolume[idx] + qty;
+        stepTradeVolume[idx] = (int) Math.min(Integer.MAX_VALUE, nextVolume);
+    }
+
+    private void refreshTradeVolumeWindow() {
+        long currentStep = Math.max(0L, lastUpdateTick / TICKS_PER_STEP);
+        if (tradeVolumeStep == currentStep) {
+            return;
+        }
+        Arrays.fill(stepTradeVolume, 0);
+        tradeVolumeStep = currentStep;
     }
 
     private static int applyBps(int baseValue, int bps, boolean roundUp) {
