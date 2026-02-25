@@ -1,6 +1,7 @@
 package com.gugucraft.guguaddons.stock;
 
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.stock.ui.StockUiNetwork;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.tree.LiteralCommandNode;
@@ -30,7 +31,7 @@ public class StockMarketCommands {
             source.sendFailure(Component.translatable("command.guguaddons.stock.players_only"));
             return 0;
         }
-        player.openMenu(StockMarketMenu.provider(player));
+        StockUiNetwork.openFor(player);
         return Command.SINGLE_SUCCESS;
     }
 }

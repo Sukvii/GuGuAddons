@@ -19,6 +19,7 @@ public class StockMarketSavedData extends SavedData {
     public static final String DATA_NAME = "guguaddons_stock_market";
     public static final int STOCK_COUNT = StockCatalog.size();
     public static final int TICKS_PER_STEP = 3600;
+    public static final int HISTORY_LENGTH = 144;
 
     public static final int SPREAD_BPS = 25;
     public static final int BUY_FEE_BPS = 30;
@@ -26,6 +27,9 @@ public class StockMarketSavedData extends SavedData {
 
     private final int[] prices = new int[STOCK_COUNT];
     private final int[] previousPrices = new int[STOCK_COUNT];
+    private final int[][] history = new int[STOCK_COUNT][HISTORY_LENGTH];
+    private final int[] historyCursor = new int[STOCK_COUNT];
+    private final int[] historySize = new int[STOCK_COUNT];
     private final double[] momenta = new double[STOCK_COUNT];
     private final Map<UUID, int[]> holdings = new HashMap<>();
 
@@ -52,6 +56,21 @@ public class StockMarketSavedData extends SavedData {
 
         copyArray(tag.getIntArray("Prices"), data.prices);
         copyArray(tag.getIntArray("PreviousPrices"), data.previousPrices);
+        copyArray(tag.getIntArray("HistoryCursor"), data.historyCursor);
+        copyArray(tag.getIntArray("HistorySize"), data.historySize);
+
+        ListTag historyList = tag.getList("History", Tag.TAG_COMPOUND);
+        for (Tag value : historyList) {
+            if (!(value instanceof CompoundTag stockTag)) {
+                continue;
+            }
+            int stock = stockTag.getInt("Stock");
+            if (stock < 0 || stock >= STOCK_COUNT) {
+                continue;
+            }
+            int[] raw = stockTag.getIntArray("Values");
+            copyArray(raw, data.history[stock]);
+        }
 
         int[] momentumScaled = tag.getIntArray("MomentaScaled");
         for (int i = 0; i < Math.min(momentumScaled.length, STOCK_COUNT); i++) {
@@ -92,6 +111,14 @@ public class StockMarketSavedData extends SavedData {
             if (data.previousPrices[i] <= 0) {
                 data.previousPrices[i] = data.prices[i];
             }
+            if (data.historySize[i] <= 0) {
+                data.history[i][0] = data.prices[i];
+                data.historySize[i] = 1;
+                data.historyCursor[i] = 1;
+            } else {
+                data.historySize[i] = Mth.clamp(data.historySize[i], 1, HISTORY_LENGTH);
+                data.historyCursor[i] = Mth.clamp(data.historyCursor[i], 0, HISTORY_LENGTH - 1);
+            }
         }
 
         return data;
@@ -101,6 +128,8 @@ public class StockMarketSavedData extends SavedData {
     public @NotNull CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putIntArray("Prices", prices);
         tag.putIntArray("PreviousPrices", previousPrices);
+        tag.putIntArray("HistoryCursor", historyCursor);
+        tag.putIntArray("HistorySize", historySize);
 
         int[] momentumScaled = new int[STOCK_COUNT];
         for (int i = 0; i < STOCK_COUNT; i++) {
@@ -114,6 +143,15 @@ public class StockMarketSavedData extends SavedData {
         tag.putInt("RegimeTicksRemaining", regimeTicksRemaining);
         tag.putDouble("RegimeDrift", regimeDrift);
         tag.putDouble("RegimeVolatility", regimeVolatility);
+
+        ListTag historyList = new ListTag();
+        for (int i = 0; i < STOCK_COUNT; i++) {
+            CompoundTag stockTag = new CompoundTag();
+            stockTag.putInt("Stock", i);
+            stockTag.putIntArray("Values", history[i]);
+            historyList.add(stockTag);
+        }
+        tag.put("History", historyList);
 
         ListTag playerHoldings = new ListTag();
         for (Map.Entry<UUID, int[]> entry : holdings.entrySet()) {
@@ -156,6 +194,20 @@ public class StockMarketSavedData extends SavedData {
 
     public int getPrice(int stockIndex) {
         return prices[validateStockIndex(stockIndex)];
+    }
+
+    public int[] getRecentHistory(int stockIndex, int points) {
+        int idx = validateStockIndex(stockIndex);
+        int requested = Math.max(1, points);
+        int size = Math.max(1, historySize[idx]);
+        int actual = Math.min(requested, size);
+        int[] out = new int[actual];
+
+        int start = (historyCursor[idx] - actual + HISTORY_LENGTH) % HISTORY_LENGTH;
+        for (int i = 0; i < actual; i++) {
+            out[i] = history[idx][(start + i) % HISTORY_LENGTH];
+        }
+        return out;
     }
 
     public int getPreviousPrice(int stockIndex) {
@@ -288,6 +340,9 @@ public class StockMarketSavedData extends SavedData {
             prices[i] = initialPrice;
             previousPrices[i] = initialPrice;
             momenta[i] = 0.0D;
+            Arrays.fill(history[i], initialPrice);
+            historyCursor[i] = 1;
+            historySize[i] = 1;
         }
         holdings.clear();
     }
@@ -324,6 +379,7 @@ public class StockMarketSavedData extends SavedData {
 
             previousPrices[i] = current;
             prices[i] = nextPrice;
+            pushHistory(i, nextPrice);
         }
     }
 
@@ -382,5 +438,12 @@ public class StockMarketSavedData extends SavedData {
             throw new IllegalArgumentException("Invalid stock index: " + stockIndex);
         }
         return stockIndex;
+    }
+
+    private void pushHistory(int stockIndex, int price) {
+        int cursor = historyCursor[stockIndex];
+        history[stockIndex][cursor] = price;
+        historyCursor[stockIndex] = (cursor + 1) % HISTORY_LENGTH;
+        historySize[stockIndex] = Math.min(HISTORY_LENGTH, historySize[stockIndex] + 1);
     }
 }

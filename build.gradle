@@ -18,6 +18,8 @@ group = mod_group_id
 
 repositories {
     // Add here additional repositories if required by some of the dependencies below.
+    mavenCentral() // LWJGL Yoga
+    maven { url = "https://maven.firstdark.dev/snapshots" } // LDLIB2
     maven { url = "https://maven.createmod.net" } // Create, Ponder, Flywheel
     maven { url = "https://maven.ithundxr.dev/snapshots" } // Registrate
     maven { url = "https://maven.terraformersmc.com/releases/" } // EMI
@@ -102,6 +104,19 @@ dependencies {
     // For all intends and purposes: You can treat this dependency as if it is a normal library you would use.
     implementation "net.neoforged:neoforge:${neo_version}"
 
+    // LDLIB2
+    implementation("com.lowdragmc.ldlib2:ldlib2-neoforge-${minecraft_version}:${ldlib2_version}") { transitive = false }
+    runtimeOnly "com.lowdragmc.ldlib2:ldlib2-neoforge-${minecraft_version}:${ldlib2_version}:all"
+    compileOnly "org.lwjgl:lwjgl-yoga:${lwjgl_yoga_version}"
+    runtimeOnly "org.lwjgl:lwjgl-yoga:${lwjgl_yoga_version}:natives-windows"
+    runtimeOnly "org.lwjgl:lwjgl-yoga:${lwjgl_yoga_version}:natives-windows-arm64"
+    runtimeOnly "org.lwjgl:lwjgl-yoga:${lwjgl_yoga_version}:natives-linux"
+    runtimeOnly "org.lwjgl:lwjgl-yoga:${lwjgl_yoga_version}:natives-linux-arm64"
+    runtimeOnly "org.lwjgl:lwjgl-yoga:${lwjgl_yoga_version}:natives-macos"
+    runtimeOnly "org.lwjgl:lwjgl-yoga:${lwjgl_yoga_version}:natives-macos-arm64"
+    compileOnly "org.appliedenergistics.yoga:yoga:1.0.0"
+    compileOnly "dev.vfyjxf:taffy:1.1.3"
+
     // EMI
     implementation "dev.emi:emi-neoforge:1.1.22+1.21.1"
 
@@ -156,6 +171,7 @@ tasks.withType(ProcessResources).configureEach {
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
             loader_version_range   : loader_version_range,
+            ldlib2_version         : ldlib2_version,
             numismatics_version    : numismatics_version,
             ftb_chunks_version     : ftb_chunks_version,
             mod_id                 : mod_id,

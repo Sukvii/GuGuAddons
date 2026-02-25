@@ -19,6 +19,7 @@ import com.gugucraft.guguaddons.registry.ModCreativeModeTabs;
 import com.gugucraft.guguaddons.registry.ModItems;
 import com.gugucraft.guguaddons.ftbchunks.ChunkClaimEconomyHandler;
 import com.gugucraft.guguaddons.ftbchunks.ChunkClaimEconomyNetwork;
+import com.gugucraft.guguaddons.stock.ui.StockUiNetwork;
 
 @Mod(GuGuAddons.MODID)
 public class GuGuAddons {
@@ -39,6 +40,7 @@ public class GuGuAddons {
 
         ModCreativeModeTabs.register(modEventBus); // Postponed to next version
         modEventBus.addListener(ChunkClaimEconomyNetwork::registerPayloads);
+        modEventBus.addListener(StockUiNetwork::registerPayloads);
 
         NeoForge.EVENT_BUS.register(this);
 
