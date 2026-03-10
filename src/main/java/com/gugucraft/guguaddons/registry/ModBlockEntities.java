@@ -2,6 +2,7 @@ package com.gugucraft.guguaddons.registry;
 
 import com.gugucraft.guguaddons.GuGuAddons;
 import com.gugucraft.guguaddons.block.entity.QuestInterfaceBlockEntity;
+import com.gugucraft.guguaddons.block.entity.VacuumChamberBlockEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
@@ -27,6 +28,11 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("quest_submission", () ->
                     BlockEntityType.Builder.of(com.gugucraft.guguaddons.block.entity.QuestSubmissionBlockEntity::new,
                             ModBlocks.QUEST_SUBMISSION.get()).build(null));
+
+    public static final Supplier<BlockEntityType<VacuumChamberBlockEntity>> VACUUM_CHAMBER =
+            BLOCK_ENTITIES.register("vacuum_chamber", () ->
+                    BlockEntityType.Builder.of(VacuumChamberBlockEntity::new,
+                            ModBlocks.VACUUM_CHAMBER.get()).build(null));
 
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);

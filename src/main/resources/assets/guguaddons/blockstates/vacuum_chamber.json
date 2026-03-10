@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "guguaddons:block/vacuum_chamber/block"
+    }
+  }
+}

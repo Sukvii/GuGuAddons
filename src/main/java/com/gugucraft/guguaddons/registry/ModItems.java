@@ -8,6 +8,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import net.minecraft.world.item.BlockItem;
+import com.simibubi.create.content.processing.AssemblyOperatorBlockItem;
 
 public class ModItems {
         public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(GuGuAddons.MODID);
@@ -24,6 +25,9 @@ public class ModItems {
 
         public static final DeferredItem<Item> DEDUCTION_CASING_ITEM = ITEMS.register("deduction_casing",
                         () -> new BlockItem(ModBlocks.DEDUCTION_CASING.get(), new Item.Properties()));
+
+        public static final DeferredItem<Item> VACUUM_CHAMBER = ITEMS.register("vacuum_chamber",
+                        () -> new AssemblyOperatorBlockItem(ModBlocks.VACUUM_CHAMBER.get(), new Item.Properties()));
 
         public static final DeferredItem<Item> TAB_ICON = ITEMS.register("tab_icon",
                         () -> new Item(new Item.Properties()));

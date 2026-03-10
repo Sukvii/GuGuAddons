@@ -17,5 +17,9 @@ public class ModCapabilities {
                 Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.QUEST_SUBMISSION.get(),
                 (blockEntity, context) -> blockEntity.getItemHandler());
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.VACUUM_CHAMBER.get(),
+                (blockEntity, context) -> blockEntity.getFluidCapability());
     }
 }

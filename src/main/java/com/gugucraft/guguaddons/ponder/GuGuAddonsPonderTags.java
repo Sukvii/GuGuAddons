@@ -1,6 +1,7 @@
 package com.gugucraft.guguaddons.ponder;
 
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.registry.ModBlocks;
 import net.createmod.ponder.api.registration.PonderTagRegistrationHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Items;
@@ -17,5 +18,8 @@ public class GuGuAddonsPonderTags {
                 .description("guguaddons.ponder.tag.general.description")
                 .addToIndex()
                 .register();
+
+        helper.addToTag(GUGU_ADDONS)
+                .add(ModBlocks.VACUUM_CHAMBER.getId());
     }
 }

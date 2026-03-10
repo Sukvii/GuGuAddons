@@ -1,5 +1,7 @@
 package com.gugucraft.guguaddons;
 
+import com.gugucraft.guguaddons.client.ModPartialModels;
+import com.gugucraft.guguaddons.client.visual.VacuumChamberVisual;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -22,6 +24,8 @@ import com.simibubi.create.foundation.block.connected.CTSpriteShiftEntry;
 import com.simibubi.create.foundation.block.connected.CTSpriteShifter;
 import net.createmod.ponder.foundation.PonderIndex;
 import com.gugucraft.guguaddons.ponder.GuGuAddonsPonderPlugin;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
 
 // This class will not load on dedicated servers. Accessing client side code from here is safe.
 @Mod(value = GuGuAddons.MODID, dist = Dist.CLIENT)
@@ -59,11 +63,19 @@ public class GuGuAddonsClient {
         static void onClientSetup(FMLClientSetupEvent event) {
                 // Client setup code
                 PonderIndex.addPlugin(new GuGuAddonsPonderPlugin());
+                ModPartialModels.init();
+                event.enqueueWork(() -> ItemBlockRenderTypes.setRenderLayer(ModBlocks.VACUUM_CHAMBER.get(),
+                                RenderType.cutoutMipped()));
 
                 dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
                                 .builder(ModBlockEntities.QUEST_INPUT.get())
                                 .factory(OrientedRotatingVisual.of(AllPartialModels.SHAFT_HALF))
                                 .skipVanillaRender(be -> true)
+                                .apply();
+
+                dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
+                                .builder(ModBlockEntities.VACUUM_CHAMBER.get())
+                                .factory(VacuumChamberVisual::new)
                                 .apply();
 
                 // Register Connected Textures
@@ -106,5 +118,7 @@ public class GuGuAddonsClient {
                         net.neoforged.neoforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
                 event.registerBlockEntityRenderer(ModBlockEntities.QUEST_INPUT.get(),
                                 com.gugucraft.guguaddons.client.renderer.QuestInputRenderer::new);
+                event.registerBlockEntityRenderer(ModBlockEntities.VACUUM_CHAMBER.get(),
+                                com.gugucraft.guguaddons.client.renderer.VacuumChamberRenderer::new);
         }
 }

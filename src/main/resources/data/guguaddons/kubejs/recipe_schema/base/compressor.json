@@ -1,0 +1,24 @@
+{
+  "parent": "create:base/processing",
+  "keys": [
+    {
+      "name": "secondaryFluidOutput",
+      "type": "int",
+      "optional": -1,
+      "alternative_names": [
+        "secondary_fluid_output"
+      ]
+    },
+    {
+      "name": "secondaryFluidInput",
+      "type": "int",
+      "optional": -1,
+      "alternative_names": [
+        "secondary_fluid_input"
+      ]
+    }
+  ],
+  "merge": {
+    "keys": true
+  }
+}

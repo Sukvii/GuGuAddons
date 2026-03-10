@@ -1,6 +1,7 @@
 package com.gugucraft.guguaddons.registry;
 
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.block.custom.VacuumChamberBlock;
 
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -29,6 +30,10 @@ public class ModBlocks {
         public static final DeferredBlock<Block> DEDUCTION_CASING = BLOCKS.register("deduction_casing",
                         () -> new com.gugucraft.guguaddons.block.custom.DeductionCasingBlock(
                                         BlockBehaviour.Properties.of().strength(3.0F).sound(SoundType.METAL)));
+
+        public static final DeferredBlock<Block> VACUUM_CHAMBER = BLOCKS.register("vacuum_chamber",
+                        () -> new VacuumChamberBlock(BlockBehaviour.Properties.of().strength(3.0F)
+                                        .sound(SoundType.METAL).noOcclusion()));
 
         public static void register(IEventBus eventBus) {
                 BLOCKS.register(eventBus);

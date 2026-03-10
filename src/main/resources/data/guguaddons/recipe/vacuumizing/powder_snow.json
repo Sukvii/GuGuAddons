@@ -1,0 +1,18 @@
+{
+  "type": "guguaddons:vacuumizing",
+  "ingredients": [
+    {
+      "item": "minecraft:bucket"
+    },
+    {
+      "item": "minecraft:snow_block"
+    }
+  ],
+  "results": [
+    {
+      "id": "minecraft:powder_snow_bucket",
+      "count": 1
+    }
+  ],
+  "processing_time": 600
+}

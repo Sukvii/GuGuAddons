@@ -95,5 +95,17 @@
   "menu.guguaddons.chunk_claim_confirm.cancel": "取消",
   "menu.guguaddons.chunk_claim_confirm.confirm": "确认",
   "menu.guguaddons.chunk_claim_confirm.summary": "认领 %s 个区块，花费 %s",
-  "menu.guguaddons.chunk_claim_confirm.expired": "请求已过期"
+  "menu.guguaddons.chunk_claim_confirm.expired": "请求已过期",
+  "block.guguaddons.vacuum_chamber": "压缩机",
+  "tooltip.guguaddons.vacuum_chamber.mode": "模式：%s",
+  "tooltip.guguaddons.vacuum_chamber.mode.vacuumizing": "真空",
+  "tooltip.guguaddons.vacuum_chamber.mode.pressurizing": "加压",
+  "guguaddons.ponder.vacuum_chamber.header": "使用压缩机",
+  "guguaddons.ponder.vacuum_chamber.text_1": "压缩机需要放在 Basin 上方工作，并且可以在真空与加压两种模式间切换。",
+  "guguaddons.ponder.vacuum_chamber.text_2": "和其他 Basin 机器一样，热量仍然来自下方的加热器。",
+  "guguaddons.ponder.vacuum_chamber_secondary.header": "副流体",
+  "guguaddons.ponder.vacuum_chamber_secondary.text_1": "压缩机自带独立的副流体内部储槽。",
+  "guguaddons.ponder.vacuum_chamber_secondary.text_2": "配方可以把其中一个流体输入改为从机器自身读取。",
+  "guguaddons.ponder.vacuum_chamber_secondary.text_3": "外部管道或储罐可以向机器的输入侧灌入副流体。",
+  "guguaddons.ponder.vacuum_chamber_secondary.text_4": "配方也可以把其中一个流体输出导回机器的内部输出槽。"
 }
