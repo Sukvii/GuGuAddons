@@ -29,6 +29,10 @@ public class VacuumChamberRenderer extends KineticBlockEntityRenderer<VacuumCham
     @Override
     protected void renderSafe(VacuumChamberBlockEntity blockEntity, float partialTicks, PoseStack poseStack,
             MultiBufferSource buffer, int light, int overlay) {
+        if (VisualizationManager.supportsVisualization(blockEntity.getLevel())) {
+            return;
+        }
+
         BlockState blockState = blockEntity.getBlockState();
         VertexConsumer vertexConsumer = buffer.getBuffer(RenderType.solid());
 
@@ -37,10 +41,6 @@ public class VacuumChamberRenderer extends KineticBlockEntityRenderer<VacuumCham
             arrows.rotateCentered(AngleHelper.rad(180), Direction.EAST);
         }
         arrows.light(light).renderInto(poseStack, vertexConsumer);
-
-        if (VisualizationManager.supportsVisualization(blockEntity.getLevel())) {
-            return;
-        }
 
         SuperByteBuffer cog = CachedBuffers.partial(ModPartialModels.VACUUM_COG, blockState);
         standardKineticRotationTransform(cog, blockEntity, light).renderInto(poseStack, vertexConsumer);
