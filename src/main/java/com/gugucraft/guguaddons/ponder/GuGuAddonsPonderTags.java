@@ -20,6 +20,7 @@ public class GuGuAddonsPonderTags {
                 .register();
 
         helper.addToTag(GUGU_ADDONS)
-                .add(ModBlocks.VACUUM_CHAMBER.getId());
+                .add(ModBlocks.VACUUM_CHAMBER.getId())
+                .add(ModBlocks.CENTRIFUGE.getId());
     }
 }

@@ -1,6 +1,7 @@
 package com.gugucraft.guguaddons.registry;
 
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.item.CentrifugeBlockItem;
 
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
@@ -28,6 +29,9 @@ public class ModItems {
 
         public static final DeferredItem<Item> VACUUM_CHAMBER = ITEMS.register("vacuum_chamber",
                         () -> new AssemblyOperatorBlockItem(ModBlocks.VACUUM_CHAMBER.get(), new Item.Properties()));
+
+        public static final DeferredItem<Item> CENTRIFUGE = ITEMS.register("centrifuge",
+                        () -> new CentrifugeBlockItem(ModBlocks.CENTRIFUGE.get(), new Item.Properties()));
 
         public static final DeferredItem<Item> TAB_ICON = ITEMS.register("tab_icon",
                         () -> new Item(new Item.Properties()));

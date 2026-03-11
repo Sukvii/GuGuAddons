@@ -1,0 +1,16 @@
+{
+  "type": "guguaddons:centrifugation",
+  "ingredients": [
+    {
+      "item": "minecraft:honeycomb"
+    }
+  ],
+  "results": [
+    {
+      "id": "create:honey",
+      "amount": 100
+    }
+  ],
+  "processing_time": 1000,
+  "minimalRPM": 100
+}

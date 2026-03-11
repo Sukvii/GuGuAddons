@@ -1,6 +1,7 @@
 package com.gugucraft.guguaddons;
 
 import com.gugucraft.guguaddons.client.ModPartialModels;
+import com.gugucraft.guguaddons.client.visual.CentrifugeVisual;
 import com.gugucraft.guguaddons.client.visual.VacuumChamberVisual;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import net.neoforged.api.distmarker.Dist;
@@ -26,6 +27,7 @@ import net.createmod.ponder.foundation.PonderIndex;
 import com.gugucraft.guguaddons.ponder.GuGuAddonsPonderPlugin;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
+import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 
 // This class will not load on dedicated servers. Accessing client side code from here is safe.
 @Mod(value = GuGuAddons.MODID, dist = Dist.CLIENT)
@@ -51,6 +53,7 @@ public class GuGuAddonsClient {
         public GuGuAddonsClient(IEventBus modEventBus, ModContainer container) {
                 modEventBus.addListener(GuGuAddonsClient::onClientSetup);
                 modEventBus.addListener(GuGuAddonsClient::registerRenderers);
+                modEventBus.addListener(GuGuAddonsClient::registerClientExtensions);
 
                 // Allows NeoForge to create a config screen for this mod's configs.
                 // The config screen is accessed by going to the Mods screen > clicking on your
@@ -76,6 +79,11 @@ public class GuGuAddonsClient {
                 dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
                                 .builder(ModBlockEntities.VACUUM_CHAMBER.get())
                                 .factory(VacuumChamberVisual::new)
+                                .apply();
+
+                dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
+                                .builder(ModBlockEntities.CENTRIFUGE.get())
+                                .factory(CentrifugeVisual::new)
                                 .apply();
 
                 // Register Connected Textures
@@ -120,5 +128,12 @@ public class GuGuAddonsClient {
                                 com.gugucraft.guguaddons.client.renderer.QuestInputRenderer::new);
                 event.registerBlockEntityRenderer(ModBlockEntities.VACUUM_CHAMBER.get(),
                                 com.gugucraft.guguaddons.client.renderer.VacuumChamberRenderer::new);
+                event.registerBlockEntityRenderer(ModBlockEntities.CENTRIFUGE.get(),
+                                com.gugucraft.guguaddons.client.renderer.CentrifugeRenderer::new);
+        }
+
+        public static void registerClientExtensions(RegisterClientExtensionsEvent event) {
+                event.registerBlock(new com.gugucraft.guguaddons.block.custom.CentrifugeStructuralBlock.RenderProperties(),
+                                ModBlocks.CENTRIFUGE_STRUCTURE.get());
         }
 }

@@ -1,0 +1,16 @@
+{
+  "parent": "create:base/processing",
+  "keys": [
+    {
+      "name": "minimalRPM",
+      "type": "int",
+      "optional": 100,
+      "alternative_names": [
+        "minimal_rpm"
+      ]
+    }
+  ],
+  "merge": {
+    "keys": true
+  }
+}

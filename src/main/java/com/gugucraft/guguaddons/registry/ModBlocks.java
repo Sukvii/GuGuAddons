@@ -1,6 +1,8 @@
 package com.gugucraft.guguaddons.registry;
 
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.block.custom.CentrifugeBlock;
+import com.gugucraft.guguaddons.block.custom.CentrifugeStructuralBlock;
 import com.gugucraft.guguaddons.block.custom.VacuumChamberBlock;
 
 import net.neoforged.bus.api.IEventBus;
@@ -34,6 +36,14 @@ public class ModBlocks {
         public static final DeferredBlock<Block> VACUUM_CHAMBER = BLOCKS.register("vacuum_chamber",
                         () -> new VacuumChamberBlock(BlockBehaviour.Properties.of().strength(3.0F)
                                         .sound(SoundType.METAL).noOcclusion()));
+
+        public static final DeferredBlock<Block> CENTRIFUGE = BLOCKS.register("centrifuge",
+                        () -> new CentrifugeBlock(BlockBehaviour.Properties.of().strength(3.0F)
+                                        .sound(SoundType.METAL).noOcclusion()));
+
+        public static final DeferredBlock<Block> CENTRIFUGE_STRUCTURE = BLOCKS.register("centrifuge_structure",
+                        () -> new CentrifugeStructuralBlock(BlockBehaviour.Properties.of().strength(3.0F)
+                                        .sound(SoundType.METAL).noOcclusion().noLootTable()));
 
         public static void register(IEventBus eventBus) {
                 BLOCKS.register(eventBus);

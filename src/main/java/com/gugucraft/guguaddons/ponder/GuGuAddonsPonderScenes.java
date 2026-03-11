@@ -1,6 +1,7 @@
 package com.gugucraft.guguaddons.ponder;
 
 import com.gugucraft.guguaddons.ponder.scenes.QuestInterfaceScenes;
+import com.gugucraft.guguaddons.ponder.scenes.CentrifugeScenes;
 import com.gugucraft.guguaddons.ponder.scenes.VacuumChamberScenes;
 import com.gugucraft.guguaddons.registry.ModBlocks;
 import net.createmod.ponder.api.registration.PonderSceneRegistrationHelper;
@@ -16,6 +17,9 @@ public class GuGuAddonsPonderScenes {
                 .addStoryBoard("vacuum_chamber/processing", VacuumChamberScenes::processing,
                         GuGuAddonsPonderTags.GUGU_ADDONS)
                 .addStoryBoard("vacuum_chamber/secondary", VacuumChamberScenes::secondary,
+                        GuGuAddonsPonderTags.GUGU_ADDONS);
+        helper.forComponents(ModBlocks.CENTRIFUGE.getId())
+                .addStoryBoard("centrifuge/processing", CentrifugeScenes::processing,
                         GuGuAddonsPonderTags.GUGU_ADDONS);
     }
 }

@@ -1,6 +1,8 @@
 package com.gugucraft.guguaddons.registry;
 
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.block.entity.CentrifugeBlockEntity;
+import com.gugucraft.guguaddons.block.entity.CentrifugeStructuralBlockEntity;
 import com.gugucraft.guguaddons.block.entity.QuestInterfaceBlockEntity;
 import com.gugucraft.guguaddons.block.entity.VacuumChamberBlockEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -33,6 +35,16 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("vacuum_chamber", () ->
                     BlockEntityType.Builder.of(VacuumChamberBlockEntity::new,
                             ModBlocks.VACUUM_CHAMBER.get()).build(null));
+
+    public static final Supplier<BlockEntityType<CentrifugeBlockEntity>> CENTRIFUGE =
+            BLOCK_ENTITIES.register("centrifuge", () ->
+                    BlockEntityType.Builder.of(CentrifugeBlockEntity::new,
+                            ModBlocks.CENTRIFUGE.get()).build(null));
+
+    public static final Supplier<BlockEntityType<CentrifugeStructuralBlockEntity>> CENTRIFUGE_STRUCTURE =
+            BLOCK_ENTITIES.register("centrifuge_structure", () ->
+                    BlockEntityType.Builder.of(CentrifugeStructuralBlockEntity::new,
+                            ModBlocks.CENTRIFUGE_STRUCTURE.get()).build(null));
 
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);

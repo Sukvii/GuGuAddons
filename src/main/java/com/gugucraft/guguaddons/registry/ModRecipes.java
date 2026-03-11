@@ -1,6 +1,8 @@
 package com.gugucraft.guguaddons.registry;
 
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.recipe.CentrifugationRecipe;
+import com.gugucraft.guguaddons.recipe.CentrifugationRecipeSerializer;
 import com.gugucraft.guguaddons.recipe.CompressorRecipeSerializer;
 import com.gugucraft.guguaddons.recipe.PressurizingRecipe;
 import com.gugucraft.guguaddons.recipe.VacuumizingRecipe;
@@ -35,6 +37,11 @@ public class ModRecipes {
     private static final DeferredHolder<RecipeType<?>, RecipeType<PressurizingRecipe>> PRESSURIZING_TYPE_HOLDER =
             TYPES.register("pressurizing", () -> RecipeType.simple(id("pressurizing")));
 
+    private static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<CentrifugationRecipe>> CENTRIFUGATION_SERIALIZER_HOLDER =
+            SERIALIZERS.register("centrifugation", () -> new CentrifugationRecipeSerializer<>(CentrifugationRecipe::new));
+    private static final DeferredHolder<RecipeType<?>, RecipeType<CentrifugationRecipe>> CENTRIFUGATION_TYPE_HOLDER =
+            TYPES.register("centrifugation", () -> RecipeType.simple(id("centrifugation")));
+
     public static final ModProcessingRecipeType<VacuumizingRecipe> VACUUMIZING =
             new ModProcessingRecipeType<>(id("vacuumizing"), VACUUMIZING_SERIALIZER_HOLDER::get,
                     VACUUMIZING_TYPE_HOLDER::get);
@@ -42,6 +49,10 @@ public class ModRecipes {
     public static final ModProcessingRecipeType<PressurizingRecipe> PRESSURIZING =
             new ModProcessingRecipeType<>(id("pressurizing"), PRESSURIZING_SERIALIZER_HOLDER::get,
                     PRESSURIZING_TYPE_HOLDER::get);
+
+    public static final ModProcessingRecipeType<CentrifugationRecipe> CENTRIFUGATION =
+            new ModProcessingRecipeType<>(id("centrifugation"), CENTRIFUGATION_SERIALIZER_HOLDER::get,
+                    CENTRIFUGATION_TYPE_HOLDER::get);
 
     public static void register(IEventBus eventBus) {
         SERIALIZERS.register(eventBus);

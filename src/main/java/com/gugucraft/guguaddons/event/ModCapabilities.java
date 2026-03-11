@@ -18,6 +18,22 @@ public class ModCapabilities {
                 ModBlockEntities.QUEST_SUBMISSION.get(),
                 (blockEntity, context) -> blockEntity.getItemHandler());
         event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.CENTRIFUGE.get(),
+                (blockEntity, context) -> blockEntity.getItemCapability());
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.CENTRIFUGE.get(),
+                (blockEntity, context) -> blockEntity.getFluidCapability());
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.CENTRIFUGE_STRUCTURE.get(),
+                (blockEntity, context) -> blockEntity.getItemCapability());
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.CENTRIFUGE_STRUCTURE.get(),
+                (blockEntity, context) -> blockEntity.getFluidCapability());
+        event.registerBlockEntity(
                 Capabilities.FluidHandler.BLOCK,
                 ModBlockEntities.VACUUM_CHAMBER.get(),
                 (blockEntity, context) -> blockEntity.getFluidCapability());
