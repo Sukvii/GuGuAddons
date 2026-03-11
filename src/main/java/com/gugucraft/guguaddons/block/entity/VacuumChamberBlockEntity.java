@@ -6,6 +6,8 @@ import com.gugucraft.guguaddons.recipe.VacuumizingRecipe;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModRecipes;
 import com.simibubi.create.AllSoundEvents;
+import com.simibubi.create.content.fluids.transfer.GenericItemEmptying;
+import com.simibubi.create.content.fluids.transfer.GenericItemFilling;
 import com.simibubi.create.content.kinetics.base.IRotate;
 import com.simibubi.create.content.processing.basin.BasinBlockEntity;
 import com.simibubi.create.content.processing.basin.BasinOperatingBlockEntity;
@@ -14,6 +16,7 @@ import com.simibubi.create.content.processing.recipe.StandardProcessingRecipe;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
 import com.simibubi.create.foundation.blockEntity.behaviour.fluid.SmartFluidTankBehaviour;
 import com.simibubi.create.foundation.fluid.CombinedTankWrapper;
+import com.simibubi.create.foundation.fluid.FluidHelper;
 import com.simibubi.create.foundation.recipe.RecipeFinder;
 import com.simibubi.create.foundation.recipe.trie.AbstractVariant;
 import com.simibubi.create.foundation.recipe.trie.RecipeTrie;
@@ -39,6 +42,10 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -192,7 +199,7 @@ public class VacuumChamberBlockEntity extends BasinOperatingBlockEntity {
             IItemHandler availableItems = level.getCapability(Capabilities.ItemHandler.BLOCK, basin.getBlockPos(), null);
             IFluidHandler availableBasinFluids = level.getCapability(Capabilities.FluidHandler.BLOCK, basin.getBlockPos(),
                     null);
-            IFluidHandler availableChamberFluids = fluidCapability;
+            IFluidHandler availableChamberFluids = getInputTankCapability();
             IFluidHandler availableFluids = new CombinedTankWrapper(availableBasinFluids, availableChamberFluids);
 
             if (availableItems == null && availableBasinFluids == null && availableChamberFluids == null) {
@@ -295,6 +302,29 @@ public class VacuumChamberBlockEntity extends BasinOperatingBlockEntity {
 
     public IFluidHandler getFluidCapability() {
         return fluidCapability;
+    }
+
+    public IFluidHandler getInputTankCapability() {
+        return inputTank == null ? null : inputTank.getCapability();
+    }
+
+    public ItemInteractionResult handleItemUse(Player player, InteractionHand hand, ItemStack stack) {
+        if (level == null) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+
+        if (FluidHelper.tryEmptyItemIntoBE(level, player, hand, stack, this)) {
+            return ItemInteractionResult.SUCCESS;
+        }
+        if (FluidHelper.tryFillItemFromBE(level, player, hand, stack, this)) {
+            return ItemInteractionResult.SUCCESS;
+        }
+
+        if (GenericItemEmptying.canItemBeEmptied(level, stack) || GenericItemFilling.canItemBeFilled(level, stack)) {
+            return ItemInteractionResult.SUCCESS;
+        }
+
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     public float getRenderedHeadOffset(float partialTicks) {

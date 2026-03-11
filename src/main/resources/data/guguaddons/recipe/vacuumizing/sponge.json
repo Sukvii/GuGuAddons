@@ -1,0 +1,20 @@
+{
+  "type": "guguaddons:vacuumizing",
+  "ingredients": [
+    {
+      "item": "minecraft:wet_sponge"
+    }
+  ],
+  "results": [
+    {
+      "id": "minecraft:sponge",
+      "count": 1
+    },
+    {
+      "id": "minecraft:water",
+      "amount": 250
+    }
+  ],
+  "processing_time": 200,
+  "secondaryFluidOutput": 0
+}

@@ -1,0 +1,21 @@
+{
+  "type": "guguaddons:pressurizing",
+  "ingredients": [
+    {
+      "item": "minecraft:dirt"
+    },
+    {
+      "type": "neoforge:single",
+      "fluid": "minecraft:water",
+      "amount": 250
+    }
+  ],
+  "results": [
+    {
+      "id": "minecraft:mud",
+      "count": 1
+    }
+  ],
+  "processing_time": 200,
+  "secondaryFluidInput": 0
+}

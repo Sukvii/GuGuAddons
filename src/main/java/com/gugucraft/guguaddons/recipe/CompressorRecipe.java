@@ -62,12 +62,16 @@ public abstract class CompressorRecipe extends BasinRecipe {
         return secondaryFluidOutput;
     }
 
+    public int getSecondaryFluidInput() {
+        return secondaryFluidInput;
+    }
+
     private boolean applyInternal(BasinBlockEntity basin, VacuumChamberBlockEntity chamber, boolean test) {
         IItemHandler availableItems = basin.getLevel().getCapability(Capabilities.ItemHandler.BLOCK, basin.getBlockPos(),
                 null);
         IFluidHandler availableFluids = basin.getLevel().getCapability(Capabilities.FluidHandler.BLOCK,
                 basin.getBlockPos(), null);
-        IFluidHandler availableSecondaryFluids = chamber.getFluidCapability();
+        IFluidHandler availableSecondaryFluids = chamber.getInputTankCapability();
 
         if (availableItems == null || availableFluids == null || availableSecondaryFluids == null) {
             return false;
