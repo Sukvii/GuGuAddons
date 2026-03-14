@@ -4,22 +4,15 @@ import com.gugucraft.guguaddons.Config;
 import com.gugucraft.guguaddons.registry.ModItems;
 import com.gugucraft.guguaddons.registry.ModRecipes;
 import com.mojang.serialization.MapCodec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.SmithingRecipe;
 import net.minecraft.world.item.crafting.SmithingRecipeInput;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.stream.Stream;
 
 public class SlashBackSmithingRecipe implements SmithingRecipe {
 
@@ -36,11 +29,8 @@ public class SlashBackSmithingRecipe implements SmithingRecipe {
         ItemStack baseStack = input.base();
         ItemStack additionStack = input.addition();
 
-        String configuredTemplateId = Config.SLASH_BACK_REFILL_TEMPLATE.get();
-        Item configuredTemplate = BuiltInRegistries.ITEM.get(ResourceLocation.parse(configuredTemplateId));
-
-        String configuredMaterialId = Config.SLASH_BACK_REFILL_MATERIAL.get();
-        Item configuredMaterial = BuiltInRegistries.ITEM.get(ResourceLocation.parse(configuredMaterialId));
+        Item configuredTemplate = Config.getSlashBackRefillTemplateItem();
+        Item configuredMaterial = Config.getSlashBackRefillMaterialItem();
 
         boolean templateMatches = !templateStack.isEmpty() && templateStack.getItem() == configuredTemplate;
         boolean baseMatches = !baseStack.isEmpty() && baseStack.getItem() == ModItems.DEATH_RECALL_ITEM.get();
@@ -68,9 +58,7 @@ public class SlashBackSmithingRecipe implements SmithingRecipe {
 
     @Override
     public boolean isTemplateIngredient(ItemStack stack) {
-        String configuredId = Config.SLASH_BACK_REFILL_TEMPLATE.get();
-        Item configuredItem = BuiltInRegistries.ITEM.get(ResourceLocation.parse(configuredId));
-        return stack.getItem() == configuredItem;
+        return stack.getItem() == Config.getSlashBackRefillTemplateItem();
     }
 
     @Override
@@ -80,9 +68,7 @@ public class SlashBackSmithingRecipe implements SmithingRecipe {
 
     @Override
     public boolean isAdditionIngredient(ItemStack stack) {
-        String configuredId = Config.SLASH_BACK_REFILL_MATERIAL.get();
-        Item configuredItem = BuiltInRegistries.ITEM.get(ResourceLocation.parse(configuredId));
-        return stack.getItem() == configuredItem;
+        return stack.getItem() == Config.getSlashBackRefillMaterialItem();
     }
 
     @Override

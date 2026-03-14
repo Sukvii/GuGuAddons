@@ -3,10 +3,7 @@ package com.gugucraft.guguaddons.recipe;
 import com.gugucraft.guguaddons.block.entity.CentrifugeBlockEntity;
 import com.gugucraft.guguaddons.registry.ModRecipes;
 import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
-import com.simibubi.create.foundation.blockEntity.behaviour.fluid.SmartFluidTankBehaviour;
-import com.simibubi.create.foundation.blockEntity.behaviour.fluid.SmartFluidTankBehaviour.TankSegment;
 import com.simibubi.create.foundation.recipe.DummyCraftingContainer;
-import net.createmod.catnip.data.Iterate;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
@@ -18,6 +15,7 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
 import net.neoforged.neoforge.items.IItemHandler;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -55,90 +53,87 @@ public class CentrifugationRecipe extends ProcessingRecipe<RecipeInput, Centrifu
         List<Ingredient> ingredients = new LinkedList<>(centrifugationRecipe.getIngredients());
         List<SizedFluidIngredient> fluidIngredients = new ArrayList<>(centrifugationRecipe.getFluidIngredients());
 
-        for (boolean simulate : Iterate.trueAndFalse) {
-            if (!simulate && test) {
-                return true;
-            }
+        ItemConsumptionPlan itemPlan = planItemConsumption(availableItems, ingredients);
+        if (itemPlan == null) {
+            return false;
+        }
 
-            int[] extractedItemsFromSlot = new int[availableItems.getSlots()];
-            int[] extractedFluidsFromTank = new int[availableFluids.getTanks()];
+        List<FluidStack> fluidDrainPlan = RecipeFluidDrainPlan.plan(availableFluids, fluidIngredients);
+        if (fluidDrainPlan == null) {
+            return false;
+        }
 
-            ingredientsLoop:
-            for (Ingredient ingredient : ingredients) {
-                for (int slot = 0; slot < availableItems.getSlots(); slot++) {
-                    ItemStack stackInSlot = availableItems.getStackInSlot(slot);
-                    if (simulate && stackInSlot.getCount() <= extractedItemsFromSlot[slot]) {
-                        continue;
-                    }
-                    if (!ingredient.test(stackInSlot)) {
-                        continue;
-                    }
-                    if (!simulate) {
-                        centrifuge.getInputInventory().extractItem(slot, 1, false);
-                    }
-                    extractedItemsFromSlot[slot]++;
-                    continue ingredientsLoop;
-                }
-                return false;
-            }
-
-            boolean fluidsAffected = false;
-            fluidLoop:
-            for (SizedFluidIngredient fluidIngredient : fluidIngredients) {
-                int amountRequired = fluidIngredient.amount();
-
-                for (int tank = 0; tank < availableFluids.getTanks(); tank++) {
-                    FluidStack fluidStack = availableFluids.getFluidInTank(tank);
-                    if (simulate && fluidStack.getAmount() <= extractedFluidsFromTank[tank]) {
-                        continue;
-                    }
-                    if (!fluidIngredient.test(fluidStack)) {
-                        continue;
-                    }
-                    int drainedAmount = Math.min(amountRequired, fluidStack.getAmount());
-                    if (!simulate) {
-                        fluidStack.shrink(drainedAmount);
-                        fluidsAffected = true;
-                    }
-                    amountRequired -= drainedAmount;
-                    if (amountRequired != 0) {
-                        continue;
-                    }
-                    extractedFluidsFromTank[tank] += drainedAmount;
-                    continue fluidLoop;
-                }
-                return false;
-            }
-
-            if (fluidsAffected) {
-                centrifuge.getBehaviour(SmartFluidTankBehaviour.INPUT).forEach(TankSegment::onFluidStackChanged);
-                centrifuge.getBehaviour(SmartFluidTankBehaviour.OUTPUT).forEach(TankSegment::onFluidStackChanged);
-            }
-
-            if (simulate) {
-                recipeOutputItems.addAll(centrifugationRecipe.rollResults(centrifuge.getLevel().random));
-                CraftingInput remainderInput = new DummyCraftingContainer(availableItems, extractedItemsFromSlot)
-                        .asCraftInput();
-                for (ItemStack stack : centrifugationRecipe.getRemainingItems(remainderInput)) {
-                    if (!stack.isEmpty()) {
-                        recipeOutputItems.add(stack);
-                    }
-                }
-
-                NonNullList<FluidStack> fluidResults = centrifugationRecipe.getFluidResults();
-                for (FluidStack fluidStack : fluidResults) {
-                    if (!fluidStack.isEmpty()) {
-                        recipeOutputFluids.add(fluidStack.copy());
-                    }
-                }
-            }
-
-            if (!centrifuge.acceptOutputs(recipeOutputItems, recipeOutputFluids, simulate)) {
-                return false;
+        recipeOutputItems.addAll(centrifugationRecipe.rollResults(centrifuge.getLevel().random));
+        CraftingInput remainderInput = new DummyCraftingContainer(availableItems, itemPlan.extractedItemsPerSlot())
+                .asCraftInput();
+        for (ItemStack stack : centrifugationRecipe.getRemainingItems(remainderInput)) {
+            if (!stack.isEmpty()) {
+                recipeOutputItems.add(stack);
             }
         }
 
+        NonNullList<FluidStack> fluidResults = centrifugationRecipe.getFluidResults();
+        for (FluidStack fluidStack : fluidResults) {
+            if (!fluidStack.isEmpty()) {
+                recipeOutputFluids.add(fluidStack.copy());
+            }
+        }
+
+        if (!centrifuge.acceptOutputs(recipeOutputItems, recipeOutputFluids, true)) {
+            return false;
+        }
+
+        if (test) {
+            return true;
+        }
+
+        if (!executeItemConsumption(availableItems, itemPlan)) {
+            return false;
+        }
+        if (!RecipeFluidDrainPlan.execute(availableFluids, fluidDrainPlan)) {
+            return false;
+        }
+
+        return centrifuge.acceptOutputs(recipeOutputItems, recipeOutputFluids, false);
+    }
+
+    @Nullable
+    private static ItemConsumptionPlan planItemConsumption(IItemHandler availableItems, List<Ingredient> ingredients) {
+        int[] extractedItemsFromSlot = new int[availableItems.getSlots()];
+
+        ingredientsLoop:
+        for (Ingredient ingredient : ingredients) {
+            for (int slot = 0; slot < availableItems.getSlots(); slot++) {
+                ItemStack stackInSlot = availableItems.getStackInSlot(slot);
+                if (stackInSlot.getCount() <= extractedItemsFromSlot[slot]) {
+                    continue;
+                }
+                ItemStack extracted = availableItems.extractItem(slot, 1, true);
+                if (!ingredient.test(extracted)) {
+                    continue;
+                }
+                extractedItemsFromSlot[slot]++;
+                continue ingredientsLoop;
+            }
+            return null;
+        }
+
+        return new ItemConsumptionPlan(extractedItemsFromSlot);
+    }
+
+    private static boolean executeItemConsumption(IItemHandler availableItems, ItemConsumptionPlan plan) {
+        int[] extractedItemsPerSlot = plan.extractedItemsPerSlot();
+        for (int slot = 0; slot < extractedItemsPerSlot.length; slot++) {
+            for (int count = 0; count < extractedItemsPerSlot[slot]; count++) {
+                if (availableItems.extractItem(slot, 1, false).isEmpty()) {
+                    return false;
+                }
+            }
+        }
         return true;
+    }
+
+    private record ItemConsumptionPlan(int[] extractedItemsPerSlot) {
     }
 
     @Override

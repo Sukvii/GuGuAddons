@@ -26,6 +26,7 @@ tasks.named('wrapper', Wrapper).configure {
 
 version = mod_version
 group = mod_group_id
+def emi_version = '1.1.22+1.21.1'
 
 repositories {
     // Add here additional repositories if required by some of the dependencies below.
@@ -129,7 +130,7 @@ dependencies {
     compileOnly "dev.vfyjxf:taffy:1.1.3"
 
     // EMI
-    implementation "dev.emi:emi-neoforge:1.1.22+1.21.1"
+    implementation "dev.emi:emi-neoforge:${emi_version}"
 
     // Create
     implementation("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
@@ -147,7 +148,7 @@ dependencies {
     implementation "dev.ftb.mods:ftb-chunks-neoforge:${ftb_chunks_version}"
 
     // Jade
-    implementation "maven.modrinth:jade:15.10.3+neoforge"
+    implementation "maven.modrinth:jade:${jade_version}+neoforge"
 
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
@@ -182,9 +183,18 @@ tasks.withType(ProcessResources).configureEach {
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
             loader_version_range   : loader_version_range,
+            create_version         : create_version,
+            ponder_version         : ponder_version,
+            flywheel_version       : flywheel_version,
             ldlib2_version         : ldlib2_version,
             numismatics_version    : numismatics_version,
+            architectury_version   : architectury_version,
+            ftb_library_version    : ftb_library_version,
+            ftb_teams_version      : ftb_teams_version,
+            ftb_quests_version     : ftb_quests_version,
             ftb_chunks_version     : ftb_chunks_version,
+            jade_version           : jade_version,
+            emi_version            : emi_version,
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,

@@ -2,9 +2,9 @@ package com.gugucraft.guguaddons.client.ftbchunks;
 
 import java.util.Locale;
 
-import com.gugucraft.guguaddons.ftbchunks.ChunkClaimDecisionC2SPayload;
-import com.gugucraft.guguaddons.ftbchunks.ChunkClaimPromptS2CPayload;
-import com.gugucraft.guguaddons.ftbchunks.ChunkClaimToastS2CPayload;
+import com.gugucraft.guguaddons.compat.ftbchunks.ChunkClaimDecisionC2SPayload;
+import com.gugucraft.guguaddons.compat.ftbchunks.ChunkClaimPromptS2CPayload;
+import com.gugucraft.guguaddons.compat.ftbchunks.ChunkClaimToastS2CPayload;
 
 import dev.ftb.mods.ftbchunks.client.gui.ChunkScreen;
 import dev.ftb.mods.ftblibrary.ui.BaseScreen;

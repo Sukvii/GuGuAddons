@@ -1,7 +1,6 @@
 package com.gugucraft.guguaddons.block.custom;
 
 import com.gugucraft.guguaddons.block.entity.QuestInterfaceBlockEntity;
-import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
 
 import net.minecraft.core.BlockPos;
@@ -16,8 +15,6 @@ import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityTicker;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
@@ -109,17 +106,8 @@ public class QuestInterfaceBlock extends BaseEntityBlock implements IWrenchable 
         if (!level.isClientSide) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof QuestInterfaceBlockEntity questInterface) {
-                questInterface.setStructureDirty();
+                questInterface.requestStructureRefresh();
             }
         }
-    }
-
-    @Nullable
-    @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
-            BlockEntityType<T> blockEntityType) {
-        return createTickerHelper(blockEntityType, ModBlockEntities.QUEST_INTERFACE.get(),
-                (level1, pos, state1, blockEntity) -> blockEntity.tick(level1, pos, state1));
-
     }
 }

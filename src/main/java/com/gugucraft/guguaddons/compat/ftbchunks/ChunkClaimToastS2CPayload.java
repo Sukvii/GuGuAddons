@@ -1,4 +1,4 @@
-package com.gugucraft.guguaddons.ftbchunks;
+package com.gugucraft.guguaddons.compat.ftbchunks;
 
 import com.gugucraft.guguaddons.GuGuAddons;
 

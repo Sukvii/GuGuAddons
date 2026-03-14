@@ -18,7 +18,6 @@ import dev.emi.emi.api.render.EmiTexture;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.api.widget.WidgetHolder;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -66,13 +65,11 @@ public class ModEmiPlugin implements EmiPlugin {
 
     private void registerSlashBackSmithing(EmiRegistry registry) {
         // 1. Get Configured Template
-        String templateId = Config.SLASH_BACK_REFILL_TEMPLATE.get();
-        Item templateItem = BuiltInRegistries.ITEM.get(ResourceLocation.parse(templateId));
+        Item templateItem = Config.getSlashBackRefillTemplateItem();
         EmiIngredient template = EmiStack.of(templateItem);
 
         // 2. Get Configured Material
-        String materialId = Config.SLASH_BACK_REFILL_MATERIAL.get();
-        Item materialItem = BuiltInRegistries.ITEM.get(ResourceLocation.parse(materialId));
+        Item materialItem = Config.getSlashBackRefillMaterialItem();
         EmiIngredient material = EmiStack.of(materialItem);
 
         // 3. Create Base Item (Broken Terminal)
@@ -86,7 +83,7 @@ public class ModEmiPlugin implements EmiPlugin {
         EmiStack result = EmiStack.of(repairedStack);
 
         // 5. Create EmiSmithingRecipe
-        ResourceLocation id = ResourceLocation.fromNamespaceAndPath("guguaddons", "/slash_back_smithing_emi");
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath("guguaddons", "slash_back_smithing_emi");
 
         registry.addRecipe(new EmiRecipe() {
             @Override

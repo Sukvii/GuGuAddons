@@ -87,6 +87,41 @@ description='''${mod_description}'''
     side="BOTH"
 
 [[dependencies."${mod_id}"]]
+    modId="create"
+    type="required"
+    versionRange="[6.0.9,6.1.0)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies."${mod_id}"]]
+    modId="architectury"
+    type="required"
+    versionRange="[${architectury_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies."${mod_id}"]]
+    modId="ftblibrary"
+    type="required"
+    versionRange="[${ftb_library_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies."${mod_id}"]]
+    modId="ftbteams"
+    type="required"
+    versionRange="[${ftb_teams_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies."${mod_id}"]]
+    modId="ftbquests"
+    type="required"
+    versionRange="[${ftb_quests_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies."${mod_id}"]]
     modId="numismatics"
     type="required"
     versionRange="[${numismatics_version},)"
@@ -104,6 +139,34 @@ description='''${mod_description}'''
     modId="ldlib2"
     type="required"
     versionRange="[${ldlib2_version},)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies."${mod_id}"]]
+    modId="ponder"
+    type="required"
+    versionRange="[${ponder_version},)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies."${mod_id}"]]
+    modId="flywheel"
+    type="required"
+    versionRange="[${flywheel_version},)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies."${mod_id}"]]
+    modId="emi"
+    type="optional"
+    versionRange="[${emi_version},)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies."${mod_id}"]]
+    modId="jade"
+    type="optional"
+    versionRange="[${jade_version},)"
     ordering="NONE"
     side="CLIENT"
 

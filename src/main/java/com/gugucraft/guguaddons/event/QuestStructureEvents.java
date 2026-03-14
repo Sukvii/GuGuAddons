@@ -24,12 +24,21 @@ public class QuestStructureEvents {
         if (!(levelAccessor instanceof Level level) || level.isClientSide)
             return;
 
-        for (QuestInterfaceBlockEntity be : QuestInterfaceBlockEntity.TRACKED_INTERFACES) {
-            if (be.getLevel() == level && be.getBlockPos().distSqr(pos) < 64) { // 8 blocks distance check
-                if (be.isBlockInStructure(pos)) {
-                    be.setStructureDirty();
-                }
-            }
+        QuestInterfaceBlockEntity.requestStructureRefreshAround(level, pos);
+    }
+
+    @SubscribeEvent
+    public static void onChunkLoad(net.neoforged.neoforge.event.level.ChunkEvent.Load event) {
+        if (event.getLevel() instanceof Level level && !level.isClientSide) {
+            level.getServer().execute(() ->
+                    QuestInterfaceBlockEntity.requestStructureRefreshForChunk(level, event.getChunk().getPos()));
+        }
+    }
+
+    @SubscribeEvent
+    public static void onChunkUnload(net.neoforged.neoforge.event.level.ChunkEvent.Unload event) {
+        if (event.getLevel() instanceof Level level && !level.isClientSide) {
+            QuestInterfaceBlockEntity.requestStructureRefreshForChunk(level, event.getChunk().getPos());
         }
     }
 }
