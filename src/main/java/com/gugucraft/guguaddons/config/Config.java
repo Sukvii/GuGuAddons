@@ -1,5 +1,7 @@
-package com.gugucraft.guguaddons;
+package com.gugucraft.guguaddons.config;
 
+import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.config.sync.ConfigSyncState;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -54,7 +56,7 @@ public class Config {
                                 .define("stockEnabled", DEFAULT_STOCK_ENABLED);
         }
 
-        static final ModConfigSpec SPEC = BUILDER.build();
+        public static final ModConfigSpec SPEC = BUILDER.build();
 
         public static ServerConfigSnapshot captureConfiguredSnapshot() {
                 return new ServerConfigSnapshot(

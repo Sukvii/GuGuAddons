@@ -1,6 +1,6 @@
 package com.gugucraft.guguaddons.compat.emi;
 
-import com.gugucraft.guguaddons.Config;
+import com.gugucraft.guguaddons.config.Config;
 import com.gugucraft.guguaddons.recipe.CentrifugationRecipe;
 import com.gugucraft.guguaddons.recipe.PressurizingRecipe;
 import com.gugucraft.guguaddons.recipe.VacuumizingRecipe;

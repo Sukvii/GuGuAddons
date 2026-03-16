@@ -1,4 +1,4 @@
-package com.gugucraft.guguaddons;
+package com.gugucraft.guguaddons.config;
 
 public record ServerConfigSnapshot(
         String slashBackRefillTemplate,

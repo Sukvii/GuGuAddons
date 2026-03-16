@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
-import com.gugucraft.guguaddons.Config;
+import com.gugucraft.guguaddons.config.Config;
 import com.gugucraft.guguaddons.stock.StockCatalog;
 import com.gugucraft.guguaddons.stock.StockDefinition;
 import com.gugucraft.guguaddons.stock.StockMarketSavedData;

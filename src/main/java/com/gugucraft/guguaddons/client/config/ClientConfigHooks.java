@@ -1,10 +1,10 @@
-package com.gugucraft.guguaddons.client;
+package com.gugucraft.guguaddons.client.config;
 
 import java.lang.reflect.Method;
 
-import com.gugucraft.guguaddons.ConfigSyncState;
 import com.gugucraft.guguaddons.GuGuAddons;
 import com.gugucraft.guguaddons.client.stock.StockUiClientHooks;
+import com.gugucraft.guguaddons.config.sync.ConfigSyncState;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;

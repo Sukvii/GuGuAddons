@@ -1,7 +1,7 @@
 package com.gugucraft.guguaddons.stock;
 
-import com.gugucraft.guguaddons.Config;
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.config.Config;
 import com.gugucraft.guguaddons.stock.ui.StockUiNetwork;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;

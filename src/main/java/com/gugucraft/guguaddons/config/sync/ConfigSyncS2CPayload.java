@@ -1,5 +1,7 @@
-package com.gugucraft.guguaddons;
+package com.gugucraft.guguaddons.config.sync;
 
+import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.config.ServerConfigSnapshot;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;

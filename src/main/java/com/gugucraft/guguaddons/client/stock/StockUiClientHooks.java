@@ -2,7 +2,7 @@ package com.gugucraft.guguaddons.client.stock;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.gugucraft.guguaddons.Config;
+import com.gugucraft.guguaddons.config.Config;
 import com.gugucraft.guguaddons.stock.ui.StockUiAction;
 import com.gugucraft.guguaddons.stock.ui.StockUiActionC2SPayload;
 import com.gugucraft.guguaddons.stock.ui.StockUiSnapshot;

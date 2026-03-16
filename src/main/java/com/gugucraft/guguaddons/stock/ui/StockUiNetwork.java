@@ -2,8 +2,8 @@ package com.gugucraft.guguaddons.stock.ui;
 
 import java.lang.reflect.Method;
 
-import com.gugucraft.guguaddons.Config;
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.config.Config;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;

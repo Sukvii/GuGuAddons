@@ -1,7 +1,10 @@
-package com.gugucraft.guguaddons;
+package com.gugucraft.guguaddons.config.sync;
 
 import java.lang.reflect.Method;
 
+import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.config.Config;
+import com.gugucraft.guguaddons.config.ServerConfigSnapshot;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -69,7 +72,7 @@ public final class ConfigSyncNetwork {
             ConfigSyncState.applyServerSnapshot(payload.snapshot());
 
             try {
-                Class<?> hooksClass = Class.forName("com.gugucraft.guguaddons.client.ClientConfigHooks");
+                Class<?> hooksClass = Class.forName("com.gugucraft.guguaddons.client.config.ClientConfigHooks");
                 Method method = hooksClass.getMethod("onServerConfigSnapshotChanged");
                 method.invoke(null);
             } catch (Throwable t) {

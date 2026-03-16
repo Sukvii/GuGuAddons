@@ -1,6 +1,6 @@
 package com.gugucraft.guguaddons.recipe;
 
-import com.gugucraft.guguaddons.Config;
+import com.gugucraft.guguaddons.config.Config;
 import com.gugucraft.guguaddons.registry.ModItems;
 import com.gugucraft.guguaddons.registry.ModRecipes;
 import com.mojang.serialization.MapCodec;

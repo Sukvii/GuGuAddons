@@ -13,8 +13,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.gugucraft.guguaddons.Config;
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.config.Config;
 
 import dev.architectury.event.CompoundEventResult;
 import dev.ftb.mods.ftbchunks.api.ChunkTeamData;

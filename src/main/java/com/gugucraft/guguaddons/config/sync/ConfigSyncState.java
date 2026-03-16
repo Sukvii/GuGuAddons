@@ -1,5 +1,7 @@
-package com.gugucraft.guguaddons;
+package com.gugucraft.guguaddons.config.sync;
 
+import com.gugucraft.guguaddons.config.Config;
+import com.gugucraft.guguaddons.config.ServerConfigSnapshot;
 import org.jetbrains.annotations.Nullable;
 
 public final class ConfigSyncState {

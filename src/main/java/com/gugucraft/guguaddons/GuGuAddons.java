@@ -19,6 +19,8 @@ import com.gugucraft.guguaddons.registry.ModCreativeModeTabs;
 import com.gugucraft.guguaddons.registry.ModItems;
 import com.gugucraft.guguaddons.compat.ftbchunks.ChunkClaimEconomyHandler;
 import com.gugucraft.guguaddons.compat.ftbchunks.ChunkClaimEconomyNetwork;
+import com.gugucraft.guguaddons.config.Config;
+import com.gugucraft.guguaddons.config.sync.ConfigSyncNetwork;
 import com.gugucraft.guguaddons.stock.ui.StockUiNetwork;
 
 @Mod(GuGuAddons.MODID)
