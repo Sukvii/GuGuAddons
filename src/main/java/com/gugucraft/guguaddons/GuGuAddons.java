@@ -39,12 +39,14 @@ public class GuGuAddons {
         modEventBus.addListener(ModCapabilities::registerCapabilities);
 
         ModCreativeModeTabs.register(modEventBus); // Postponed to next version
+        modEventBus.addListener(ConfigSyncNetwork::registerPayloads);
+        modEventBus.addListener(ConfigSyncNetwork::onConfigReloading);
         modEventBus.addListener(ChunkClaimEconomyNetwork::registerPayloads);
         modEventBus.addListener(StockUiNetwork::registerPayloads);
 
         NeoForge.EVENT_BUS.register(this);
 
-        modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {

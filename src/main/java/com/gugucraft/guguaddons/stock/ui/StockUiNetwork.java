@@ -2,8 +2,11 @@ package com.gugucraft.guguaddons.stock.ui;
 
 import java.lang.reflect.Method;
 
+import com.gugucraft.guguaddons.Config;
 import com.gugucraft.guguaddons.GuGuAddons;
 
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -32,6 +35,10 @@ public final class StockUiNetwork {
     }
 
     public static void openFor(ServerPlayer player) {
+        if (!Config.isConfiguredStockEnabled()) {
+            notifyStockDisabled(player);
+            return;
+        }
         sendSnapshot(player, StockUiService.defaultState());
     }
 
@@ -42,6 +49,12 @@ public final class StockUiNetwork {
 
         context.enqueueWork(() -> {
             StockUiAction action = payload.action();
+            if (!Config.isConfiguredStockEnabled()) {
+                if (action != StockUiAction.CLOSE) {
+                    notifyStockDisabled(player);
+                }
+                return;
+            }
             if (action == StockUiAction.CLOSE) {
                 return;
             }
@@ -58,6 +71,9 @@ public final class StockUiNetwork {
     }
 
     private static void sendSnapshot(ServerPlayer player, StockUiSessionState state) {
+        if (!Config.isConfiguredStockEnabled()) {
+            return;
+        }
         StockUiSnapshot snapshot = StockUiService.createSnapshot(player, state);
         PacketDistributor.sendToPlayer(player, new StockUiSnapshotS2CPayload(snapshot));
     }
@@ -76,5 +92,11 @@ public final class StockUiNetwork {
                 GuGuAddons.LOGGER.error("Failed to open LDLIB stock UI", t);
             }
         });
+    }
+
+    private static void notifyStockDisabled(ServerPlayer player) {
+        player.displayClientMessage(
+                Component.translatable("menu.guguaddons.stock.message.disabled").withStyle(ChatFormatting.RED),
+                true);
     }
 }

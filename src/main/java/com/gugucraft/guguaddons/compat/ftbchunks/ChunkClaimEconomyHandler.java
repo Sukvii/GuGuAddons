@@ -270,15 +270,15 @@ public class ChunkClaimEconomyHandler {
     }
 
     private static int getClaimPrice() {
-        return Math.max(0, Config.FTB_CHUNKS_CLAIM_PRICE.get());
+        return Config.getConfiguredFtbChunksClaimPrice();
     }
 
     private static double getUnclaimRefundRatio() {
-        return Math.max(0.0D, Math.min(1.0D, Config.FTB_CHUNKS_UNCLAIM_REFUND_RATIO.get()));
+        return Config.getConfiguredFtbChunksUnclaimRefundRatio();
     }
 
     private static int getConfirmTimeoutTicks() {
-        return Math.max(20, Config.FTB_CHUNKS_CLAIM_CONFIRM_TIMEOUT_TICKS.get());
+        return Config.getConfiguredFtbChunksClaimConfirmTimeoutTicks();
     }
 
     private static int safeMultiply(int left, int right) {

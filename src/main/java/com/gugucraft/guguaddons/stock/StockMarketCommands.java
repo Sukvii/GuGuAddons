@@ -1,5 +1,6 @@
 package com.gugucraft.guguaddons.stock;
 
+import com.gugucraft.guguaddons.Config;
 import com.gugucraft.guguaddons.GuGuAddons;
 import com.gugucraft.guguaddons.stock.ui.StockUiNetwork;
 import com.mojang.brigadier.Command;
@@ -19,19 +20,29 @@ public class StockMarketCommands {
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         LiteralArgumentBuilder<CommandSourceStack> rootBuilder = Commands.literal("stock")
-                .requires(source -> source.hasPermission(0))
+                .requires(StockMarketCommands::canUseStockCommand)
                 .executes(context -> openMarket(context.getSource()));
 
         LiteralCommandNode<CommandSourceStack> stockRoot = event.getDispatcher().register(rootBuilder);
-        event.getDispatcher().register(Commands.literal("stocks").redirect(stockRoot));
+        event.getDispatcher().register(Commands.literal("stocks")
+                .requires(StockMarketCommands::canUseStockCommand)
+                .redirect(stockRoot));
     }
 
     private static int openMarket(CommandSourceStack source) {
+        if (!Config.isConfiguredStockEnabled()) {
+            source.sendFailure(Component.translatable("command.guguaddons.stock.disabled"));
+            return 0;
+        }
         if (!(source.getEntity() instanceof ServerPlayer player)) {
             source.sendFailure(Component.translatable("command.guguaddons.stock.players_only"));
             return 0;
         }
         StockUiNetwork.openFor(player);
         return Command.SINGLE_SUCCESS;
+    }
+
+    private static boolean canUseStockCommand(CommandSourceStack source) {
+        return source.hasPermission(0) && Config.isConfiguredStockEnabled();
     }
 }

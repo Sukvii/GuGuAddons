@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import com.gugucraft.guguaddons.Config;
 import com.gugucraft.guguaddons.stock.StockCatalog;
 import com.gugucraft.guguaddons.stock.StockDefinition;
 import com.gugucraft.guguaddons.stock.StockMarketSavedData;
@@ -50,6 +51,9 @@ public final class StockUiService {
             StockUiSessionState requestedState,
             StockUiAction action,
             int targetStock) {
+        if (!Config.isConfiguredStockEnabled()) {
+            return normalizeState(requestedState);
+        }
         StockUiSessionState state = normalizeState(requestedState);
         StockMarketSavedData market = StockMarketSavedData.get(player.serverLevel().getServer());
         market.catchUp(player.serverLevel().getGameTime());
@@ -99,6 +103,9 @@ public final class StockUiService {
     }
 
     public static StockUiSnapshot createSnapshot(ServerPlayer player, StockUiSessionState requestedState) {
+        if (!Config.isConfiguredStockEnabled()) {
+            return StockUiSnapshot.empty();
+        }
         StockUiSessionState state = normalizeState(requestedState);
         UUID playerId = player.getUUID();
         StockMarketSavedData market = StockMarketSavedData.get(player.serverLevel().getServer());

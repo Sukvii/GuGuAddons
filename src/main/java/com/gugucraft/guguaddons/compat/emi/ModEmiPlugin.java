@@ -20,7 +20,6 @@ import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.api.widget.WidgetHolder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeType;
 
@@ -64,25 +63,16 @@ public class ModEmiPlugin implements EmiPlugin {
     }
 
     private void registerSlashBackSmithing(EmiRegistry registry) {
-        // 1. Get Configured Template
-        Item templateItem = Config.getSlashBackRefillTemplateItem();
-        EmiIngredient template = EmiStack.of(templateItem);
-
-        // 2. Get Configured Material
-        Item materialItem = Config.getSlashBackRefillMaterialItem();
-        EmiIngredient material = EmiStack.of(materialItem);
-
-        // 3. Create Base Item (Broken Terminal)
+        // Create Base Item (Broken Terminal)
         ItemStack damagedStack = new ItemStack(ModItems.DEATH_RECALL_ITEM.get());
         damagedStack.setDamageValue(damagedStack.getMaxDamage() - 1);
         EmiIngredient base = EmiStack.of(damagedStack);
 
-        // 4. Create Result Item (Repaired Terminal)
+        // Create Result Item (Repaired Terminal)
         ItemStack repairedStack = new ItemStack(ModItems.DEATH_RECALL_ITEM.get());
         repairedStack.setDamageValue(0);
         EmiStack result = EmiStack.of(repairedStack);
 
-        // 5. Create EmiSmithingRecipe
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath("guguaddons", "slash_back_smithing_emi");
 
         registry.addRecipe(new EmiRecipe() {
@@ -98,7 +88,7 @@ public class ModEmiPlugin implements EmiPlugin {
 
             @Override
             public List<EmiIngredient> getInputs() {
-                return List.of(template, base, material);
+                return List.of(currentTemplate(), base, currentMaterial());
             }
 
             @Override
@@ -118,17 +108,24 @@ public class ModEmiPlugin implements EmiPlugin {
 
             @Override
             public void addWidgets(WidgetHolder widgets) {
-                // Mimic standard smithing layout
-                // Template (0,0), Base (18,0), Material (36,0) -> Arrow -> Output (94,0)
+                EmiIngredient template = currentTemplate();
+                EmiIngredient material = currentMaterial();
+
                 widgets.addSlot(template, 0, 0);
                 widgets.addSlot(base, 18, 0);
                 widgets.addSlot(material, 36, 0);
 
-                // EMI API usually has standard texture constants.
-                // EmiTexture.EMPTY_ARROW is at 62, 1 in standard smithing.
                 widgets.addTexture(EmiTexture.EMPTY_ARROW, 62, 1);
 
                 widgets.addSlot(result, 94, 0).recipeContext(this);
+            }
+
+            private EmiIngredient currentTemplate() {
+                return EmiStack.of(Config.getEffectiveSlashBackRefillTemplateItem());
+            }
+
+            private EmiIngredient currentMaterial() {
+                return EmiStack.of(Config.getEffectiveSlashBackRefillMaterialItem());
             }
         });
     }

@@ -29,8 +29,8 @@ public class SlashBackSmithingRecipe implements SmithingRecipe {
         ItemStack baseStack = input.base();
         ItemStack additionStack = input.addition();
 
-        Item configuredTemplate = Config.getSlashBackRefillTemplateItem();
-        Item configuredMaterial = Config.getSlashBackRefillMaterialItem();
+        Item configuredTemplate = Config.getEffectiveSlashBackRefillTemplateItem();
+        Item configuredMaterial = Config.getEffectiveSlashBackRefillMaterialItem();
 
         boolean templateMatches = !templateStack.isEmpty() && templateStack.getItem() == configuredTemplate;
         boolean baseMatches = !baseStack.isEmpty() && baseStack.getItem() == ModItems.DEATH_RECALL_ITEM.get();
@@ -58,7 +58,7 @@ public class SlashBackSmithingRecipe implements SmithingRecipe {
 
     @Override
     public boolean isTemplateIngredient(ItemStack stack) {
-        return stack.getItem() == Config.getSlashBackRefillTemplateItem();
+        return stack.getItem() == Config.getEffectiveSlashBackRefillTemplateItem();
     }
 
     @Override
@@ -68,7 +68,7 @@ public class SlashBackSmithingRecipe implements SmithingRecipe {
 
     @Override
     public boolean isAdditionIngredient(ItemStack stack) {
-        return stack.getItem() == Config.getSlashBackRefillMaterialItem();
+        return stack.getItem() == Config.getEffectiveSlashBackRefillMaterialItem();
     }
 
     @Override
