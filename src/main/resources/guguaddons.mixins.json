@@ -13,6 +13,7 @@
     "create.MechanicalCrafterBlockEntityMixin",
     "create.MechanicalPressBlockEntityMixin",
     "create.MillstoneBlockEntityMixin",
+    "create.RepackagerBlockEntityMixin",
     "create.SandPaperItemMixin",
     "create.SawBlockEntityMixin",
     "create.SpoutBlockEntityMixin"
