@@ -3,6 +3,7 @@ package com.gugucraft.guguaddons.block.entity;
 import com.gugucraft.guguaddons.recipe.CentrifugationRecipe;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModRecipes;
+import com.gugucraft.guguaddons.stage.MachineRecipeStageManager;
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.content.fluids.transfer.GenericItemEmptying;
 import com.simibubi.create.content.fluids.transfer.GenericItemFilling;
@@ -30,6 +31,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -156,18 +158,21 @@ public class CentrifugeBlockEntity extends KineticBlockEntity {
             return null;
         }
 
-        List<CentrifugationRecipe> matches = new ArrayList<>();
-        for (RecipeHolder<?> holder : level.getRecipeManager().getAllRecipesFor(ModRecipes.CENTRIFUGATION.getType())) {
-            if (!(holder.value() instanceof CentrifugationRecipe recipe)) {
-                continue;
-            }
-            if (CentrifugationRecipe.match(this, recipe)) {
-                matches.add(recipe);
+        @SuppressWarnings("unchecked")
+        RecipeType<CentrifugationRecipe> recipeType =
+                (RecipeType<CentrifugationRecipe>) (RecipeType<?>) ModRecipes.CENTRIFUGATION.getType();
+        List<RecipeHolder<CentrifugationRecipe>> matches = new ArrayList<>();
+        for (RecipeHolder<CentrifugationRecipe> holder : level.getRecipeManager()
+                .getAllRecipesFor(recipeType)) {
+            CentrifugationRecipe recipe = holder.value();
+            if (CentrifugationRecipe.match(this, recipe)
+                    && MachineRecipeStageManager.canProcess(this, holder)) {
+                matches.add(holder);
             }
         }
 
-        matches.sort((first, second) -> recipeWeight(second) - recipeWeight(first));
-        return matches.isEmpty() ? null : matches.getFirst();
+        matches.sort((first, second) -> recipeWeight(second.value()) - recipeWeight(first.value()));
+        return matches.isEmpty() ? null : matches.getFirst().value();
     }
 
     private int recipeWeight(CentrifugationRecipe recipe) {

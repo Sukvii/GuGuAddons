@@ -5,6 +5,7 @@ import com.gugucraft.guguaddons.recipe.PressurizingRecipe;
 import com.gugucraft.guguaddons.recipe.VacuumizingRecipe;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModRecipes;
+import com.gugucraft.guguaddons.stage.MachineRecipeStageManager;
 import com.simibubi.create.AllSoundEvents;
 import com.simibubi.create.content.fluids.transfer.GenericItemEmptying;
 import com.simibubi.create.content.fluids.transfer.GenericItemFilling;
@@ -151,6 +152,9 @@ public class VacuumChamberBlockEntity extends BasinOperatingBlockEntity {
         if (currentRecipe == null) {
             return;
         }
+        if (!MachineRecipeStageManager.canProcess(this, currentRecipe)) {
+            return;
+        }
 
         Optional<BasinBlockEntity> optionalBasin = getBasin();
         if (optionalBasin.isEmpty()) {
@@ -210,7 +214,7 @@ public class VacuumChamberBlockEntity extends BasinOperatingBlockEntity {
             Set<AbstractVariant> availableVariants = RecipeTrie.getVariants(availableItems, availableFluids);
 
             for (Recipe<?> recipe : trie.lookup(availableVariants)) {
-                if (matchBasinRecipe(recipe)) {
+                if (matchBasinRecipe(recipe) && MachineRecipeStageManager.canProcess(this, recipe)) {
                     matchingRecipes.add(recipe);
                 }
             }
@@ -218,7 +222,7 @@ public class VacuumChamberBlockEntity extends BasinOperatingBlockEntity {
             matchingRecipes.clear();
             for (RecipeHolder<? extends Recipe<?>> holder : RecipeFinder.get(getRecipeCacheKey(), level,
                     this::matchStaticFilters)) {
-                if (matchBasinRecipe(holder.value())) {
+                if (matchBasinRecipe(holder.value()) && MachineRecipeStageManager.canProcess(this, holder)) {
                     matchingRecipes.add(holder.value());
                 }
             }

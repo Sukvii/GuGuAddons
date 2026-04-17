@@ -35,7 +35,27 @@ repositories {
     maven { url = "https://maven.createmod.net" } // Create, Ponder, Flywheel
     maven { url = "https://maven.ithundxr.dev/snapshots" } // Registrate
     maven { url = "https://maven.terraformersmc.com/releases/" } // EMI
+    maven { url = "https://maven.blamejared.com" } // JEI
     maven { url = "https://maven.architectury.dev/" }
+    maven {
+        url = "https://maven.latvians.dev/releases"
+        content {
+            includeGroup("dev.latvian.mods")
+        }
+    }
+    maven {
+        url = "https://maven.latvian.dev/releases"
+        content {
+            includeGroup("dev.latvian.mods")
+            includeGroup("dev.latvian.apps")
+        }
+    }
+    maven {
+        url = "https://jitpack.io"
+        content {
+            includeGroup("com.github.rtyley")
+        }
+    }
     maven { url = "https://maven.ftb.dev/releases" }
     maven { url = "https://api.modrinth.com/maven" } // Jade
 }
@@ -150,12 +170,14 @@ dependencies {
     // Jade
     implementation "maven.modrinth:jade:${jade_version}+neoforge"
 
-    // Example optional mod dependency with JEI
-    // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
-    // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
-    // compileOnly "mezz.jei:jei-${mc_version}-neoforge-api:${jei_version}"
-    // We add the full version to localRuntime, not runtimeOnly, so that we do not publish a dependency on it
-    // localRuntime "mezz.jei:jei-${mc_version}-neoforge:${jei_version}"
+    // AStages
+    implementation "maven.modrinth:astages:${astages_version}"
+
+    // KubeJS
+    implementation "dev.latvian.mods:kubejs-neoforge:${kubejs_version}"
+
+    // JEI is only needed in dev/runtime so EMI's JEMI bridge can expose Create's JEI recipe categories.
+    localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 
     // Example mod dependency using a mod jar from ./libs with a flat dir repository
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
@@ -194,7 +216,10 @@ tasks.withType(ProcessResources).configureEach {
             ftb_quests_version     : ftb_quests_version,
             ftb_chunks_version     : ftb_chunks_version,
             jade_version           : jade_version,
+            astages_version        : astages_version,
+            kubejs_version         : kubejs_version,
             emi_version            : emi_version,
+            jei_version            : jei_version,
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,

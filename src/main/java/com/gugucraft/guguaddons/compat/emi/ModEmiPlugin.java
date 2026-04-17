@@ -7,6 +7,7 @@ import com.gugucraft.guguaddons.recipe.VacuumizingRecipe;
 import com.gugucraft.guguaddons.registry.ModBlocks;
 import com.gugucraft.guguaddons.registry.ModItems;
 import com.gugucraft.guguaddons.registry.ModRecipes;
+import com.gugucraft.guguaddons.stage.MachineRecipeStageManager;
 import com.simibubi.create.AllBlocks;
 import dev.emi.emi.api.EmiEntrypoint;
 import dev.emi.emi.api.EmiPlugin;
@@ -56,6 +57,9 @@ public class ModEmiPlugin implements EmiPlugin {
 
     @Override
     public void register(EmiRegistry registry) {
+        registry.removeRecipes(recipe -> MachineRecipeStageManager.clientShouldHide(recipe.getBackingRecipe())
+                || recipe.getId() != null && MachineRecipeStageManager.clientShouldHide(recipe.getId()));
+
         registerSlashBackSmithing(registry);
         registerVacuumizing(registry);
         registerPressurizing(registry);
@@ -73,7 +77,7 @@ public class ModEmiPlugin implements EmiPlugin {
         repairedStack.setDamageValue(0);
         EmiStack result = EmiStack.of(repairedStack);
 
-        ResourceLocation id = ResourceLocation.fromNamespaceAndPath("guguaddons", "slash_back_smithing_emi");
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath("guguaddons", "/slash_back_smithing_emi");
 
         registry.addRecipe(new EmiRecipe() {
             @Override
@@ -140,6 +144,8 @@ public class ModEmiPlugin implements EmiPlugin {
                 (RecipeType<VacuumizingRecipe>) (RecipeType<?>) ModRecipes.VACUUMIZING.getType();
         registry.getRecipeManager()
                 .getAllRecipesFor(recipeType)
+                .stream()
+                .filter(holder -> MachineRecipeStageManager.clientCanSee(recipeType, holder.id()))
                 .forEach(holder -> registry.addRecipe(
                         new CompressorEmiRecipe(VACUUMIZING_CATEGORY, holder.id(), holder.value(), false)));
     }
@@ -154,6 +160,8 @@ public class ModEmiPlugin implements EmiPlugin {
                 (RecipeType<PressurizingRecipe>) (RecipeType<?>) ModRecipes.PRESSURIZING.getType();
         registry.getRecipeManager()
                 .getAllRecipesFor(recipeType)
+                .stream()
+                .filter(holder -> MachineRecipeStageManager.clientCanSee(recipeType, holder.id()))
                 .forEach(holder -> registry.addRecipe(
                         new CompressorEmiRecipe(PRESSURIZING_CATEGORY, holder.id(), holder.value(), true)));
     }
@@ -167,6 +175,8 @@ public class ModEmiPlugin implements EmiPlugin {
                 (RecipeType<CentrifugationRecipe>) (RecipeType<?>) ModRecipes.CENTRIFUGATION.getType();
         registry.getRecipeManager()
                 .getAllRecipesFor(recipeType)
+                .stream()
+                .filter(holder -> MachineRecipeStageManager.clientCanSee(recipeType, holder.id()))
                 .forEach(holder -> registry.addRecipe(
                         new CentrifugationEmiRecipe(CENTRIFUGATION_CATEGORY, holder.id(), holder.value())));
     }

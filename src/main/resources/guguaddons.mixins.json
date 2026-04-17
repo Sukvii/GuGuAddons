@@ -1,0 +1,24 @@
+{
+  "required": true,
+  "package": "com.gugucraft.guguaddons.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BlockEntityOwnerMixin",
+    "create.AirCurrentMixin",
+    "create.BasinOperatingBlockEntityMixin",
+    "create.CrushingWheelBlockMixin",
+    "create.CrushingWheelControllerBlockEntityMixin",
+    "create.DeployerBlockEntityMixin",
+    "create.ItemDrainBlockEntityMixin",
+    "create.MechanicalCrafterBlockEntityMixin",
+    "create.MechanicalPressBlockEntityMixin",
+    "create.MillstoneBlockEntityMixin",
+    "create.SandPaperItemMixin",
+    "create.SawBlockEntityMixin",
+    "create.SpoutBlockEntityMixin"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

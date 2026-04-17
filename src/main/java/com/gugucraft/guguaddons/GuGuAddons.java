@@ -21,6 +21,7 @@ import com.gugucraft.guguaddons.compat.ftbchunks.ChunkClaimEconomyHandler;
 import com.gugucraft.guguaddons.compat.ftbchunks.ChunkClaimEconomyNetwork;
 import com.gugucraft.guguaddons.config.Config;
 import com.gugucraft.guguaddons.config.sync.ConfigSyncNetwork;
+import com.gugucraft.guguaddons.stage.MachineRecipeStageNetwork;
 import com.gugucraft.guguaddons.stock.ui.StockUiNetwork;
 
 @Mod(GuGuAddons.MODID)
@@ -45,6 +46,7 @@ public class GuGuAddons {
         modEventBus.addListener(ConfigSyncNetwork::onConfigReloading);
         modEventBus.addListener(ChunkClaimEconomyNetwork::registerPayloads);
         modEventBus.addListener(StockUiNetwork::registerPayloads);
+        modEventBus.addListener(MachineRecipeStageNetwork::registerPayloads);
 
         NeoForge.EVENT_BUS.register(this);
 
