@@ -26,3 +26,7 @@ run-data
 repo
 .vscode/settings.json
 .vscode/launch.json
+/.tmp/
+
+# local Codex agent instructions
+AGENTS.md
