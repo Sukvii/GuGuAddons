@@ -164,13 +164,6 @@ config="${mod_id}.mixins.json"
     side="CLIENT"
 
 [[dependencies."${mod_id}"]]
-    modId="jei"
-    type="optional"
-    versionRange="[${jei_version},)"
-    ordering="NONE"
-    side="CLIENT"
-
-[[dependencies."${mod_id}"]]
     modId="jade"
     type="optional"
     versionRange="[${jade_version},)"

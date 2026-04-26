@@ -57,8 +57,9 @@ public class ModEmiPlugin implements EmiPlugin {
 
     @Override
     public void register(EmiRegistry registry) {
-        registry.removeRecipes(recipe -> MachineRecipeStageManager.clientShouldHide(recipe.getBackingRecipe())
-                || recipe.getId() != null && MachineRecipeStageManager.clientShouldHide(recipe.getId()));
+        registry.removeRecipes(recipe -> AStagesEmiVisibility.shouldHideMachineRecipe(recipe)
+                || AStagesEmiVisibility.shouldHideRecipe(recipe));
+        registry.removeEmiStacks(AStagesEmiVisibility::shouldHideStack);
 
         registerSlashBackSmithing(registry);
         registerVacuumizing(registry);
