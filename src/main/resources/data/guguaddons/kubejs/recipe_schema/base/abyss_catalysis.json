@@ -1,0 +1,122 @@
+{
+  "keys": [
+    {
+      "name": "topIngredients",
+      "role": "input",
+      "type": {
+        "type": "list",
+        "component": {
+          "type": "either",
+          "left": "flat_sized_fluid_ingredient",
+          "right": "ingredient"
+        }
+      },
+      "optional": [],
+      "alternative_names": [
+        "top_ingredients"
+      ]
+    },
+    {
+      "name": "bottomIngredients",
+      "role": "input",
+      "type": {
+        "type": "list",
+        "component": {
+          "type": "either",
+          "left": "flat_sized_fluid_ingredient",
+          "right": "ingredient"
+        }
+      },
+      "optional": [],
+      "alternative_names": [
+        "bottom_ingredients"
+      ]
+    },
+    {
+      "name": "catalysts",
+      "role": "input",
+      "type": {
+        "type": "list",
+        "component": {
+          "type": "either",
+          "left": "flat_sized_fluid_ingredient",
+          "right": "ingredient"
+        }
+      },
+      "optional": []
+    },
+    {
+      "name": "chances",
+      "role": "other",
+      "type": "float",
+      "optional": 1.0
+    },
+    {
+      "name": "results",
+      "role": "output",
+      "type": {
+        "type": "list",
+        "component": {
+          "type": "either",
+          "left": "fluid_stack",
+          "right": {
+            "type": "custom_object",
+            "keys": [
+              {
+                "name": "id",
+                "component": "id"
+              },
+              {
+                "name": "count",
+                "component": "int",
+                "optional": true
+              },
+              {
+                "name": "chance",
+                "component": "float",
+                "optional": true
+              }
+            ]
+          }
+        }
+      },
+      "optional": []
+    },
+    {
+      "name": "heatRequirement",
+      "role": "other",
+      "type": "string",
+      "optional": "none",
+      "alternative_names": [
+        "heat_requirement"
+      ]
+    }
+  ],
+  "constructors": [
+    {
+      "keys": [
+        "results",
+        "topIngredients",
+        "bottomIngredients",
+        "catalysts"
+      ]
+    }
+  ],
+  "functions": {
+    "noHeat": {
+      "type": "set",
+      "key": "heatRequirement",
+      "value": "none"
+    },
+    "heated": {
+      "type": "set",
+      "key": "heatRequirement",
+      "value": "heated"
+    },
+    "superheated": {
+      "type": "set",
+      "key": "heatRequirement",
+      "value": "superheated"
+    }
+  }
+}

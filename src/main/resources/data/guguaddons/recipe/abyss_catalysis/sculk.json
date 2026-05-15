@@ -1,0 +1,36 @@
+{
+  "type": "guguaddons:abyss_catalysis",
+  "topIngredients": [
+    {
+      "item": "minecraft:echo_shard"
+    }
+  ],
+  "bottomIngredients": [
+    {
+      "item": "minecraft:dirt"
+    },
+    {
+      "item": "minecraft:bone_meal"
+    },
+    {
+      "item": "minecraft:bone_meal"
+    },
+    {
+      "item": "minecraft:bone_meal"
+    }
+  ],
+  "catalysts": [
+    {
+      "type": "neoforge:single",
+      "fluid": "minecraft:water",
+      "amount": 500
+    }
+  ],
+  "chances": 0.0,
+  "results": [
+    {
+      "id": "minecraft:sculk",
+      "count": 3
+    }
+  ]
+}

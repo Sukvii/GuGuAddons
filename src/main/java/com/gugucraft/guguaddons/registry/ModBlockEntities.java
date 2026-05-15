@@ -1,8 +1,12 @@
 package com.gugucraft.guguaddons.registry;
 
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.block.entity.AbyssCatalyticChamberBlockEntity;
+import com.gugucraft.guguaddons.block.entity.AbyssCatalyticChamberMiddleBlockEntity;
+import com.gugucraft.guguaddons.block.entity.AbyssCatalyticChamberTopBlockEntity;
 import com.gugucraft.guguaddons.block.entity.CentrifugeBlockEntity;
 import com.gugucraft.guguaddons.block.entity.CentrifugeStructuralBlockEntity;
+import com.gugucraft.guguaddons.block.entity.MechanicalShriekerBlockEntity;
 import com.gugucraft.guguaddons.block.entity.QuestInterfaceBlockEntity;
 import com.gugucraft.guguaddons.block.entity.VacuumChamberBlockEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -45,6 +49,26 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("centrifuge_structure", () ->
                     BlockEntityType.Builder.of(CentrifugeStructuralBlockEntity::new,
                             ModBlocks.CENTRIFUGE_STRUCTURE.get()).build(null));
+
+    public static final Supplier<BlockEntityType<AbyssCatalyticChamberBlockEntity>> ABYSS_CATALYTIC_CHAMBER =
+            BLOCK_ENTITIES.register("abyss_catalytic_chamber", () ->
+                    BlockEntityType.Builder.of(AbyssCatalyticChamberBlockEntity::new,
+                            ModBlocks.ABYSS_CATALYTIC_CHAMBER.get()).build(null));
+
+    public static final Supplier<BlockEntityType<AbyssCatalyticChamberMiddleBlockEntity>> ABYSS_CATALYTIC_CHAMBER_MIDDLE =
+            BLOCK_ENTITIES.register("abyss_catalytic_chamber_middle", () ->
+                    BlockEntityType.Builder.of(AbyssCatalyticChamberMiddleBlockEntity::new,
+                            ModBlocks.ABYSS_CATALYTIC_CHAMBER_MIDDLE.get()).build(null));
+
+    public static final Supplier<BlockEntityType<AbyssCatalyticChamberTopBlockEntity>> ABYSS_CATALYTIC_CHAMBER_TOP =
+            BLOCK_ENTITIES.register("abyss_catalytic_chamber_top", () ->
+                    BlockEntityType.Builder.of(AbyssCatalyticChamberTopBlockEntity::new,
+                            ModBlocks.ABYSS_CATALYTIC_CHAMBER_TOP.get()).build(null));
+
+    public static final Supplier<BlockEntityType<MechanicalShriekerBlockEntity>> MECHANICAL_SHRIEKER =
+            BLOCK_ENTITIES.register("mechanical_shrieker", () ->
+                    BlockEntityType.Builder.of(MechanicalShriekerBlockEntity::new,
+                            ModBlocks.MECHANICAL_SHRIEKER.get()).build(null));
 
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);

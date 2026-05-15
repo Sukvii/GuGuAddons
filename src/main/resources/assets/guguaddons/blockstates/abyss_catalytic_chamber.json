@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "facing=down": {
+      "model": "guguaddons:block/abyss_catalytic_chamber/block"
+    },
+    "facing=east": {
+      "model": "guguaddons:block/abyss_catalytic_chamber/block_directional",
+      "y": 270
+    },
+    "facing=north": {
+      "model": "guguaddons:block/abyss_catalytic_chamber/block_directional",
+      "y": 180
+    },
+    "facing=south": {
+      "model": "guguaddons:block/abyss_catalytic_chamber/block_directional"
+    },
+    "facing=west": {
+      "model": "guguaddons:block/abyss_catalytic_chamber/block_directional",
+      "y": 90
+    }
+  }
+}

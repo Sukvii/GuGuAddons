@@ -1,0 +1,33 @@
+{
+  "type": "guguaddons:abyss_catalysis",
+  "topIngredients": [
+    {
+      "type": "neoforge:single",
+      "fluid": "minecraft:water",
+      "amount": 1000
+    }
+  ],
+  "bottomIngredients": [
+    {
+      "tag": "minecraft:fox_food"
+    },
+    {
+      "tag": "minecraft:fox_food"
+    },
+    {
+      "tag": "minecraft:fox_food"
+    }
+  ],
+  "catalysts": [
+    {
+      "tag": "minecraft:leaves"
+    }
+  ],
+  "chances": 1.0,
+  "results": [
+    {
+      "id": "create:honey",
+      "amount": 50
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "type": "guguaddons:abyss_catalysis",
+  "heatRequirement": "superheated",
+  "topIngredients": [
+    {
+      "item": "minecraft:wither_skeleton_skull"
+    },
+    {
+      "item": "minecraft:wither_skeleton_skull"
+    },
+    {
+      "item": "minecraft:wither_skeleton_skull"
+    }
+  ],
+  "bottomIngredients": [
+    {
+      "item": "minecraft:soul_sand"
+    },
+    {
+      "item": "minecraft:soul_sand"
+    },
+    {
+      "item": "minecraft:soul_sand"
+    },
+    {
+      "item": "minecraft:golden_apple"
+    }
+  ],
+  "catalysts": [
+    {
+      "type": "neoforge:single",
+      "fluid": "minecraft:lava",
+      "amount": 1000
+    }
+  ],
+  "chances": 1.0,
+  "results": [
+    {
+      "id": "minecraft:nether_star",
+      "chance": 0.5
+    }
+  ]
+}

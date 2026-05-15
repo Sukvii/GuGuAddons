@@ -1,5 +1,6 @@
 package com.gugucraft.guguaddons.ponder;
 
+import com.gugucraft.guguaddons.client.ponder.scenes.AbyssCatalyticChamberScenes;
 import com.gugucraft.guguaddons.ponder.scenes.QuestInterfaceScenes;
 import com.gugucraft.guguaddons.ponder.scenes.CentrifugeScenes;
 import com.gugucraft.guguaddons.ponder.scenes.VacuumChamberScenes;
@@ -20,6 +21,9 @@ public class GuGuAddonsPonderScenes {
                         GuGuAddonsPonderTags.GUGU_ADDONS);
         helper.forComponents(ModBlocks.CENTRIFUGE.getId())
                 .addStoryBoard("centrifuge/processing", CentrifugeScenes::processing,
+                        GuGuAddonsPonderTags.GUGU_ADDONS);
+        helper.forComponents(ModBlocks.ABYSS_CATALYTIC_CHAMBER.getId(), ModBlocks.MECHANICAL_SHRIEKER.getId())
+                .addStoryBoard("abyss_catalytic_chamber/processing", AbyssCatalyticChamberScenes::processing,
                         GuGuAddonsPonderTags.GUGU_ADDONS);
     }
 }

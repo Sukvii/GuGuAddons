@@ -10,6 +10,7 @@ public class ModPartialModels {
     public static final PartialModel VACUUM_CHAMBER_ARROWS = block("vacuum_chamber/arrows");
     public static final PartialModel CENTRIFUGE_BEAMS = block("centrifuge/head");
     public static final PartialModel CENTRIFUGE_BASIN = block("centrifuge/basin");
+    public static final PartialModel MECHANICAL_SHRIEKER_INNER = block("mechanical_shrieker/inner");
 
     private static PartialModel block(String path) {
         return PartialModel.of(ResourceLocation.fromNamespaceAndPath(GuGuAddons.MODID, "block/" + path));

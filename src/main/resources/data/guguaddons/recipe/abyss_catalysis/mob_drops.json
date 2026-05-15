@@ -1,0 +1,49 @@
+{
+  "type": "guguaddons:abyss_catalysis",
+  "heatRequirement": "superheated",
+  "topIngredients": [
+    {
+      "item": "minecraft:sculk"
+    },
+    {
+      "item": "minecraft:bone_meal"
+    }
+  ],
+  "bottomIngredients": [
+    {
+      "item": "create:experience_nugget"
+    },
+    {
+      "item": "create:experience_nugget"
+    },
+    {
+      "item": "create:experience_nugget"
+    }
+  ],
+  "catalysts": [
+    {
+      "type": "neoforge:single",
+      "fluid": "create:honey",
+      "amount": 100
+    }
+  ],
+  "chances": 0.5,
+  "results": [
+    {
+      "id": "minecraft:bone",
+      "chance": 0.1
+    },
+    {
+      "id": "minecraft:rotten_flesh",
+      "chance": 0.1
+    },
+    {
+      "id": "minecraft:string",
+      "chance": 0.1
+    },
+    {
+      "id": "minecraft:gunpowder",
+      "chance": 0.05
+    }
+  ]
+}

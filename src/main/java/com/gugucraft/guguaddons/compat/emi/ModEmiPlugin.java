@@ -1,6 +1,8 @@
 package com.gugucraft.guguaddons.compat.emi;
 
 import com.gugucraft.guguaddons.config.Config;
+import com.gugucraft.guguaddons.client.compat.emi.AbyssCatalysisEmiRecipe;
+import com.gugucraft.guguaddons.recipe.AbyssCatalysisRecipe;
 import com.gugucraft.guguaddons.recipe.CentrifugationRecipe;
 import com.gugucraft.guguaddons.recipe.PressurizingRecipe;
 import com.gugucraft.guguaddons.recipe.VacuumizingRecipe;
@@ -55,6 +57,15 @@ public class ModEmiPlugin implements EmiPlugin {
         }
     };
 
+    private static final EmiRecipeCategory ABYSS_CATALYSIS_CATEGORY = new EmiRecipeCategory(
+            ResourceLocation.fromNamespaceAndPath("guguaddons", "abyss_catalysis"),
+            EmiStack.of(ModBlocks.ABYSS_CATALYTIC_CHAMBER.get())) {
+        @Override
+        public Component getName() {
+            return Component.translatable("recipe.guguaddons.abyss_catalysis");
+        }
+    };
+
     @Override
     public void register(EmiRegistry registry) {
         registry.removeRecipes(recipe -> AStagesEmiVisibility.shouldHideMachineRecipe(recipe)
@@ -65,6 +76,7 @@ public class ModEmiPlugin implements EmiPlugin {
         registerVacuumizing(registry);
         registerPressurizing(registry);
         registerCentrifugation(registry);
+        registerAbyssCatalysis(registry);
     }
 
     private void registerSlashBackSmithing(EmiRegistry registry) {
@@ -180,5 +192,21 @@ public class ModEmiPlugin implements EmiPlugin {
                 .filter(holder -> MachineRecipeStageManager.clientCanSee(recipeType, holder.id()))
                 .forEach(holder -> registry.addRecipe(
                         new CentrifugationEmiRecipe(CENTRIFUGATION_CATEGORY, holder.id(), holder.value())));
+    }
+
+    @SuppressWarnings("unchecked")
+    private void registerAbyssCatalysis(EmiRegistry registry) {
+        registry.addCategory(ABYSS_CATALYSIS_CATEGORY);
+        registry.addWorkstation(ABYSS_CATALYSIS_CATEGORY, EmiStack.of(ModBlocks.ABYSS_CATALYTIC_CHAMBER.get()));
+        registry.addWorkstation(ABYSS_CATALYSIS_CATEGORY, EmiStack.of(ModBlocks.MECHANICAL_SHRIEKER.get()));
+
+        RecipeType<AbyssCatalysisRecipe> recipeType =
+                (RecipeType<AbyssCatalysisRecipe>) (RecipeType<?>) ModRecipes.ABYSS_CATALYSIS.getType();
+        registry.getRecipeManager()
+                .getAllRecipesFor(recipeType)
+                .stream()
+                .filter(holder -> MachineRecipeStageManager.clientCanSee(recipeType, holder.id()))
+                .forEach(holder -> registry.addRecipe(
+                        new AbyssCatalysisEmiRecipe(ABYSS_CATALYSIS_CATEGORY, holder.id(), holder.value())));
     }
 }

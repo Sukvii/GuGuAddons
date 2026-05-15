@@ -1,0 +1,28 @@
+{
+  "type": "guguaddons:abyss_catalysis",
+  "heatRequirement": "superheated",
+  "topIngredients": [
+    {
+      "item": "minecraft:wither_skeleton_skull"
+    }
+  ],
+  "bottomIngredients": [
+    {
+      "item": "minecraft:sculk_shrieker"
+    },
+    {
+      "item": "minecraft:sculk_shrieker"
+    }
+  ],
+  "catalysts": [
+    {
+      "item": "minecraft:nether_star"
+    }
+  ],
+  "chances": 0.05,
+  "results": [
+    {
+      "id": "minecraft:dragon_head"
+    }
+  ]
+}

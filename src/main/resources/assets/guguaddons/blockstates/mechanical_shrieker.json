@@ -1,0 +1,56 @@
+{
+  "variants": {
+    "facing=up,shrieking=false": {
+      "model": "guguaddons:block/mechanical_shrieker/block"
+    },
+    "facing=down,shrieking=false": {
+      "model": "guguaddons:block/mechanical_shrieker/block",
+      "x": 180
+    },
+    "facing=east,shrieking=false": {
+      "model": "guguaddons:block/mechanical_shrieker/block",
+      "x": 90,
+      "y": 90
+    },
+    "facing=north,shrieking=false": {
+      "model": "guguaddons:block/mechanical_shrieker/block",
+      "x": 90
+    },
+    "facing=south,shrieking=false": {
+      "model": "guguaddons:block/mechanical_shrieker/block",
+      "x": 90,
+      "y": 180
+    },
+    "facing=west,shrieking=false": {
+      "model": "guguaddons:block/mechanical_shrieker/block",
+      "x": 90,
+      "y": 270
+    },
+    "facing=up,shrieking=true": {
+      "model": "guguaddons:block/mechanical_shrieker/block_shrieking"
+    },
+    "facing=down,shrieking=true": {
+      "model": "guguaddons:block/mechanical_shrieker/block_shrieking",
+      "x": 180
+    },
+    "facing=east,shrieking=true": {
+      "model": "guguaddons:block/mechanical_shrieker/block_shrieking",
+      "x": 90,
+      "y": 90
+    },
+    "facing=north,shrieking=true": {
+      "model": "guguaddons:block/mechanical_shrieker/block_shrieking",
+      "x": 90
+    },
+    "facing=south,shrieking=true": {
+      "model": "guguaddons:block/mechanical_shrieker/block_shrieking",
+      "x": 90,
+      "y": 180
+    },
+    "facing=west,shrieking=true": {
+      "model": "guguaddons:block/mechanical_shrieker/block_shrieking",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

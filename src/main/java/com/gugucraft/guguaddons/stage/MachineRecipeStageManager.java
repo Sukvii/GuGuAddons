@@ -54,7 +54,8 @@ public final class MachineRecipeStageManager {
             id("minecraft", "blasting"),
             id(GuGuAddons.MODID, "vacuumizing"),
             id(GuGuAddons.MODID, "pressurizing"),
-            id(GuGuAddons.MODID, "centrifugation"));
+            id(GuGuAddons.MODID, "centrifugation"),
+            id(GuGuAddons.MODID, "abyss_catalysis"));
 
     private MachineRecipeStageManager() {
     }

@@ -21,6 +21,8 @@ public class GuGuAddonsPonderTags {
 
         helper.addToTag(GUGU_ADDONS)
                 .add(ModBlocks.VACUUM_CHAMBER.getId())
-                .add(ModBlocks.CENTRIFUGE.getId());
+                .add(ModBlocks.CENTRIFUGE.getId())
+                .add(ModBlocks.ABYSS_CATALYTIC_CHAMBER.getId())
+                .add(ModBlocks.MECHANICAL_SHRIEKER.getId());
     }
 }

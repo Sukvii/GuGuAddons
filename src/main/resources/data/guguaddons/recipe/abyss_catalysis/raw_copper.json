@@ -1,0 +1,27 @@
+{
+  "type": "guguaddons:abyss_catalysis",
+  "heatRequirement": "heated",
+  "topIngredients": [
+    {
+      "tag": "c:ingots/copper"
+    }
+  ],
+  "bottomIngredients": [
+    {
+      "item": "minecraft:sculk_vein"
+    }
+  ],
+  "catalysts": [
+    {
+      "type": "neoforge:single",
+      "fluid": "minecraft:lava",
+      "amount": 500
+    }
+  ],
+  "chances": 1.0,
+  "results": [
+    {
+      "id": "minecraft:raw_copper"
+    }
+  ]
+}

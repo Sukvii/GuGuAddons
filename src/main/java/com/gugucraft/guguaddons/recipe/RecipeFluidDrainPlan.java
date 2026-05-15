@@ -16,8 +16,8 @@ final class RecipeFluidDrainPlan {
     @Nullable
     static List<FluidStack> plan(IFluidHandler handler, List<SizedFluidIngredient> ingredients) {
         List<FluidStack> plannedDrains = new ArrayList<>();
-        List<FluidDemand> cumulativeDemands = new ArrayList<>();
-        return plan(handler, ingredients, 0, plannedDrains, cumulativeDemands) ? plannedDrains : null;
+        List<FluidStack> availableFluids = snapshotFluids(handler);
+        return plan(handler, ingredients, 0, plannedDrains, availableFluids) ? plannedDrains : null;
     }
 
     static boolean execute(IFluidHandler handler, List<FluidStack> plannedDrains) {
@@ -31,68 +31,80 @@ final class RecipeFluidDrainPlan {
     }
 
     private static boolean plan(IFluidHandler handler, List<SizedFluidIngredient> ingredients, int index,
-            List<FluidStack> plannedDrains, List<FluidDemand> cumulativeDemands) {
+            List<FluidStack> plannedDrains, List<FluidStack> availableFluids) {
         if (index >= ingredients.size()) {
             return true;
         }
 
         SizedFluidIngredient ingredient = ingredients.get(index);
         for (FluidStack candidate : ingredient.getFluids()) {
-            FluidStack requestedTotal = candidate.copy();
-
-            int demandIndex = findDemandIndex(cumulativeDemands, candidate);
-            if (demandIndex >= 0) {
-                requestedTotal = candidate.copyWithAmount(candidate.getAmount() + cumulativeDemands.get(demandIndex).amount);
-            }
-
-            FluidStack simulatedDrain = handler.drain(requestedTotal, FluidAction.SIMULATE);
-            if (!matchesRequest(requestedTotal, simulatedDrain)) {
+            List<FluidStack> candidateDrains = new ArrayList<>();
+            List<FluidStack> remainingFluids = copyFluidStacks(availableFluids);
+            if (!planCandidateDrain(candidate, remainingFluids, candidateDrains)
+                    || !canSimulateDrains(handler, candidateDrains)) {
                 continue;
             }
 
-            plannedDrains.add(candidate.copy());
-            if (demandIndex >= 0) {
-                cumulativeDemands.get(demandIndex).amount += candidate.getAmount();
-            } else {
-                cumulativeDemands.add(new FluidDemand(candidate.copy(), candidate.getAmount()));
-            }
+            int previousSize = plannedDrains.size();
+            plannedDrains.addAll(candidateDrains);
 
-            if (plan(handler, ingredients, index + 1, plannedDrains, cumulativeDemands)) {
+            if (plan(handler, ingredients, index + 1, plannedDrains, remainingFluids)) {
                 return true;
             }
 
-            plannedDrains.remove(plannedDrains.size() - 1);
-            if (demandIndex >= 0) {
-                FluidDemand demand = cumulativeDemands.get(demandIndex);
-                demand.amount -= candidate.getAmount();
-            } else {
-                cumulativeDemands.remove(cumulativeDemands.size() - 1);
-            }
+            plannedDrains.subList(previousSize, plannedDrains.size()).clear();
         }
 
         return false;
+    }
+
+    private static List<FluidStack> snapshotFluids(IFluidHandler handler) {
+        List<FluidStack> fluids = new ArrayList<>(handler.getTanks());
+        for (int tank = 0; tank < handler.getTanks(); tank++) {
+            fluids.add(handler.getFluidInTank(tank).copy());
+        }
+        return fluids;
+    }
+
+    private static List<FluidStack> copyFluidStacks(List<FluidStack> stacks) {
+        List<FluidStack> copies = new ArrayList<>(stacks.size());
+        for (FluidStack stack : stacks) {
+            copies.add(stack.copy());
+        }
+        return copies;
+    }
+
+    private static boolean planCandidateDrain(FluidStack candidate, List<FluidStack> availableFluids,
+            List<FluidStack> plannedDrains) {
+        int amountRequired = candidate.getAmount();
+        for (FluidStack availableFluid : availableFluids) {
+            if (availableFluid.isEmpty() || !FluidStack.isSameFluidSameComponents(availableFluid, candidate)) {
+                continue;
+            }
+
+            int drainedAmount = Math.min(amountRequired, availableFluid.getAmount());
+            plannedDrains.add(candidate.copyWithAmount(drainedAmount));
+            availableFluid.shrink(drainedAmount);
+            amountRequired -= drainedAmount;
+            if (amountRequired == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean canSimulateDrains(IFluidHandler handler, List<FluidStack> plannedDrains) {
+        for (FluidStack plannedDrain : plannedDrains) {
+            FluidStack simulatedDrain = handler.drain(plannedDrain.copy(), FluidAction.SIMULATE);
+            if (!matchesRequest(plannedDrain, simulatedDrain)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean matchesRequest(FluidStack requested, FluidStack actual) {
         return FluidStack.isSameFluidSameComponents(requested, actual) && actual.getAmount() == requested.getAmount();
     }
 
-    private static int findDemandIndex(List<FluidDemand> cumulativeDemands, FluidStack candidate) {
-        for (int index = 0; index < cumulativeDemands.size(); index++) {
-            if (FluidStack.isSameFluidSameComponents(cumulativeDemands.get(index).prototype, candidate)) {
-                return index;
-            }
-        }
-        return -1;
-    }
-
-    private static final class FluidDemand {
-        private final FluidStack prototype;
-        private int amount;
-
-        private FluidDemand(FluidStack prototype, int amount) {
-            this.prototype = prototype;
-            this.amount = amount;
-        }
-    }
 }

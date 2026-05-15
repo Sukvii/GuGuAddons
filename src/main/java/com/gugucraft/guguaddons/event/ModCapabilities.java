@@ -37,5 +37,29 @@ public class ModCapabilities {
                 Capabilities.FluidHandler.BLOCK,
                 ModBlockEntities.VACUUM_CHAMBER.get(),
                 (blockEntity, context) -> blockEntity.getFluidCapability());
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.ABYSS_CATALYTIC_CHAMBER.get(),
+                (blockEntity, context) -> blockEntity.getItemCapability());
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.ABYSS_CATALYTIC_CHAMBER.get(),
+                (blockEntity, context) -> blockEntity.getFluidCapability());
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.ABYSS_CATALYTIC_CHAMBER_MIDDLE.get(),
+                (blockEntity, context) -> blockEntity.getItemCapability());
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.ABYSS_CATALYTIC_CHAMBER_MIDDLE.get(),
+                (blockEntity, context) -> blockEntity.getFluidCapability());
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.ABYSS_CATALYTIC_CHAMBER_TOP.get(),
+                (blockEntity, context) -> blockEntity.getItemCapability());
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.ABYSS_CATALYTIC_CHAMBER_TOP.get(),
+                (blockEntity, context) -> blockEntity.getFluidCapability());
     }
 }

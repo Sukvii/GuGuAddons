@@ -33,6 +33,12 @@ public class ModItems {
         public static final DeferredItem<Item> CENTRIFUGE = ITEMS.register("centrifuge",
                         () -> new CentrifugeBlockItem(ModBlocks.CENTRIFUGE.get(), new Item.Properties()));
 
+        public static final DeferredItem<Item> ABYSS_CATALYTIC_CHAMBER = ITEMS.register("abyss_catalytic_chamber",
+                        () -> new BlockItem(ModBlocks.ABYSS_CATALYTIC_CHAMBER.get(), new Item.Properties()));
+
+        public static final DeferredItem<Item> MECHANICAL_SHRIEKER = ITEMS.register("mechanical_shrieker",
+                        () -> new BlockItem(ModBlocks.MECHANICAL_SHRIEKER.get(), new Item.Properties()));
+
         public static final DeferredItem<Item> TAB_ICON = ITEMS.register("tab_icon",
                         () -> new Item(new Item.Properties()));
 

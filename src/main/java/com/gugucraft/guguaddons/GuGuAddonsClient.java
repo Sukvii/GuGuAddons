@@ -1,9 +1,13 @@
 package com.gugucraft.guguaddons;
 
 import com.gugucraft.guguaddons.client.ModPartialModels;
+import com.gugucraft.guguaddons.client.extensions.CentrifugeStructuralBlockRenderProperties;
+import com.gugucraft.guguaddons.client.particle.MechanicalShriekerParticle;
 import com.gugucraft.guguaddons.client.visual.CentrifugeVisual;
+import com.gugucraft.guguaddons.client.visual.MechanicalShriekerVisual;
 import com.gugucraft.guguaddons.client.visual.VacuumChamberVisual;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
+import com.gugucraft.guguaddons.registry.ModParticleTypes;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -28,6 +32,7 @@ import com.gugucraft.guguaddons.ponder.GuGuAddonsPonderPlugin;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
+import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 
 // This class will not load on dedicated servers. Accessing client side code from here is safe.
 @Mod(value = GuGuAddons.MODID, dist = Dist.CLIENT)
@@ -54,6 +59,7 @@ public class GuGuAddonsClient {
                 modEventBus.addListener(GuGuAddonsClient::onClientSetup);
                 modEventBus.addListener(GuGuAddonsClient::registerRenderers);
                 modEventBus.addListener(GuGuAddonsClient::registerClientExtensions);
+                modEventBus.addListener(GuGuAddonsClient::registerParticleProviders);
 
                 // Allows NeoForge to create a config screen for this mod's configs.
                 // The config screen is accessed by going to the Mods screen > clicking on your
@@ -84,6 +90,11 @@ public class GuGuAddonsClient {
                 dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
                                 .builder(ModBlockEntities.CENTRIFUGE.get())
                                 .factory(CentrifugeVisual::new)
+                                .apply();
+
+                dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
+                                .builder(ModBlockEntities.MECHANICAL_SHRIEKER.get())
+                                .factory(MechanicalShriekerVisual::new)
                                 .apply();
 
                 // Register Connected Textures
@@ -130,10 +141,16 @@ public class GuGuAddonsClient {
                                 com.gugucraft.guguaddons.client.renderer.VacuumChamberRenderer::new);
                 event.registerBlockEntityRenderer(ModBlockEntities.CENTRIFUGE.get(),
                                 com.gugucraft.guguaddons.client.renderer.CentrifugeRenderer::new);
+                event.registerBlockEntityRenderer(ModBlockEntities.MECHANICAL_SHRIEKER.get(),
+                                com.gugucraft.guguaddons.client.renderer.MechanicalShriekerRenderer::new);
         }
 
         public static void registerClientExtensions(RegisterClientExtensionsEvent event) {
-                event.registerBlock(new com.gugucraft.guguaddons.block.custom.CentrifugeStructuralBlock.RenderProperties(),
-                                ModBlocks.CENTRIFUGE_STRUCTURE.get());
+                event.registerBlock(new CentrifugeStructuralBlockRenderProperties(), ModBlocks.CENTRIFUGE_STRUCTURE.get());
+        }
+
+        public static void registerParticleProviders(RegisterParticleProvidersEvent event) {
+                event.registerSpriteSet(ModParticleTypes.MECHANICAL_SHRIEKER.get(),
+                                MechanicalShriekerParticle.Provider::new);
         }
 }

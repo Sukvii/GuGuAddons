@@ -17,6 +17,7 @@ import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModBlocks;
 import com.gugucraft.guguaddons.registry.ModCreativeModeTabs;
 import com.gugucraft.guguaddons.registry.ModItems;
+import com.gugucraft.guguaddons.registry.ModParticleTypes;
 import com.gugucraft.guguaddons.compat.ftbchunks.ChunkClaimEconomyHandler;
 import com.gugucraft.guguaddons.compat.ftbchunks.ChunkClaimEconomyNetwork;
 import com.gugucraft.guguaddons.config.Config;
@@ -38,6 +39,7 @@ public class GuGuAddons {
         ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
+        ModParticleTypes.register(modEventBus);
         com.gugucraft.guguaddons.registry.ModRecipes.register(modEventBus);
         modEventBus.addListener(ModCapabilities::registerCapabilities);
 
