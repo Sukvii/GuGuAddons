@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 
 import com.gugucraft.guguaddons.GuGuAddons;
 import com.gugucraft.guguaddons.config.Config;
+import com.gugucraft.guguaddons.util.ReflectionCache;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -16,6 +17,10 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public final class StockUiNetwork {
     private static final String PROTOCOL_VERSION = "1";
+    private static final ReflectionCache.MethodRef HANDLE_SNAPSHOT_METHOD = ReflectionCache.publicMethod(
+            "com.gugucraft.guguaddons.client.stock.StockUiClientHooks",
+            "handleSnapshot",
+            StockUiSnapshotS2CPayload.class);
 
     private StockUiNetwork() {
     }
@@ -85,8 +90,14 @@ public final class StockUiNetwork {
             }
 
             try {
-                Class<?> hooksClass = Class.forName("com.gugucraft.guguaddons.client.stock.StockUiClientHooks");
-                Method method = hooksClass.getMethod("handleSnapshot", StockUiSnapshotS2CPayload.class);
+                ReflectionCache.MethodLookup lookup = HANDLE_SNAPSHOT_METHOD.lookup();
+                Method method = lookup.method();
+                if (method == null) {
+                    if (lookup.reportFailure()) {
+                        GuGuAddons.LOGGER.error("Failed to open LDLIB stock UI", lookup.failure());
+                    }
+                    return;
+                }
                 method.invoke(null, payload);
             } catch (Throwable t) {
                 GuGuAddons.LOGGER.error("Failed to open LDLIB stock UI", t);

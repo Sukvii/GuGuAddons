@@ -25,6 +25,8 @@ public class StockMarketSavedData extends SavedData {
     public static final int BUY_FEE_BPS = 40;
     public static final int SELL_FEE_BPS = 45;
 
+    // simulateStep walks every stock and uses random math, so spread offline debt across server ticks.
+    private static final int MAX_CATCH_UP_STEPS_PER_GAME_TICK = 32;
     private static final double STRUCTURAL_DRIFT_PENALTY = 0.00003D;
     private static final double UNDERVALUED_MEAN_REVERSION = 0.015D;
     private static final double OVERVALUED_MEAN_REVERSION = 0.026D;
@@ -46,6 +48,7 @@ public class StockMarketSavedData extends SavedData {
     private long lastUpdateTick = 0L;
     private long rngState = 0x9E3779B97F4A7C15L;
     private long tradeVolumeStep = -1L;
+    private long lastCatchUpWorkGameTime = Long.MIN_VALUE;
     private int regimeTicksRemaining = 0;
     private double regimeDrift = 0.0D;
     private double regimeVolatility = 1.0D;
@@ -206,6 +209,7 @@ public class StockMarketSavedData extends SavedData {
         if (lastUpdateTick == 0L) {
             lastUpdateTick = gameTime;
             refreshTradeVolumeWindow();
+            setDirty();
             return;
         }
         if (gameTime <= lastUpdateTick) {
@@ -219,11 +223,17 @@ public class StockMarketSavedData extends SavedData {
             return;
         }
 
-        steps = Math.min(steps, 24_000L);
+        if (lastCatchUpWorkGameTime == gameTime) {
+            refreshTradeVolumeWindow();
+            return;
+        }
+
+        steps = Math.min(steps, MAX_CATCH_UP_STEPS_PER_GAME_TICK);
         for (long i = 0L; i < steps; i++) {
             simulateStep();
         }
         lastUpdateTick += steps * TICKS_PER_STEP;
+        lastCatchUpWorkGameTime = gameTime;
         refreshTradeVolumeWindow();
         setDirty();
     }

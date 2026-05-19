@@ -4,14 +4,11 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.neoforge.common.NeoForge;
 
-import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import com.gugucraft.guguaddons.event.ModCapabilities;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModBlocks;
@@ -50,17 +47,10 @@ public class GuGuAddons {
         modEventBus.addListener(StockUiNetwork::registerPayloads);
         modEventBus.addListener(MachineRecipeStageNetwork::registerPayloads);
 
-        NeoForge.EVENT_BUS.register(this);
-
         modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
         ChunkClaimEconomyHandler.init();
-    }
-
-    @SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event) {
-
     }
 }

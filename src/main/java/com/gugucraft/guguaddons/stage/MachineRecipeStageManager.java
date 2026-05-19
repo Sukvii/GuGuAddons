@@ -11,6 +11,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -20,17 +21,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.WeakHashMap;
 
 public final class MachineRecipeStageManager {
     private static final Map<RecipeType<?>, Map<ResourceLocation, String>> SERVER_RESTRICTIONS = new LinkedHashMap<>();
     private static final Map<RecipeType<?>, Set<ResourceLocation>> SERVER_EXPLICIT_RECIPES = new LinkedHashMap<>();
     private static final Map<RecipeType<?>, Map<ResourceLocation, String>> CLIENT_RESTRICTIONS = new LinkedHashMap<>();
+    private static final Map<RecipeManager, Map<RecipeType<?>, RecipeIdLookup>> SERVER_RECIPE_IDS =
+            new WeakHashMap<>();
 
     private static final Set<ResourceLocation> SUPPORTED_RECIPE_TYPE_IDS = Set.of(
             id("create", "crushing"),
@@ -69,6 +74,7 @@ public final class MachineRecipeStageManager {
     public static void clearServer() {
         SERVER_RESTRICTIONS.clear();
         SERVER_EXPLICIT_RECIPES.clear();
+        SERVER_RECIPE_IDS.clear();
     }
 
     public static void clearClient() {
@@ -244,12 +250,12 @@ public final class MachineRecipeStageManager {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private static List<RecipeHolder<?>> getAllRecipes(MinecraftServer server, RecipeType<?> recipeType) {
-        return (List) server.getRecipeManager().getAllRecipesFor((RecipeType) recipeType);
+        return getAllRecipes(server.getRecipeManager(), recipeType);
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private static List<RecipeHolder<?>> getAllRecipes(Level level, RecipeType<?> recipeType) {
-        return (List) level.getRecipeManager().getAllRecipesFor((RecipeType) recipeType);
+    private static List<RecipeHolder<?>> getAllRecipes(RecipeManager recipeManager, RecipeType<?> recipeType) {
+        return (List) recipeManager.getAllRecipesFor((RecipeType) recipeType);
     }
 
     private static String getStage(Map<RecipeType<?>, Map<ResourceLocation, String>> restrictions,
@@ -273,16 +279,32 @@ public final class MachineRecipeStageManager {
         }
 
         RecipeType<?> recipeType = recipe.getType();
-        if (!restrictions.containsKey(recipeType)) {
+        Map<ResourceLocation, String> byRecipe = restrictions.get(recipeType);
+        if (byRecipe == null || byRecipe.isEmpty()) {
             return null;
         }
 
-        for (RecipeHolder<?> holder : getAllRecipes(machine.getLevel(), recipeType)) {
-            if (holder.value() == recipe || holder.value().equals(recipe)) {
-                return getStage(restrictions, holder);
-            }
+        ResourceLocation recipeId = getRecipeId(machine.getLevel().getRecipeManager(), recipeType, recipe);
+        return recipeId == null ? null : byRecipe.get(recipeId);
+    }
+
+    private static ResourceLocation getRecipeId(RecipeManager recipeManager, RecipeType<?> recipeType,
+                                                Recipe<?> recipe) {
+        RecipeIdLookup lookup = SERVER_RECIPE_IDS
+                .computeIfAbsent(recipeManager, ignored -> new LinkedHashMap<>())
+                .computeIfAbsent(recipeType, type -> createRecipeIdLookup(recipeManager, type));
+        return lookup.get(recipe);
+    }
+
+    private static RecipeIdLookup createRecipeIdLookup(RecipeManager recipeManager, RecipeType<?> recipeType) {
+        IdentityHashMap<Recipe<?>, ResourceLocation> byIdentity = new IdentityHashMap<>();
+        Map<Recipe<?>, ResourceLocation> byEquality = new LinkedHashMap<>();
+        for (RecipeHolder<?> holder : getAllRecipes(recipeManager, recipeType)) {
+            Recipe<?> value = holder.value();
+            byIdentity.put(value, holder.id());
+            byEquality.putIfAbsent(value, holder.id());
         }
-        return null;
+        return new RecipeIdLookup(byIdentity, byEquality);
     }
 
     private static boolean canProcessSequencedRestriction(UUID ownerId, RecipeHolder<?> holder) {
@@ -324,5 +346,13 @@ public final class MachineRecipeStageManager {
 
     private static ResourceLocation id(String namespace, String path) {
         return ResourceLocation.fromNamespaceAndPath(namespace, path);
+    }
+
+    private record RecipeIdLookup(IdentityHashMap<Recipe<?>, ResourceLocation> byIdentity,
+                                  Map<Recipe<?>, ResourceLocation> byEquality) {
+        ResourceLocation get(Recipe<?> recipe) {
+            ResourceLocation recipeId = byIdentity.get(recipe);
+            return recipeId == null ? byEquality.get(recipe) : recipeId;
+        }
     }
 }

@@ -35,7 +35,6 @@
   "tooltip.guguaddons.recall_location": "记录位置：%s",
   "tooltip.guguaddons.recall_dimension": "维度：%s",
   "tooltip.guguaddons.recall_no_location": "没有记录位置",
-  "tooltip.guguaddons.gem_gui_hint": "右键打开宝石 GUI",
   "tooltip.guguaddons.submission_tier": "当前升级：等级 %s",
   "tooltip.guguaddons.hold_for_description": "按住 [Shift] 查看详情",
   "tooltip.guguaddons.vacuum_chamber.mode": "模式：%s",

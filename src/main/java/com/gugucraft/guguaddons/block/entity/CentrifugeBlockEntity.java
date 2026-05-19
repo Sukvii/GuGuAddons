@@ -43,7 +43,6 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.wrapper.CombinedInvWrapper;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class CentrifugeBlockEntity extends KineticBlockEntity {
@@ -161,18 +160,22 @@ public class CentrifugeBlockEntity extends KineticBlockEntity {
         @SuppressWarnings("unchecked")
         RecipeType<CentrifugationRecipe> recipeType =
                 (RecipeType<CentrifugationRecipe>) (RecipeType<?>) ModRecipes.CENTRIFUGATION.getType();
-        List<RecipeHolder<CentrifugationRecipe>> matches = new ArrayList<>();
+        CentrifugationRecipe bestMatch = null;
+        int bestWeight = Integer.MIN_VALUE;
         for (RecipeHolder<CentrifugationRecipe> holder : level.getRecipeManager()
                 .getAllRecipesFor(recipeType)) {
             CentrifugationRecipe recipe = holder.value();
             if (CentrifugationRecipe.match(this, recipe)
                     && MachineRecipeStageManager.canProcess(this, holder)) {
-                matches.add(holder);
+                int weight = recipeWeight(recipe);
+                if (weight > bestWeight) {
+                    bestMatch = recipe;
+                    bestWeight = weight;
+                }
             }
         }
 
-        matches.sort((first, second) -> recipeWeight(second.value()) - recipeWeight(first.value()));
-        return matches.isEmpty() ? null : matches.getFirst().value();
+        return bestMatch;
     }
 
     private int recipeWeight(CentrifugationRecipe recipe) {

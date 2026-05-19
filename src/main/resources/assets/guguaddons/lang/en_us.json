@@ -35,7 +35,6 @@
   "tooltip.guguaddons.recall_location": "Recorded Location: %s",
   "tooltip.guguaddons.recall_dimension": "Dimension: %s",
   "tooltip.guguaddons.recall_no_location": "No location recorded",
-  "tooltip.guguaddons.gem_gui_hint": "Right click to open the gem GUI",
   "tooltip.guguaddons.submission_tier": "Current upgrade: Tier %s",
   "tooltip.guguaddons.hold_for_description": "Hold [Shift] for details",
   "tooltip.guguaddons.vacuum_chamber.mode": "Mode: %s",

@@ -21,6 +21,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -43,6 +44,9 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
     private boolean chamberContentsChanged = true;
     private RecipeHolder<AbyssCatalysisRecipe> activeRecipe;
     private ResourceLocation activeRecipeId;
+    private ChamberContentSignature cachedCandidateSignature;
+    private RecipeManager cachedCandidateRecipeManager;
+    private List<RecipeHolder<AbyssCatalysisRecipe>> cachedRecipeCandidates = List.of();
 
     public MechanicalShriekerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.MECHANICAL_SHRIEKER.get(), pos, state);
@@ -91,8 +95,9 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
 
         if (!running && !level.isClientSide && speed > 0
                 && (chamberContentsChanged || level.getGameTime() % 20 == 0)) {
+            boolean forceCandidateRefresh = chamberContentsChanged;
             chamberContentsChanged = false;
-            if (tryStartProcessingChamber(chamber.get())) {
+            if (tryStartProcessingChamber(chamber.get(), forceCandidateRefresh)) {
                 startProcessingChamber();
             }
         }
@@ -145,6 +150,7 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
 
     public void onChamberContentsChanged() {
         chamberContentsChanged = true;
+        invalidateRecipeCandidateCache();
         setChanged();
         sendData();
     }
@@ -197,7 +203,12 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
     }
 
     protected boolean tryStartProcessingChamber(AbyssCatalyticChamberBlockEntity chamber) {
-        RecipeHolder<AbyssCatalysisRecipe> matchingRecipe = findMatchingRecipe(chamber);
+        return tryStartProcessingChamber(chamber, chamberContentsChanged);
+    }
+
+    protected boolean tryStartProcessingChamber(AbyssCatalyticChamberBlockEntity chamber,
+            boolean forceCandidateRefresh) {
+        RecipeHolder<AbyssCatalysisRecipe> matchingRecipe = findMatchingRecipe(chamber, forceCandidateRefresh);
         setActiveRecipe(matchingRecipe);
         return matchingRecipe != null;
     }
@@ -224,6 +235,7 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
     }
 
     protected void onChamberRemoved() {
+        clearActiveRecipe();
         if (!running) {
             return;
         }
@@ -232,27 +244,81 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
         running = false;
         processingTicks = -1;
         renderingTicks = 0;
-        clearActiveRecipe();
         setShrieking(false);
         sendData();
     }
 
-    private RecipeHolder<AbyssCatalysisRecipe> findMatchingRecipe(AbyssCatalyticChamberBlockEntity chamber) {
+    private RecipeHolder<AbyssCatalysisRecipe> findMatchingRecipe(AbyssCatalyticChamberBlockEntity chamber,
+            boolean forceCandidateRefresh) {
         if (level == null) {
             return null;
         }
 
-        List<RecipeHolder<AbyssCatalysisRecipe>> matches = new ArrayList<>();
-        for (RecipeHolder<AbyssCatalysisRecipe> holder : getAbyssCatalysisRecipes()) {
+        ChamberContentSignature signature = createChamberContentSignature(chamber);
+        if (signature == null) {
+            invalidateRecipeCandidateCache();
+            return null;
+        }
+
+        RecipeManager recipeManager = level.getRecipeManager();
+        if (forceCandidateRefresh || !signature.equals(cachedCandidateSignature)
+                || recipeManager != cachedCandidateRecipeManager) {
+            rebuildRecipeCandidates(chamber, signature, recipeManager);
+        }
+
+        RecipeHolder<AbyssCatalysisRecipe> bestMatch = null;
+        int bestWeight = -1;
+        for (RecipeHolder<AbyssCatalysisRecipe> holder : cachedRecipeCandidates) {
             AbyssCatalysisRecipe recipe = holder.value();
-            if (AbyssCatalysisRecipe.match(chamber, recipe)
-                    && MachineRecipeStageManager.canProcess(this, holder)) {
-                matches.add(holder);
+            int weight = recipeWeight(recipe);
+            if (weight <= bestWeight) {
+                continue;
+            }
+            if (MachineRecipeStageManager.canProcess(this, holder)) {
+                bestMatch = holder;
+                bestWeight = weight;
             }
         }
 
-        matches.sort((first, second) -> recipeWeight(second.value()) - recipeWeight(first.value()));
-        return matches.isEmpty() ? null : matches.getFirst();
+        return bestMatch;
+    }
+
+    private void rebuildRecipeCandidates(AbyssCatalyticChamberBlockEntity chamber, ChamberContentSignature signature,
+            RecipeManager recipeManager) {
+        List<RecipeHolder<AbyssCatalysisRecipe>> candidates = new ArrayList<>();
+        for (RecipeHolder<AbyssCatalysisRecipe> holder : getAbyssCatalysisRecipes()) {
+            if (AbyssCatalysisRecipe.match(chamber, holder.value())) {
+                candidates.add(holder);
+            }
+        }
+
+        cachedCandidateSignature = signature;
+        cachedCandidateRecipeManager = recipeManager;
+        cachedRecipeCandidates = List.copyOf(candidates);
+    }
+
+    private ChamberContentSignature createChamberContentSignature(AbyssCatalyticChamberBlockEntity chamber) {
+        if (level == null) {
+            return null;
+        }
+
+        BlockPos bottomPos = chamber.getBottomPos();
+        if (!AbyssCatalyticChamberBlock.isValidChamber(level, bottomPos)
+                || !(level.getBlockEntity(bottomPos) instanceof AbyssCatalyticChamberBlockEntity bottom)
+                || !(level.getBlockEntity(bottomPos.above()) instanceof AbyssCatalyticChamberBlockEntity middle)
+                || !(level.getBlockEntity(bottomPos.above(2)) instanceof AbyssCatalyticChamberBlockEntity top)) {
+            return null;
+        }
+
+        return new ChamberContentSignature(bottom.getBlockPos(), middle.getBlockPos(), top.getBlockPos(),
+                bottom.getContentsVersion(), middle.getContentsVersion(), top.getContentsVersion(),
+                level.getBlockState(bottomPos.below()));
+    }
+
+    private void invalidateRecipeCandidateCache() {
+        cachedCandidateSignature = null;
+        cachedCandidateRecipeManager = null;
+        cachedRecipeCandidates = List.of();
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -286,6 +352,7 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
     private void clearActiveRecipe() {
         activeRecipe = null;
         activeRecipeId = null;
+        invalidateRecipeCandidateCache();
     }
 
     @SuppressWarnings("unchecked")
@@ -360,6 +427,7 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
         activeRecipeId = tag.contains("ActiveRecipe") ? ResourceLocation.tryParse(tag.getString("ActiveRecipe"))
                 : null;
         activeRecipe = null;
+        invalidateRecipeCandidateCache();
         super.read(tag, registries, clientPacket);
     }
 
@@ -379,5 +447,10 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
     @Override
     public float calculateStressApplied() {
         return 4.0f;
+    }
+
+    private record ChamberContentSignature(BlockPos bottomPos, BlockPos middlePos, BlockPos topPos,
+            int bottomContentsVersion, int middleContentsVersion, int topContentsVersion,
+            BlockState heatSourceState) {
     }
 }

@@ -1,6 +1,7 @@
 package com.gugucraft.guguaddons.client.emi;
 
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.util.ReflectionCache;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -13,6 +14,12 @@ import java.lang.reflect.Method;
 @EventBusSubscriber(modid = GuGuAddons.MODID, value = Dist.CLIENT)
 public final class EmiClientReloadHelper {
     private static final int RELOAD_DELAY_TICKS = 2;
+    private static final ReflectionCache.MethodRef EMI_IS_LOADED_METHOD = ReflectionCache.publicMethod(
+            "dev.emi.emi.runtime.EmiReloadManager",
+            "isLoaded");
+    private static final ReflectionCache.MethodRef EMI_RELOAD_METHOD = ReflectionCache.publicMethod(
+            "dev.emi.emi.runtime.EmiReloadManager",
+            "reload");
 
     private static boolean pendingReload;
     private static boolean reloadQueued;
@@ -77,8 +84,14 @@ public final class EmiClientReloadHelper {
 
     private static boolean isEmiLoaded() {
         try {
-            Class<?> reloadManagerClass = Class.forName("dev.emi.emi.runtime.EmiReloadManager");
-            Method isLoadedMethod = reloadManagerClass.getMethod("isLoaded");
+            ReflectionCache.MethodLookup lookup = EMI_IS_LOADED_METHOD.lookup();
+            Method isLoadedMethod = lookup.method();
+            if (isLoadedMethod == null) {
+                if (lookup.reportFailure()) {
+                    GuGuAddons.LOGGER.warn("Failed to check EMI reload state", lookup.failure());
+                }
+                return true;
+            }
             return Boolean.TRUE.equals(isLoadedMethod.invoke(null));
         } catch (Throwable t) {
             GuGuAddons.LOGGER.warn("Failed to check EMI reload state", t);
@@ -88,8 +101,15 @@ public final class EmiClientReloadHelper {
 
     private static void reload() {
         try {
-            Class<?> reloadManagerClass = Class.forName("dev.emi.emi.runtime.EmiReloadManager");
-            Method reloadMethod = reloadManagerClass.getMethod("reload");
+            ReflectionCache.MethodLookup lookup = EMI_RELOAD_METHOD.lookup();
+            Method reloadMethod = lookup.method();
+            if (reloadMethod == null) {
+                if (lookup.reportFailure()) {
+                    GuGuAddons.LOGGER.warn("Failed to refresh EMI recipes after {}", pendingReason,
+                            lookup.failure());
+                }
+                return;
+            }
             reloadMethod.invoke(null);
         } catch (Throwable t) {
             GuGuAddons.LOGGER.warn("Failed to refresh EMI recipes after {}", pendingReason, t);

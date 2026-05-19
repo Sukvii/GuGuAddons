@@ -5,6 +5,7 @@ import java.lang.reflect.Method;
 import com.gugucraft.guguaddons.GuGuAddons;
 import com.gugucraft.guguaddons.config.Config;
 import com.gugucraft.guguaddons.config.ServerConfigSnapshot;
+import com.gugucraft.guguaddons.util.ReflectionCache;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -22,6 +23,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 @EventBusSubscriber(modid = GuGuAddons.MODID)
 public final class ConfigSyncNetwork {
     private static final String PROTOCOL_VERSION = "2";
+    private static final ReflectionCache.MethodRef SERVER_CONFIG_CHANGED_METHOD = ReflectionCache.publicMethod(
+            "com.gugucraft.guguaddons.client.config.ClientConfigHooks",
+            "onServerConfigSnapshotChanged");
 
     private ConfigSyncNetwork() {
     }
@@ -72,8 +76,14 @@ public final class ConfigSyncNetwork {
             ConfigSyncState.applyServerSnapshot(payload.snapshot());
 
             try {
-                Class<?> hooksClass = Class.forName("com.gugucraft.guguaddons.client.config.ClientConfigHooks");
-                Method method = hooksClass.getMethod("onServerConfigSnapshotChanged");
+                ReflectionCache.MethodLookup lookup = SERVER_CONFIG_CHANGED_METHOD.lookup();
+                Method method = lookup.method();
+                if (method == null) {
+                    if (lookup.reportFailure()) {
+                        GuGuAddons.LOGGER.error("Failed to refresh client state after config sync", lookup.failure());
+                    }
+                    return;
+                }
                 method.invoke(null);
             } catch (Throwable t) {
                 GuGuAddons.LOGGER.error("Failed to refresh client state after config sync", t);

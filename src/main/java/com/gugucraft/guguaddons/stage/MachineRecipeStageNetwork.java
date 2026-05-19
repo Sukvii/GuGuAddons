@@ -1,6 +1,7 @@
 package com.gugucraft.guguaddons.stage;
 
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.util.ReflectionCache;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -18,6 +19,9 @@ import java.lang.reflect.Method;
 @EventBusSubscriber(modid = GuGuAddons.MODID)
 public final class MachineRecipeStageNetwork {
     private static final String PROTOCOL_VERSION = "1";
+    private static final ReflectionCache.MethodRef RESTRICTION_SNAPSHOT_CHANGED_METHOD = ReflectionCache.publicMethod(
+            "com.gugucraft.guguaddons.client.stage.MachineRecipeStageClientHooks",
+            "onRestrictionSnapshotChanged");
 
     private MachineRecipeStageNetwork() {
     }
@@ -72,9 +76,15 @@ public final class MachineRecipeStageNetwork {
 
     private static void notifyClientSnapshotChanged() {
         try {
-            Class<?> hooksClass = Class.forName(
-                    "com.gugucraft.guguaddons.client.stage.MachineRecipeStageClientHooks");
-            Method method = hooksClass.getMethod("onRestrictionSnapshotChanged");
+            ReflectionCache.MethodLookup lookup = RESTRICTION_SNAPSHOT_CHANGED_METHOD.lookup();
+            Method method = lookup.method();
+            if (method == null) {
+                if (lookup.reportFailure()) {
+                    GuGuAddons.LOGGER.warn("Failed to refresh client recipe stages after restriction sync",
+                            lookup.failure());
+                }
+                return;
+            }
             method.invoke(null);
         } catch (Throwable t) {
             GuGuAddons.LOGGER.warn("Failed to refresh client recipe stages after restriction sync", t);

@@ -4,6 +4,7 @@ import com.gugucraft.guguaddons.block.entity.VacuumChamberBlockEntity;
 import com.simibubi.create.content.processing.basin.BasinBlockEntity;
 import com.simibubi.create.content.processing.basin.BasinRecipe;
 import com.simibubi.create.content.processing.burner.BlazeBurnerBlock;
+import com.simibubi.create.content.processing.recipe.ProcessingOutput;
 import com.simibubi.create.foundation.blockEntity.behaviour.filtering.FilteringBehaviour;
 import com.simibubi.create.foundation.recipe.DummyCraftingContainer;
 import com.simibubi.create.foundation.recipe.IRecipeTypeInfo;
@@ -113,7 +114,11 @@ public abstract class CompressorRecipe extends BasinRecipe {
             return false;
         }
 
-        recipeOutputItems.addAll(rollResults(basin.getLevel().random));
+        if (test) {
+            recipeOutputItems.addAll(getPotentialOutputItemsForCapacityCheck());
+        } else {
+            recipeOutputItems.addAll(rollResults(basin.getLevel().random));
+        }
 
         CraftingInput remainderInput = new DummyCraftingContainer(availableItems, itemPlan.extractedItemsPerSlot())
                 .asCraftInput();
@@ -163,6 +168,17 @@ public abstract class CompressorRecipe extends BasinRecipe {
         }
 
         return secondaryFluidOutput < 0 || chamber.acceptOutputs(recipeSecondaryOutputFluids, false);
+    }
+
+    private List<ItemStack> getPotentialOutputItemsForCapacityCheck() {
+        List<ItemStack> results = new ArrayList<>();
+        for (ProcessingOutput output : getRollableResults()) {
+            ItemStack stack = output.getStack();
+            if (!stack.isEmpty()) {
+                results.add(stack.copy());
+            }
+        }
+        return results;
     }
 
     @Nullable

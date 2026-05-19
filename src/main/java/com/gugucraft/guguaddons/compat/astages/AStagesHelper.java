@@ -7,6 +7,7 @@ import com.alessandro.astages.api.holder.AHolder;
 import com.alessandro.astages.api.util.AStagesClientUtils;
 import com.alessandro.astages.api.util.AStagesUtils;
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.util.ReflectionCache;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -47,6 +48,10 @@ public final class AStagesHelper {
 
     @EventBusSubscriber(modid = GuGuAddons.MODID, value = Dist.CLIENT)
     public static final class ClientEvents {
+        private static final ReflectionCache.MethodRef ASTAGES_CHANGED_METHOD = ReflectionCache.publicMethod(
+                "com.gugucraft.guguaddons.client.stage.MachineRecipeStageClientHooks",
+                "onAStagesChanged");
+
         private ClientEvents() {
         }
 
@@ -62,9 +67,15 @@ public final class AStagesHelper {
 
         private static void notifyClientStageChanged() {
             try {
-                Class<?> hooksClass = Class.forName(
-                        "com.gugucraft.guguaddons.client.stage.MachineRecipeStageClientHooks");
-                Method method = hooksClass.getMethod("onAStagesChanged");
+                ReflectionCache.MethodLookup lookup = ASTAGES_CHANGED_METHOD.lookup();
+                Method method = lookup.method();
+                if (method == null) {
+                    if (lookup.reportFailure()) {
+                        GuGuAddons.LOGGER.warn("Failed to refresh client recipe stages after AStages sync",
+                                lookup.failure());
+                    }
+                    return;
+                }
                 method.invoke(null);
             } catch (Throwable t) {
                 GuGuAddons.LOGGER.warn("Failed to refresh client recipe stages after AStages sync", t);

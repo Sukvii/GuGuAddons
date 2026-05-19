@@ -3,6 +3,7 @@ package com.gugucraft.guguaddons.compat.ftbchunks;
 import java.lang.reflect.Method;
 
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.util.ReflectionCache;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -13,6 +14,14 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public class ChunkClaimEconomyNetwork {
     private static final String PROTOCOL_VERSION = "1";
+    private static final ReflectionCache.MethodRef OPEN_CLAIM_PROMPT_METHOD = ReflectionCache.publicMethod(
+            "com.gugucraft.guguaddons.client.ftbchunks.ChunkClaimEconomyClientHooks",
+            "openClaimPrompt",
+            ChunkClaimPromptS2CPayload.class);
+    private static final ReflectionCache.MethodRef SHOW_TOAST_METHOD = ReflectionCache.publicMethod(
+            "com.gugucraft.guguaddons.client.ftbchunks.ChunkClaimEconomyClientHooks",
+            "showToast",
+            ChunkClaimToastS2CPayload.class);
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
@@ -52,9 +61,14 @@ public class ChunkClaimEconomyNetwork {
             }
 
             try {
-                Class<?> hooksClass = Class
-                        .forName("com.gugucraft.guguaddons.client.ftbchunks.ChunkClaimEconomyClientHooks");
-                Method method = hooksClass.getMethod("openClaimPrompt", ChunkClaimPromptS2CPayload.class);
+                ReflectionCache.MethodLookup lookup = OPEN_CLAIM_PROMPT_METHOD.lookup();
+                Method method = lookup.method();
+                if (method == null) {
+                    if (lookup.reportFailure()) {
+                        GuGuAddons.LOGGER.error("Failed to open chunk claim confirmation prompt", lookup.failure());
+                    }
+                    return;
+                }
                 method.invoke(null, payload);
             } catch (Throwable t) {
                 GuGuAddons.LOGGER.error("Failed to open chunk claim confirmation prompt", t);
@@ -83,9 +97,14 @@ public class ChunkClaimEconomyNetwork {
             }
 
             try {
-                Class<?> hooksClass = Class
-                        .forName("com.gugucraft.guguaddons.client.ftbchunks.ChunkClaimEconomyClientHooks");
-                Method method = hooksClass.getMethod("showToast", ChunkClaimToastS2CPayload.class);
+                ReflectionCache.MethodLookup lookup = SHOW_TOAST_METHOD.lookup();
+                Method method = lookup.method();
+                if (method == null) {
+                    if (lookup.reportFailure()) {
+                        GuGuAddons.LOGGER.error("Failed to show chunk claim toast", lookup.failure());
+                    }
+                    return;
+                }
                 method.invoke(null, payload);
             } catch (Throwable t) {
                 GuGuAddons.LOGGER.error("Failed to show chunk claim toast", t);

@@ -6,7 +6,6 @@ import java.util.List;
 
 import com.gugucraft.guguaddons.GuGuAddons;
 import com.gugucraft.guguaddons.item.DeathRecallItem;
-import com.gugucraft.guguaddons.registry.ModItems;
 
 import net.minecraft.core.GlobalPos;
 import net.minecraft.nbt.CompoundTag;

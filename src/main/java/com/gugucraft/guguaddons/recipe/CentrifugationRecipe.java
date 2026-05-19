@@ -3,6 +3,7 @@ package com.gugucraft.guguaddons.recipe;
 import com.gugucraft.guguaddons.block.entity.CentrifugeBlockEntity;
 import com.gugucraft.guguaddons.registry.ModRecipes;
 import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
+import com.simibubi.create.content.processing.recipe.ProcessingOutput;
 import com.simibubi.create.foundation.recipe.DummyCraftingContainer;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.ItemStack;
@@ -63,7 +64,11 @@ public class CentrifugationRecipe extends ProcessingRecipe<RecipeInput, Centrifu
             return false;
         }
 
-        recipeOutputItems.addAll(centrifugationRecipe.rollResults(centrifuge.getLevel().random));
+        if (test) {
+            recipeOutputItems.addAll(centrifugationRecipe.getPotentialOutputItemsForCapacityCheck());
+        } else {
+            recipeOutputItems.addAll(centrifugationRecipe.rollResults(centrifuge.getLevel().random));
+        }
         CraftingInput remainderInput = new DummyCraftingContainer(availableItems, itemPlan.extractedItemsPerSlot())
                 .asCraftInput();
         for (ItemStack stack : centrifugationRecipe.getRemainingItems(remainderInput)) {
@@ -95,6 +100,17 @@ public class CentrifugationRecipe extends ProcessingRecipe<RecipeInput, Centrifu
         }
 
         return centrifuge.acceptOutputs(recipeOutputItems, recipeOutputFluids, false);
+    }
+
+    private List<ItemStack> getPotentialOutputItemsForCapacityCheck() {
+        List<ItemStack> results = new ArrayList<>();
+        for (ProcessingOutput output : getRollableResults()) {
+            ItemStack stack = output.getStack();
+            if (!stack.isEmpty()) {
+                results.add(stack.copy());
+            }
+        }
+        return results;
     }
 
     @Nullable

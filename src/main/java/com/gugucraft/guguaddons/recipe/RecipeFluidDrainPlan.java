@@ -37,21 +37,24 @@ final class RecipeFluidDrainPlan {
         }
 
         SizedFluidIngredient ingredient = ingredients.get(index);
-        for (FluidStack candidate : ingredient.getFluids()) {
-            List<FluidStack> candidateDrains = new ArrayList<>();
-            List<FluidStack> remainingFluids = copyFluidStacks(availableFluids);
-            if (!planCandidateDrain(candidate, remainingFluids, candidateDrains)
-                    || !canSimulateDrains(handler, candidateDrains)) {
+        List<FluidStack> attemptedCandidates = new ArrayList<>();
+        for (FluidStack availableFluid : availableFluids) {
+            FluidStack candidate = matchingCandidate(ingredient, availableFluid);
+            if (candidate == null || wasCandidateAttempted(attemptedCandidates, candidate)) {
                 continue;
             }
+            attemptedCandidates.add(candidate);
 
             int previousSize = plannedDrains.size();
-            plannedDrains.addAll(candidateDrains);
+            List<FluidAmountChange> changes = new ArrayList<>();
 
-            if (plan(handler, ingredients, index + 1, plannedDrains, remainingFluids)) {
+            if (planCandidateDrain(candidate, availableFluids, plannedDrains, changes)
+                    && canSimulateDrains(handler, plannedDrains, previousSize)
+                    && plan(handler, ingredients, index + 1, plannedDrains, availableFluids)) {
                 return true;
             }
 
+            rollbackChanges(availableFluids, changes);
             plannedDrains.subList(previousSize, plannedDrains.size()).clear();
         }
 
@@ -66,24 +69,41 @@ final class RecipeFluidDrainPlan {
         return fluids;
     }
 
-    private static List<FluidStack> copyFluidStacks(List<FluidStack> stacks) {
-        List<FluidStack> copies = new ArrayList<>(stacks.size());
-        for (FluidStack stack : stacks) {
-            copies.add(stack.copy());
+    @Nullable
+    private static FluidStack matchingCandidate(SizedFluidIngredient ingredient, FluidStack availableFluid) {
+        if (availableFluid.isEmpty() || !ingredient.ingredient().test(availableFluid)) {
+            return null;
         }
-        return copies;
+
+        for (FluidStack candidate : ingredient.getFluids()) {
+            if (FluidStack.isSameFluidSameComponents(availableFluid, candidate)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private static boolean wasCandidateAttempted(List<FluidStack> attemptedCandidates, FluidStack candidate) {
+        for (FluidStack attemptedCandidate : attemptedCandidates) {
+            if (FluidStack.isSameFluidSameComponents(attemptedCandidate, candidate)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean planCandidateDrain(FluidStack candidate, List<FluidStack> availableFluids,
-            List<FluidStack> plannedDrains) {
+            List<FluidStack> plannedDrains, List<FluidAmountChange> changes) {
         int amountRequired = candidate.getAmount();
-        for (FluidStack availableFluid : availableFluids) {
+        for (int tank = 0; tank < availableFluids.size(); tank++) {
+            FluidStack availableFluid = availableFluids.get(tank);
             if (availableFluid.isEmpty() || !FluidStack.isSameFluidSameComponents(availableFluid, candidate)) {
                 continue;
             }
 
             int drainedAmount = Math.min(amountRequired, availableFluid.getAmount());
             plannedDrains.add(candidate.copyWithAmount(drainedAmount));
+            changes.add(new FluidAmountChange(tank, drainedAmount));
             availableFluid.shrink(drainedAmount);
             amountRequired -= drainedAmount;
             if (amountRequired == 0) {
@@ -93,8 +113,15 @@ final class RecipeFluidDrainPlan {
         return false;
     }
 
-    private static boolean canSimulateDrains(IFluidHandler handler, List<FluidStack> plannedDrains) {
-        for (FluidStack plannedDrain : plannedDrains) {
+    private static void rollbackChanges(List<FluidStack> availableFluids, List<FluidAmountChange> changes) {
+        for (FluidAmountChange change : changes) {
+            availableFluids.get(change.tank()).grow(change.amount());
+        }
+    }
+
+    private static boolean canSimulateDrains(IFluidHandler handler, List<FluidStack> plannedDrains, int startIndex) {
+        for (int index = startIndex; index < plannedDrains.size(); index++) {
+            FluidStack plannedDrain = plannedDrains.get(index);
             FluidStack simulatedDrain = handler.drain(plannedDrain.copy(), FluidAction.SIMULATE);
             if (!matchesRequest(plannedDrain, simulatedDrain)) {
                 return false;
@@ -105,6 +132,9 @@ final class RecipeFluidDrainPlan {
 
     private static boolean matchesRequest(FluidStack requested, FluidStack actual) {
         return FluidStack.isSameFluidSameComponents(requested, actual) && actual.getAmount() == requested.getAmount();
+    }
+
+    private record FluidAmountChange(int tank, int amount) {
     }
 
 }

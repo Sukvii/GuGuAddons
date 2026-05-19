@@ -6,6 +6,7 @@ import com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock;
 import com.gugucraft.guguaddons.block.custom.QuestSubmissionBlock;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModBlocks;
+import com.gugucraft.guguaddons.util.ReflectionCache;
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
 import com.simibubi.create.content.decoration.palettes.AllPaletteBlocks;
@@ -74,9 +75,10 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
             .thenComparingInt(BlockPos::getZ);
     private static final Map<Level, LoadedInterfaceState> LOADED_INTERFACE_STATES = Collections
             .synchronizedMap(new WeakHashMap<>());
-
-    private static Method clientEditPermissionHook;
-    private static boolean clientEditPermissionHookInitialized;
+    private static final ReflectionCache.MethodRef CLIENT_EDIT_PERMISSION_HOOK = ReflectionCache.publicMethod(
+            "com.gugucraft.guguaddons.client.ftbquests.QuestInterfaceClientHooks",
+            "canEditTaskSelection",
+            TeamData.class);
 
     private final IItemHandler itemHandler = new IItemHandler() {
         @Override
@@ -656,19 +658,12 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
 
     @Nullable
     private static Method getClientEditPermissionHook() {
-        if (clientEditPermissionHookInitialized) {
-            return clientEditPermissionHook;
+        ReflectionCache.MethodLookup lookup = CLIENT_EDIT_PERMISSION_HOOK.lookup();
+        Method method = lookup.method();
+        if (method == null && lookup.reportFailure()) {
+            GuGuAddons.LOGGER.debug("Quest interface client edit permission hook is unavailable", lookup.failure());
         }
-
-        clientEditPermissionHookInitialized = true;
-        try {
-            Class<?> hookClass = Class.forName("com.gugucraft.guguaddons.client.ftbquests.QuestInterfaceClientHooks");
-            clientEditPermissionHook = hookClass.getMethod("canEditTaskSelection", TeamData.class);
-        } catch (ReflectiveOperationException exception) {
-            GuGuAddons.LOGGER.debug("Quest interface client edit permission hook is unavailable", exception);
-            clientEditPermissionHook = null;
-        }
-        return clientEditPermissionHook;
+        return method;
     }
 
     private static void registerLoadedInterface(QuestInterfaceBlockEntity blockEntity) {

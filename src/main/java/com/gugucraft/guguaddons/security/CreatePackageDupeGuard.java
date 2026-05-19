@@ -226,6 +226,9 @@ public final class CreatePackageDupeGuard {
         List<CandidatePackage> selectedPackages = new ArrayList<>();
         PackageOrderWithCrafts mergedContext = mergeCraftingContext(candidates.getFirst().orderContext());
         InventorySummary requiredContents = requiredCraftingContents(mergedContext);
+        InventorySummary selectedContents = new InventorySummary();
+        int firstScanIndex = Integer.MAX_VALUE;
+        int completionScanIndex = Integer.MIN_VALUE;
 
         for (CandidatePackage candidate : candidates.stream()
                 .sorted(Comparator.comparingInt(CandidatePackage::scanIndex))
@@ -235,19 +238,15 @@ public final class CreatePackageDupeGuard {
             }
 
             selectedPackages.add(candidate);
-            InventorySummary selectedContents = packageContents(selectedPackages);
+            if (!addPackageContents(selectedContents, candidate.stack(), 1)) {
+                return null;
+            }
+            firstScanIndex = Math.min(firstScanIndex, candidate.scanIndex());
+            completionScanIndex = Math.max(completionScanIndex, candidate.scanIndex());
             if (!containsAtLeast(selectedContents, requiredContents)) {
                 continue;
             }
 
-            int firstScanIndex = selectedPackages.stream()
-                    .mapToInt(CandidatePackage::scanIndex)
-                    .min()
-                    .orElse(Integer.MAX_VALUE);
-            int completionScanIndex = selectedPackages.stream()
-                    .mapToInt(CandidatePackage::scanIndex)
-                    .max()
-                    .orElse(Integer.MAX_VALUE);
             return new CompleteOrder(selectedPackages.getFirst().orderId(), List.copyOf(selectedPackages),
                     firstScanIndex, completionScanIndex, mergedContext);
         }
