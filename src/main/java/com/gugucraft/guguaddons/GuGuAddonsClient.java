@@ -6,6 +6,7 @@ import com.gugucraft.guguaddons.client.particle.MechanicalShriekerParticle;
 import com.gugucraft.guguaddons.client.visual.CentrifugeVisual;
 import com.gugucraft.guguaddons.client.visual.MechanicalShriekerVisual;
 import com.gugucraft.guguaddons.client.visual.VacuumChamberVisual;
+import com.gugucraft.guguaddons.item.UnknownBagItem;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModParticleTypes;
 import net.neoforged.api.distmarker.Dist;
@@ -14,6 +15,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import com.gugucraft.guguaddons.registry.ModBlocks;
+import com.gugucraft.guguaddons.registry.ModItems;
 import com.simibubi.create.AllPartialModels;
 import com.simibubi.create.CreateClient;
 import com.simibubi.create.content.kinetics.base.OrientedRotatingVisual;
@@ -21,6 +23,7 @@ import com.simibubi.create.content.decoration.encasing.EncasedCTBehaviour;
 import com.simibubi.create.foundation.block.connected.CTModel;
 import net.minecraft.resources.ResourceLocation;
 
+import net.minecraft.client.renderer.item.ItemProperties;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
@@ -73,8 +76,14 @@ public class GuGuAddonsClient {
                 // Client setup code
                 PonderIndex.addPlugin(new GuGuAddonsPonderPlugin());
                 ModPartialModels.init();
-                event.enqueueWork(() -> ItemBlockRenderTypes.setRenderLayer(ModBlocks.VACUUM_CHAMBER.get(),
-                                RenderType.cutoutMipped()));
+                event.enqueueWork(() -> {
+                        ItemBlockRenderTypes.setRenderLayer(ModBlocks.VACUUM_CHAMBER.get(),
+                                        RenderType.cutoutMipped());
+                        ItemProperties.register(ModItems.UNKNOWN_BAG.get(),
+                                        ResourceLocation.fromNamespaceAndPath(GuGuAddons.MODID, "filled"),
+                                        (stack, level, entity, seed) -> UnknownBagItem.hasStoredItems(stack) ? 1.0F
+                                                        : 0.0F);
+                });
 
                 dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
                                 .builder(ModBlockEntities.QUEST_INPUT.get())

@@ -1,0 +1,14 @@
+{
+    "parent": "item/generated",
+    "textures": {
+        "layer0": "guguaddons:item/unknown_bag_empty"
+    },
+    "overrides": [
+        {
+            "predicate": {
+                "guguaddons:filled": 1.0
+            },
+            "model": "guguaddons:item/unknown_bag_filled"
+        }
+    ]
+}

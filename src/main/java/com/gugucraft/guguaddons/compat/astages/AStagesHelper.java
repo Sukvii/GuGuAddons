@@ -6,9 +6,13 @@ import com.alessandro.astages.api.holder.AClientHolder;
 import com.alessandro.astages.api.holder.AHolder;
 import com.alessandro.astages.api.util.AStagesClientUtils;
 import com.alessandro.astages.api.util.AStagesUtils;
+import com.alessandro.astages.engine.ARestrictionManager;
+import com.alessandro.astages.engine.server.restriction.item.ABaseItemRestriction;
+import com.alessandro.astages.engine.store.Attributes;
 import com.gugucraft.guguaddons.GuGuAddons;
 import com.gugucraft.guguaddons.util.ReflectionCache;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -40,6 +44,41 @@ public final class AStagesHelper {
             return false;
         }
         return AStagesClientUtils.hasStage(AClientHolder.serverAndPlayer(), stage);
+    }
+
+    public static boolean isUnknownInventoryItem(ServerPlayer player, ItemStack stack) {
+        ABaseItemRestriction<?, ?> restriction = getInventoryRestriction(player, stack);
+        return restriction != null && restriction.isDisabled(Attributes.STORING_IN_INVENTORY);
+    }
+
+    public static boolean isUnknownEquipmentItem(ServerPlayer player, ItemStack stack) {
+        ABaseItemRestriction<?, ?> restriction = getEquipmentRestriction(player, stack);
+        return restriction != null && restriction.isDisabled(Attributes.EQUIPPING);
+    }
+
+    public static boolean isStillUnknownItem(ServerPlayer player, ItemStack stack) {
+        return getItemRestriction(player, stack) != null;
+    }
+
+    private static ABaseItemRestriction<?, ?> getInventoryRestriction(ServerPlayer player, ItemStack stack) {
+        if (player == null || stack == null || stack.isEmpty()) {
+            return null;
+        }
+        return ARestrictionManager.ITEM_INSTANCE.getInventoryRestriction(AHolder.serverAndPlayer(player), stack);
+    }
+
+    private static ABaseItemRestriction<?, ?> getEquipmentRestriction(ServerPlayer player, ItemStack stack) {
+        if (player == null || stack == null || stack.isEmpty()) {
+            return null;
+        }
+        return ARestrictionManager.ITEM_INSTANCE.getEquipmentRestriction(AHolder.serverAndPlayer(player), stack);
+    }
+
+    private static ABaseItemRestriction<?, ?> getItemRestriction(ServerPlayer player, ItemStack stack) {
+        if (player == null || stack == null || stack.isEmpty()) {
+            return null;
+        }
+        return ARestrictionManager.ITEM_INSTANCE.getRestriction(AHolder.serverAndPlayer(player), stack);
     }
 
     private static boolean isBlank(String value) {
