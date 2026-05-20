@@ -19,6 +19,7 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.Scroller;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
 import com.lowdragmc.lowdraglib2.gui.ui.style.Stylesheet;
+import com.lowdragmc.lowdraglib2.gui.ui.style.StylesheetManager;
 import com.lowdragmc.lowdraglib2.gui.util.DrawerHelper;
 
 import net.minecraft.ChatFormatting;
@@ -47,10 +48,8 @@ public final class StockUiFactory {
     }
 
     public static StockUiView create(Player player, ActionDispatcher dispatcher) {
-        Stylesheet style = Stylesheet.parse("""
+        Stylesheet stockStyles = Stylesheet.parse("""
                 #oreui_root {
-                  background: sdf(#151922, 1, 1, #252c3b);
-                  padding-all: 8;
                   gap-all: 6;
                 }
 
@@ -59,14 +58,10 @@ public final class StockUiFactory {
                 }
 
                 #oreui_shell {
-                  background: sdf(#2a303b, 1, 1, #616c7d);
-                  padding-all: 6;
                   gap-all: 6;
                 }
 
                 #oreui_header {
-                  background: sdf(#313947, 1, 1, #717b8b);
-                  padding-all: 6;
                   gap-row: 2;
                 }
 
@@ -97,8 +92,6 @@ public final class StockUiFactory {
                 }
 
                 .oreui-surface {
-                  background: sdf(#303744, 1, 1, #667283);
-                  padding-all: 4;
                   gap-all: 3;
                 }
 
@@ -146,26 +139,13 @@ public final class StockUiFactory {
                 }
 
                 #oreui_lot_slider .__scroller_scroll_container__ {
-                  background: sdf(#222a36, 1, 1, #687486);
                   height: 4;
                   padding-all: 0;
                 }
 
                 #oreui_lot_slider .__scroller_scroll_bar__ {
-                  base-background: sdf(#4ea93b, 1, 1, #2f6f24);
-                  hover-background: sdf(#60c347, 1, 1, #3a8530);
-                  pressed-background: sdf(#3a7f2d, 1, 1, #26541f) translate(0, 0.8);
                   width: 10;
                   height: 8;
-                }
-
-                #oreui_lot_slider .__scroller_head_button__,
-                #oreui_lot_slider .__scroller_tail_button__ {
-                  width: 0;
-                  min-width: 0;
-                  max-width: 0;
-                  padding-all: 0;
-                  margin-all: 0;
                 }
 
                 #oreui_window_row {
@@ -208,22 +188,10 @@ public final class StockUiFactory {
                   height: 17;
                 }
 
-                .oreui-stock-btn {
-                  base-background: sdf(#363e4c, 1, 1, #808c9e);
-                  hover-background: sdf(#434c5c, 1, 1, #9ca6b6);
-                  pressed-background: sdf(#2f3642, 1, 1, #707b8e) translate(0, 0.9);
-                }
-
-                .oreui-stock-btn-selected {
-                  base-background: sdf(#3f7f30, 1, 1, #25591d);
-                  hover-background: sdf(#4f9b3d, 1, 1, #2e6c23);
-                  pressed-background: sdf(#366d29, 1, 1, #224d1b) translate(0, 0.9);
-                }
-
                 .oreui-mini-kline {
                   width: 52;
                   height: 16;
-                  background: sdf(#222a35, 1, 1, #616d7e);
+                  background: built-in(ui-ore:RECT2);
                   padding-horizontal: 2;
                   padding-vertical: 1;
                   flex-direction: row;
@@ -263,7 +231,7 @@ public final class StockUiFactory {
                 }
 
                 #oreui_chart_frame {
-                  background: sdf(#202632, 1, 1, #606b7c);
+                  background: built-in(ui-ore:RECT2);
                   padding-all: 3;
                   position-type: relative;
                   min-height: 42;
@@ -285,9 +253,6 @@ public final class StockUiFactory {
                   padding-all: 0;
                   justify-content: center;
                   align-items: center;
-                  base-background: sdf(#2f3745, 1, 1, #7e8a9f);
-                  hover-background: sdf(#394456, 1, 1, #9cb1cf);
-                  pressed-background: sdf(#27303d, 1, 1, #6b7a90) translate(0, 0.8);
                 }
 
                 #oreui_chart_zoom_icon {
@@ -296,7 +261,7 @@ public final class StockUiFactory {
                 }
 
                 .oreui-zoom-glyph {
-                  background: sdf(#9fc8ff, 1);
+                  background: sdf(#222, 1);
                 }
 
                 .oreui-chart-bar {
@@ -320,8 +285,6 @@ public final class StockUiFactory {
                 #oreui_popup {
                   position-type: absolute;
                   z-index: 21;
-                  background: sdf(#2c3442, 1, 1, #7b879a);
-                  padding-all: 5;
                   gap-row: 4;
                 }
 
@@ -330,9 +293,6 @@ public final class StockUiFactory {
                   align-items: center;
                   gap-column: 3;
                   min-height: 14;
-                  background: sdf(#27303d, 1, 1, #6d788a);
-                  padding-horizontal: 2;
-                  padding-vertical: 1;
                 }
 
                 #oreui_popup_title {
@@ -346,13 +306,10 @@ public final class StockUiFactory {
                   height: 14;
                   min-height: 14;
                   padding-all: 0;
-                  base-background: sdf(#3f4756, 1, 1, #8d98a9);
-                  hover-background: sdf(#4d5868, 1, 1, #a8b3c4);
-                  pressed-background: sdf(#38404d, 1, 1, #7c8799) translate(0, 0.8);
                 }
 
                 #oreui_popup_chart_frame {
-                  background: sdf(#1e2530, 1, 1, #5f6c7f);
+                  background: built-in(ui-ore:RECT2);
                   padding-all: 3;
                   flex: 1;
                 }
@@ -392,32 +349,6 @@ public final class StockUiFactory {
                 .oreui-popup-handle {
                   position-type: absolute;
                   z-index: 24;
-                }
-
-                button:host {
-                  base-background: sdf(#3b4351, 1, 1, #8f9aac);
-                  hover-background: sdf(#4a5464, 1, 1, #aab4c4);
-                  pressed-background: sdf(#313844, 1, 1, #7a8598) translate(0, 0.9);
-                  padding-all: 3;
-                  height: 17;
-                }
-
-                button:host .__button_text__ {
-                  text-color: #eef2f8;
-                }
-
-                button.__oreui_btn_pressed__ .__button_text__ {
-                  transform: translateY(0.9);
-                }
-
-                .oreui-btn-primary {
-                  base-background: sdf(#4ea93b, 1, 1, #2f6f24);
-                  hover-background: sdf(#60c347, 1, 1, #3a8530);
-                  pressed-background: sdf(#428f32, 1, 1, #2b6122) translate(0, 0.9);
-                }
-
-                .oreui-btn-primary .__button_text__ {
-                  text-color: #f4fff0;
                 }
                 """);
 
@@ -506,30 +437,27 @@ public final class StockUiFactory {
         valueLabel.addClass("oreui-meta");
 
         Button buyButton = new Button().setOnClick(event -> dispatcher.send(StockUiAction.BUY, -1));
-        buyButton.addClass("oreui-btn-primary");
-        withPressTextShift(buyButton);
+        buyButton.addClass("__confirm-button__");
 
         Button sellButton = new Button().setOnClick(event -> dispatcher.send(StockUiAction.SELL, -1));
-        withPressTextShift(sellButton);
+        sellButton.addClass("__reject-button__");
 
         Button sellAllButton = new Button().setOnClick(event -> dispatcher.send(StockUiAction.SELL_ALL, -1));
-        withPressTextShift(sellAllButton);
+        sellAllButton.addClass("__reject-button__");
 
         Button windowCycleButton = new Button().setOnClick(event -> dispatcher.send(StockUiAction.WINDOW_NEXT, -1));
         windowCycleButton.setId("oreui_window_button");
-        withPressTextShift(windowCycleButton);
 
         Button refreshButton = new Button().setOnClick(event -> dispatcher.send(StockUiAction.REFRESH, -1));
-        withPressTextShift(refreshButton);
 
-        Button closeScreenButton = withPressTextShift(new Button()
+        Button closeScreenButton = new Button()
                 .setText(Component.translatable("menu.guguaddons.stock.button.close"))
                 .setOnClick(event -> {
                     var modularUI = event.currentElement.getModularUI();
                     if (modularUI != null && modularUI.getScreen() != null) {
                         modularUI.getScreen().onClose();
                     }
-                }));
+                });
 
         AtomicInteger[] rowTargets = new AtomicInteger[StockUiService.PAGE_SIZE];
         Button[] rowButtons = new Button[StockUiService.PAGE_SIZE];
@@ -547,9 +475,9 @@ public final class StockUiFactory {
                         if (stockIndex >= 0) {
                             dispatcher.send(StockUiAction.SELECT_STOCK, stockIndex);
                         }
-                    });
+            });
             rowButton.addClass("oreui-stock-btn");
-            rowButtons[i] = withPressTextShift(rowButton);
+            rowButtons[i] = rowButton;
 
             UIElement miniKline = new UIElement().addClass("oreui-mini-kline");
             rowKlineContainers[i] = miniKline;
@@ -646,6 +574,7 @@ public final class StockUiFactory {
 
         UIElement popupWindow = new UIElement()
                 .setId("oreui_popup")
+                .addClass("panel_bg")
                 .setVisible(false)
                 .layout(layout -> {
                     layout.positionType(YogaPositionType.ABSOLUTE);
@@ -655,14 +584,15 @@ public final class StockUiFactory {
                     layout.height(popupHeight.get());
                 });
 
-        Button popupCloseButton = withPressTextShift(new Button()
+        Button popupCloseButton = new Button()
                 .setText(Component.literal("x"))
                 .setOnClick(event -> {
                     popupInteractionMode.set(POPUP_INTERACTION_NONE);
                     popupPointerReady.set(false);
                     popupWindow.setVisible(false);
-                }));
+                });
         popupCloseButton.setId("oreui_popup_close");
+        popupCloseButton.addClass("__reject-button__");
         popupCloseButton.addEventListener(UIEvents.MOUSE_DOWN, event -> {
             if (event.button == 0) {
                 popupInteractionMode.set(POPUP_INTERACTION_NONE);
@@ -673,6 +603,7 @@ public final class StockUiFactory {
 
         UIElement popupHeader = new UIElement()
                 .setId("oreui_popup_header")
+                .addClass("preview_bg")
                 .addChildren(popupTitleLabel, popupCloseButton);
         popupHeader.addEventListener(UIEvents.MOUSE_DOWN, event -> {
             if (event.button == 0) {
@@ -812,6 +743,7 @@ public final class StockUiFactory {
 
         UIElement popupChartFrame = new UIElement()
                 .setId("oreui_popup_chart_frame")
+                .addClass("preview_bg")
                 .layout(layout -> layout.flex(1))
                 .addChild(popupChart);
 
@@ -827,7 +759,7 @@ public final class StockUiFactory {
                 popupBottomLeftHandle,
                 popupBottomRightHandle);
 
-        Button zoomChartButton = withPressTextShift(new Button().noText());
+        Button zoomChartButton = new Button().noText();
         zoomChartButton.setId("oreui_chart_zoom_btn");
         zoomChartButton.addChild(createZoomGlyphIcon());
         zoomChartButton.layout(layout -> {
@@ -844,13 +776,16 @@ public final class StockUiFactory {
 
         UIElement root = new UIElement()
                 .setId("oreui_root")
+                .addClass("panel_bg")
                 .layout(layout -> layout.width(460))
                 .addChildren(
                         new UIElement()
                                 .setId("oreui_shell")
+                                .addClass("preview_bg")
                                 .addChildren(
                                         new UIElement()
                                                 .setId("oreui_header")
+                                                .addClass("preview_bg")
                                                 .addChildren(
                                                         new UIElement()
                                                                 .setId("oreui_header_title_row")
@@ -862,26 +797,26 @@ public final class StockUiFactory {
                                                 .addChildren(
                                                         new UIElement()
                                                                 .setId("oreui_left")
-                                                                .addClass("oreui-surface")
+                                                                .addClasses("preview_bg", "oreui-surface")
                                                                 .addChildren(
                                                                         new UIElement()
                                                                                 .addClasses("oreui-row", "oreui-row-fill")
                                                                                 .addChildren(
-                                                                                        withPressTextShift(new Button()
+                                                                                        new Button()
                                                                                                 .setText(Component.translatable(
                                                                                                         "menu.guguaddons.stock.button.prev"))
                                                                                                 .setOnClick(event -> dispatcher.send(
-                                                                                                        StockUiAction.PREV_PAGE, -1))),
+                                                                                                        StockUiAction.PREV_PAGE, -1)),
                                                                                         pageLabel,
-                                                                                        withPressTextShift(new Button()
+                                                                                        new Button()
                                                                                                 .setText(Component.translatable(
                                                                                                         "menu.guguaddons.stock.button.next"))
                                                                                                 .setOnClick(event -> dispatcher.send(
-                                                                                                        StockUiAction.NEXT_PAGE, -1)))),
+                                                                                                        StockUiAction.NEXT_PAGE, -1))),
                                                                         stockList),
                                                         new UIElement()
                                                                 .setId("oreui_right")
-                                                                .addClass("oreui-surface")
+                                                                .addClasses("preview_bg", "oreui-surface")
                                                                 .addChildren(
                                                                         selectedTitle,
                                                                         priceLabel,
@@ -1114,7 +1049,7 @@ public final class StockUiFactory {
                             row.heldShares()).withStyle(colorForChange(row.changePercent())));
                     button.setClasses("oreui-stock-btn");
                     if (row.selected()) {
-                        button.addClass("oreui-stock-btn-selected");
+                        button.addClass("__confirm-button__");
                     }
                     rowKlineContainers[i].setVisible(true);
                     renderMiniKline(rowCandleWicks[i], rowCandleBodies[i], row.miniCandles());
@@ -1158,7 +1093,10 @@ public final class StockUiFactory {
         };
 
         applySnapshot.accept(StockUiSnapshot.empty());
-        return new StockUiView(ModularUI.of(UI.of(root, style), player), applySnapshot);
+        return new StockUiView(ModularUI.of(UI.of(
+                root,
+                StylesheetManager.INSTANCE.getStylesheetSafe(StylesheetManager.ORE),
+                stockStyles), player), applySnapshot);
     }
 
     private static UIElement createZoomGlyphIcon() {
@@ -1409,18 +1347,6 @@ public final class StockUiFactory {
             return ChatFormatting.GREEN;
         }
         return ChatFormatting.YELLOW;
-    }
-
-    private static <T extends UIElement> T withPressTextShift(T element) {
-        element.addEventListener(UIEvents.MOUSE_DOWN, event -> {
-            if (event.button == 0) {
-                event.currentElement.addClass("__oreui_btn_pressed__");
-            }
-        });
-        element.addEventListener(UIEvents.MOUSE_UP, event -> event.currentElement.removeClass("__oreui_btn_pressed__"));
-        element.addEventListener(UIEvents.MOUSE_LEAVE, event -> event.currentElement.removeClass("__oreui_btn_pressed__"),
-                true);
-        return element;
     }
 
     @FunctionalInterface

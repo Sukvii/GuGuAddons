@@ -83,7 +83,7 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
         }
 
         float speed = Math.abs(getSpeed());
-        if (speed <= 0) {
+        if (speed <= 0 || !isSpeedRequirementFulfilled()) {
             if (running) {
                 onChamberRemoved();
                 sendData();
@@ -142,7 +142,7 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
     public void onSpeedChanged(float prevSpeed) {
         super.onSpeedChanged(prevSpeed);
         chamberContentsChanged = true;
-        if (level != null && !level.isClientSide && getSpeed() == 0 && running) {
+        if (level != null && !level.isClientSide && !isSpeedRequirementFulfilled() && running) {
             onChamberRemoved();
             sendData();
         }
