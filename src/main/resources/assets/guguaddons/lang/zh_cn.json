@@ -41,7 +41,7 @@
   "tooltip.guguaddons.submission_tier": "当前升级：等级 %s",
   "tooltip.guguaddons.hold_for_description": "按住 [Shift] 查看详情",
   "tooltip.guguaddons.vacuum_chamber.mode": "模式：%s",
-  "tooltip.guguaddons.vacuum_chamber.mode.vacuumizing": "真空化",
+  "tooltip.guguaddons.vacuum_chamber.mode.vacuumizing": "真空处理",
   "tooltip.guguaddons.vacuum_chamber.mode.pressurizing": "加压",
   "tooltip.guguaddons.centrifuge.basins": "工作盆：%s / %s",
   "tooltip.guguaddons.centrifuge.basins_missing": "还需要 %s 个工作盆",
