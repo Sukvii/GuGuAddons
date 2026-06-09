@@ -5,17 +5,47 @@ import com.gugucraft.guguaddons.GuGuAddons;
 import com.gugucraft.guguaddons.item.UnknownBagItem;
 import com.gugucraft.guguaddons.registry.ModItems;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.neoforge.common.util.TriState;
+import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 @EventBusSubscriber(modid = GuGuAddons.MODID)
 public final class UnknownBagAStagesEvents {
     private UnknownBagAStagesEvents() {
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onItemPickup(ItemEntityPickupEvent.Pre event) {
+        if (!(event.getPlayer() instanceof ServerPlayer player) || player instanceof FakePlayer) {
+            return;
+        }
+
+        ItemEntity itemEntity = event.getItemEntity();
+        ItemStack stack = itemEntity.getItem();
+        if (stack.isEmpty() || stack.is(ModItems.UNKNOWN_BAG.get())) {
+            return;
+        }
+        if (!AStagesHelper.isUnknownPickupItem(player, stack)) {
+            return;
+        }
+
+        ItemStack bag = findFirstUnknownBag(player.getInventory());
+        if (bag.isEmpty()) {
+            return;
+        }
+
+        if (UnknownBagItem.store(bag, stack, player.registryAccess())) {
+            stack.setCount(0);
+            itemEntity.discard();
+            event.setCanPickup(TriState.FALSE);
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

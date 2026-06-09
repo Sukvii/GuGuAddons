@@ -68,6 +68,11 @@ public final class AStagesHelper {
         return restriction != null && restriction.isDisabled(Attributes.EQUIPPING);
     }
 
+    public static boolean isUnknownPickupItem(ServerPlayer player, ItemStack stack) {
+        ABaseItemRestriction<?, ?> restriction = getPickupRestriction(player, stack);
+        return restriction != null && restriction.isDisabled(Attributes.PICKING_UP);
+    }
+
     public static boolean isStillUnknownItem(ServerPlayer player, ItemStack stack) {
         return getItemRestriction(player, stack) != null;
     }
@@ -84,6 +89,13 @@ public final class AStagesHelper {
             return null;
         }
         return ARestrictionManager.ITEM_INSTANCE.getEquipmentRestriction(AHolder.serverAndPlayer(player), stack);
+    }
+
+    private static ABaseItemRestriction<?, ?> getPickupRestriction(ServerPlayer player, ItemStack stack) {
+        if (player == null || stack == null || stack.isEmpty()) {
+            return null;
+        }
+        return ARestrictionManager.ITEM_INSTANCE.getRestriction(AHolder.player(player), stack);
     }
 
     private static ABaseItemRestriction<?, ?> getItemRestriction(ServerPlayer player, ItemStack stack) {
