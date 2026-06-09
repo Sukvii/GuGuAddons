@@ -213,6 +213,10 @@ dependencies {
     // AStages
     implementation "maven.modrinth:astages:${astages_version}"
 
+    // Lychee
+    implementation "maven.modrinth:kiwi:${kiwi_version}"
+    implementation "maven.modrinth:lychee:${lychee_version}"
+
     // KubeJS
     implementation "dev.latvian.mods:kubejs-neoforge:${kubejs_version}"
 
@@ -257,6 +261,8 @@ tasks.withType(ProcessResources).configureEach {
             ftb_chunks_version     : ftb_chunks_version,
             jade_version           : jade_version,
             astages_version        : astages_version,
+            kiwi_version           : kiwi_version,
+            lychee_version         : lychee_version,
             kubejs_version         : kubejs_version,
             emi_version            : emi_version,
             mod_id                 : mod_id,

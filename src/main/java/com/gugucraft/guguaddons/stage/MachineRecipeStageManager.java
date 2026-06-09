@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.WeakHashMap;
 
 public final class MachineRecipeStageManager {
+    private static final ResourceLocation LYCHEE_CRAFTING_ID = id("lychee", "crafting");
     private static final Map<RecipeType<?>, Map<ResourceLocation, String>> SERVER_RESTRICTIONS = new LinkedHashMap<>();
     private static final Map<RecipeType<?>, Set<ResourceLocation>> SERVER_EXPLICIT_RECIPES = new LinkedHashMap<>();
     private static final Map<RecipeType<?>, Map<ResourceLocation, String>> CLIENT_RESTRICTIONS = new LinkedHashMap<>();
@@ -54,6 +55,19 @@ public final class MachineRecipeStageManager {
             id("create", "item_application"),
             id("create", "mechanical_crafting"),
             id("create", "sequenced_assembly"),
+            id("lychee", "block_interacting"),
+            id("lychee", "block_clicking"),
+            id("lychee", "item_burning"),
+            id("lychee", "item_inside"),
+            id("lychee", "anvil_crafting"),
+            id("lychee", "block_crushing"),
+            id("lychee", "lightning_channeling"),
+            id("lychee", "item_exploding"),
+            id("lychee", "entity_ticking"),
+            id("lychee", "block_exploding"),
+            id("lychee", "random_block_ticking"),
+            id("lychee", "dripstone_dripping"),
+            LYCHEE_CRAFTING_ID,
             id("minecraft", "smelting"),
             id("minecraft", "smoking"),
             id("minecraft", "blasting"),
@@ -116,9 +130,10 @@ public final class MachineRecipeStageManager {
     }
 
     public static void addRecipeByMods(String recipeTypeId, String[] modIds, String stageId) {
-        RecipeType<?> recipeType = parseSupportedRecipeType(recipeTypeId);
+        ResourceLocation requestedTypeId = parseSupportedRecipeTypeId(recipeTypeId);
+        RecipeType<?> recipeType = resolveSupportedRecipeType(requestedTypeId, recipeTypeId);
         Set<String> namespaces = new LinkedHashSet<>(Arrays.asList(modIds));
-        List<ResourceLocation> recipeIds = getAllRecipeIds(recipeType).stream()
+        List<ResourceLocation> recipeIds = getAllRecipeIds(recipeType, requestedTypeId).stream()
                 .filter(id -> namespaces.contains(id.getNamespace()))
                 .toList();
         addRecipes(recipeType, recipeIds, stageId, false);
@@ -129,12 +144,18 @@ public final class MachineRecipeStageManager {
     }
 
     public static void addRecipeByMachine(String recipeTypeId, String stageId) {
-        RecipeType<?> recipeType = parseSupportedRecipeType(recipeTypeId);
-        addRecipes(recipeType, getAllRecipeIds(recipeType), stageId, false);
+        ResourceLocation requestedTypeId = parseSupportedRecipeTypeId(recipeTypeId);
+        RecipeType<?> recipeType = resolveSupportedRecipeType(requestedTypeId, recipeTypeId);
+        addRecipes(recipeType, getAllRecipeIds(recipeType, requestedTypeId), stageId, false);
     }
 
     public static boolean canProcess(ServerPlayer player, RecipeHolder<?> holder) {
         String stage = getStage(SERVER_RESTRICTIONS, holder);
+        return stage == null || AStagesHelper.hasStage(player, stage);
+    }
+
+    public static boolean canProcess(ServerPlayer player, Level level, Recipe<?> recipe) {
+        String stage = getStage(SERVER_RESTRICTIONS, level, recipe);
         return stage == null || AStagesHelper.hasStage(player, stage);
     }
 
@@ -151,6 +172,16 @@ public final class MachineRecipeStageManager {
     public static boolean canProcess(BlockEntity machine, Recipe<?> recipe) {
         String stage = getStage(SERVER_RESTRICTIONS, machine, recipe);
         return stage == null || AStagesHelper.hasStage(MachineOwnerHelper.getOwner(machine), stage);
+    }
+
+    public static boolean canProcessGlobally(RecipeHolder<?> holder) {
+        String stage = getStage(SERVER_RESTRICTIONS, holder);
+        return stage == null || AStagesHelper.hasServerStage(stage);
+    }
+
+    public static boolean canProcessGlobally(Level level, Recipe<?> recipe) {
+        String stage = getStage(SERVER_RESTRICTIONS, level, recipe);
+        return stage == null || AStagesHelper.hasServerStage(stage);
     }
 
     public static boolean canProcessIncludingSequenced(BlockEntity machine, RecipeHolder<?> holder) {
@@ -223,14 +254,24 @@ public final class MachineRecipeStageManager {
         }
     }
 
-    private static RecipeType<?> parseSupportedRecipeType(String recipeTypeId) {
+    private static ResourceLocation parseSupportedRecipeTypeId(String recipeTypeId) {
         ResourceLocation id = parseId(recipeTypeId, "recipe type id");
         if (!SUPPORTED_RECIPE_TYPE_IDS.contains(id)) {
             throw new IllegalArgumentException("Unsupported machine recipe type: " + recipeTypeId
                     + ". Supported types: " + String.join(", ", supportedRecipeTypeIds()));
         }
+        return id;
+    }
 
-        RecipeType<?> recipeType = BuiltInRegistries.RECIPE_TYPE.get(id);
+    private static RecipeType<?> parseSupportedRecipeType(String recipeTypeId) {
+        ResourceLocation id = parseSupportedRecipeTypeId(recipeTypeId);
+        return resolveSupportedRecipeType(id, recipeTypeId);
+    }
+
+    private static RecipeType<?> resolveSupportedRecipeType(ResourceLocation id, String recipeTypeId) {
+        RecipeType<?> recipeType = LYCHEE_CRAFTING_ID.equals(id)
+                ? RecipeType.CRAFTING
+                : BuiltInRegistries.RECIPE_TYPE.get(id);
         if (recipeType == null) {
             throw new IllegalArgumentException("Unknown recipe type: " + recipeTypeId);
         }
@@ -238,12 +279,17 @@ public final class MachineRecipeStageManager {
     }
 
     private static List<ResourceLocation> getAllRecipeIds(RecipeType<?> recipeType) {
+        return getAllRecipeIds(recipeType, BuiltInRegistries.RECIPE_TYPE.getKey(recipeType));
+    }
+
+    private static List<ResourceLocation> getAllRecipeIds(RecipeType<?> recipeType, ResourceLocation requestedTypeId) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) {
             throw new IllegalStateException("Machine recipe stage registration requires a running server");
         }
 
         return getAllRecipes(server, recipeType).stream()
+                .filter(holder -> matchesRequestedRecipeType(requestedTypeId, holder))
                 .map(RecipeHolder::id)
                 .toList();
     }
@@ -278,13 +324,22 @@ public final class MachineRecipeStageManager {
             return null;
         }
 
+        return getStage(restrictions, machine.getLevel(), recipe);
+    }
+
+    private static String getStage(Map<RecipeType<?>, Map<ResourceLocation, String>> restrictions,
+                                   Level level, Recipe<?> recipe) {
+        if (level == null || recipe == null) {
+            return null;
+        }
+
         RecipeType<?> recipeType = recipe.getType();
         Map<ResourceLocation, String> byRecipe = restrictions.get(recipeType);
         if (byRecipe == null || byRecipe.isEmpty()) {
             return null;
         }
 
-        ResourceLocation recipeId = getRecipeId(machine.getLevel().getRecipeManager(), recipeType, recipe);
+        ResourceLocation recipeId = getRecipeId(level.getRecipeManager(), recipeType, recipe);
         return recipeId == null ? null : byRecipe.get(recipeId);
     }
 
@@ -310,6 +365,15 @@ public final class MachineRecipeStageManager {
     private static boolean canProcessSequencedRestriction(UUID ownerId, RecipeHolder<?> holder) {
         String stage = getStage(SERVER_RESTRICTIONS, AllRecipeTypes.SEQUENCED_ASSEMBLY.getType(), holder.id());
         return stage == null || AStagesHelper.hasStage(ownerId, stage);
+    }
+
+    private static boolean matchesRequestedRecipeType(ResourceLocation requestedTypeId, RecipeHolder<?> holder) {
+        if (!LYCHEE_CRAFTING_ID.equals(requestedTypeId)) {
+            return true;
+        }
+
+        ResourceLocation serializerId = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
+        return LYCHEE_CRAFTING_ID.equals(serializerId);
     }
 
     private static boolean clientHasStage(String stage) {

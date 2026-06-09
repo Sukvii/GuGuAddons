@@ -16,7 +16,10 @@
     "create.RepackagerBlockEntityMixin",
     "create.SandPaperItemMixin",
     "create.SawBlockEntityMixin",
-    "create.SpoutBlockEntityMixin"
+    "create.SpoutBlockEntityMixin",
+    "lychee.EntityTickingRecipeTypeMixin",
+    "lychee.LycheeRecipeTypeMixin",
+    "lychee.ShapedCraftingRecipeMixin"
   ],
   "client": [],
   "injectors": {

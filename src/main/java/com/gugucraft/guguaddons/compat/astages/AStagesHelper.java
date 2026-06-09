@@ -44,6 +44,13 @@ public final class AStagesHelper {
                 || AStagesUtils.hasStage(AHolder.server(), stage);
     }
 
+    public static boolean hasServerStage(String stage) {
+        if (isBlank(stage)) {
+            return false;
+        }
+        return AStagesUtils.hasStage(AHolder.server(), stage);
+    }
+
     public static boolean clientHasStage(String stage) {
         if (isBlank(stage)) {
             return false;

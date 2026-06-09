@@ -178,6 +178,20 @@ config="${mod_id}.mixins.json"
     side="BOTH"
 
 [[dependencies."${mod_id}"]]
+    modId="kiwi"
+    type="required"
+    versionRange="[15.4.1,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies."${mod_id}"]]
+    modId="lychee"
+    type="required"
+    versionRange="[6.5.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies."${mod_id}"]]
     modId="kubejs"
     type="required"
     versionRange="[${kubejs_version},)"
