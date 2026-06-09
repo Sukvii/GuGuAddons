@@ -10,20 +10,12 @@ public class MachineRecipeStageKubeEvent implements KubeEvent {
         MachineRecipeStageManager.addRecipe(recipeType, recipeId, stage);
     }
 
-    public void addRecipes(String recipeType, String[] recipeIds, String stage) {
-        MachineRecipeStageManager.addRecipes(recipeType, recipeIds, stage);
-    }
-
     public void addRecipes(String recipeType, List<String> recipeIds, String stage) {
         MachineRecipeStageManager.addRecipes(recipeType, recipeIds, stage);
     }
 
     public void addRecipeByMod(String recipeType, String modId, String stage) {
         MachineRecipeStageManager.addRecipeByMod(recipeType, modId, stage);
-    }
-
-    public void addRecipeByMods(String recipeType, String[] modIds, String stage) {
-        MachineRecipeStageManager.addRecipeByMods(recipeType, modIds, stage);
     }
 
     public void addRecipeByMods(String recipeType, List<String> modIds, String stage) {
