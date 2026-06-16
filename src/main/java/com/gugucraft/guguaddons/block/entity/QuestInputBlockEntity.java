@@ -23,7 +23,9 @@ public class QuestInputBlockEntity extends KineticBlockEntity {
     @Override
     public void onChunkUnloaded() {
         if (level != null && !level.isClientSide) {
-            QuestInterfaceBlockEntity.requestStructureRefreshAround(level, worldPosition);
+            // Non-loading dirty mark only. Must not trigger synchronous chunk loads
+            // here, or shutdown ("Saving worlds") deadlocks on the server thread.
+            QuestInterfaceBlockEntity.markStructureDirtyAround(level, worldPosition);
         }
         super.onChunkUnloaded();
     }

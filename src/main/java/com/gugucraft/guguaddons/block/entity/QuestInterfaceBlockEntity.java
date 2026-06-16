@@ -108,6 +108,7 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
     private boolean isFormed;
     private boolean structureCandidate;
     private boolean structureDirty = true;
+    private boolean unloadingChunk;
     @Nullable
     private BlockPos cachedInputPos;
     private float candidateSpeed;
@@ -153,15 +154,26 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
         Level currentLevel = level;
         UUID currentTeamId = getTeamId();
         super.setRemoved();
-        unregisterLoadedInterface(this, currentLevel, currentTeamId);
+        // A genuine block removal can refresh nearby interfaces (world is live).
+        // During a chunk unload, super.onChunkUnloaded() also routes here; the
+        // unloadingChunk guard keeps that path non-loading.
+        unregisterLoadedInterface(this, currentLevel, currentTeamId, !unloadingChunk);
     }
 
     @Override
     public void onChunkUnloaded() {
         Level currentLevel = level;
         UUID currentTeamId = getTeamId();
-        super.onChunkUnloaded();
-        unregisterLoadedInterface(this, currentLevel, currentTeamId);
+        unloadingChunk = true;
+        try {
+            // super.onChunkUnloaded() may indirectly call setRemoved(); the guard
+            // ensures neither path triggers a synchronous structure refresh.
+            super.onChunkUnloaded();
+        } finally {
+            unloadingChunk = false;
+        }
+        // Unload path: detach from the registry only, never recompute.
+        unregisterLoadedInterface(this, currentLevel, currentTeamId, false);
     }
 
     public void requestStructureRefresh() {
@@ -194,16 +206,37 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
             return;
         }
 
-        BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
-        for (int x = -STRUCTURE_RADIUS; x <= STRUCTURE_RADIUS; x++) {
-            for (int y = -STRUCTURE_RADIUS; y <= STRUCTURE_RADIUS; y++) {
-                for (int z = -STRUCTURE_RADIUS; z <= STRUCTURE_RADIUS; z++) {
-                    mutablePos.set(changedPos.getX() + x, changedPos.getY() + y, changedPos.getZ() + z);
-                    BlockEntity blockEntity = level.getBlockEntity(mutablePos);
-                    if (blockEntity instanceof QuestInterfaceBlockEntity questInterface) {
-                        questInterface.requestStructureRefresh();
-                    }
-                }
+        for (QuestInterfaceBlockEntity questInterface : getLoadedInterfaces(level)) {
+            if (questInterface.isRemoved() || questInterface.level != level) {
+                continue;
+            }
+            if (questInterface.isBlockInStructure(changedPos)) {
+                questInterface.requestStructureRefresh();
+            }
+        }
+    }
+
+    /**
+     * Non-loading variant for unload/shutdown paths. Only flags already-loaded
+     * interfaces whose structure covers {@code changedPos} as dirty, without
+     * recomputing state or touching the world. The next on-demand read (or a
+     * later normal refresh) will reconcile. Uses only the interface's own cached
+     * block state (isBlockInStructureCached) and never calls level.getBlockState
+     * / level.getBlockEntity / level.getChunk, so it cannot trigger synchronous
+     * chunk loading during "Saving worlds".
+     */
+    public static void markStructureDirtyAround(Level level, BlockPos changedPos) {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+
+        for (QuestInterfaceBlockEntity questInterface : getLoadedInterfaces(level)) {
+            if (questInterface.isRemoved() || questInterface.level != level) {
+                continue;
+            }
+            if (questInterface.isBlockInStructureCached(changedPos)) {
+                questInterface.structureDirty = true;
+                invalidateTeamSelection(level, questInterface.getTeamId());
             }
         }
     }
@@ -213,16 +246,12 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
             return;
         }
 
-        BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
-        for (int x = -STRUCTURE_RADIUS; x <= STRUCTURE_RADIUS; x++) {
-            for (int y = -STRUCTURE_RADIUS; y <= STRUCTURE_RADIUS; y++) {
-                for (int z = -STRUCTURE_RADIUS; z <= STRUCTURE_RADIUS; z++) {
-                    mutablePos.set(inputPos.getX() + x, inputPos.getY() + y, inputPos.getZ() + z);
-                    BlockEntity blockEntity = level.getBlockEntity(mutablePos);
-                    if (blockEntity instanceof QuestInterfaceBlockEntity questInterface) {
-                        questInterface.notifyInputSpeedChanged(inputPos);
-                    }
-                }
+        for (QuestInterfaceBlockEntity questInterface : getLoadedInterfaces(level)) {
+            if (questInterface.isRemoved() || questInterface.level != level) {
+                continue;
+            }
+            if (questInterface.isBlockInStructure(inputPos)) {
+                questInterface.notifyInputSpeedChanged(inputPos);
             }
         }
     }
@@ -235,6 +264,27 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
         for (QuestInterfaceBlockEntity questInterface : getLoadedInterfaces(level)) {
             if (questInterface.intersectsChunk(chunkPos)) {
                 questInterface.requestStructureRefresh();
+            }
+        }
+    }
+
+    /**
+     * Non-loading variant for the chunk unload / shutdown path. Flags loaded
+     * interfaces intersecting {@code chunkPos} as dirty without recomputing
+     * state or sending block updates, so it never waits on chunk access.
+     */
+    public static void markStructureDirtyForChunk(Level level, ChunkPos chunkPos) {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+
+        for (QuestInterfaceBlockEntity questInterface : getLoadedInterfaces(level)) {
+            if (questInterface.isRemoved() || questInterface.level != level) {
+                continue;
+            }
+            if (questInterface.intersectsChunk(chunkPos)) {
+                questInterface.structureDirty = true;
+                invalidateTeamSelection(level, questInterface.getTeamId());
             }
         }
     }
@@ -278,7 +328,25 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
             return false;
         }
 
-        BlockState centerState = level.getBlockState(getBlockPos());
+        return isBlockInStructure(pos, level.getBlockState(getBlockPos()));
+    }
+
+    /**
+     * Non-loading geometry check. Uses the block entity's own cached state
+     * ({@link #getBlockState()}) instead of querying the level, so it can be
+     * called on unload/shutdown paths without touching level.getBlockState /
+     * level.getBlockEntity / level.getChunk.
+     */
+    public boolean isBlockInStructureCached(BlockPos pos) {
+        return isBlockInStructure(pos, getBlockState());
+    }
+
+    /**
+     * Pure geometry: tests whether {@code pos} is one of the pattern cells for
+     * an interface centered here and oriented per {@code centerState}. Reads no
+     * world state of its own.
+     */
+    private boolean isBlockInStructure(BlockPos pos, BlockState centerState) {
         if (!centerState.hasProperty(QuestInterfaceBlock.FACING)) {
             return false;
         }
@@ -644,7 +712,7 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
     }
 
     private static void unregisterLoadedInterface(QuestInterfaceBlockEntity blockEntity, @Nullable Level level,
-            @Nullable UUID teamId) {
+            @Nullable UUID teamId, boolean refreshNow) {
         if (level == null || level.isClientSide) {
             return;
         }
@@ -653,7 +721,13 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
         state.loadedInterfaces.remove(blockEntity);
         state.loadedInterfaces.removeIf(loadedInterface -> loadedInterface.isRemoved() || loadedInterface.level != level);
         invalidateTeamSelection(level, teamId);
-        refreshTeamInterfaces(level, teamId);
+        // refreshNow == false on the unload/shutdown path: only detach + mark the
+        // team selection dirty. Recomputing here (refreshTeamInterfaces) would
+        // reach level.getBlockState / level.getBlockEntity and can stall the
+        // server thread during "Saving worlds".
+        if (refreshNow) {
+            refreshTeamInterfaces(level, teamId);
+        }
     }
 
     private static void invalidateTeamSelection(@Nullable Level level, @Nullable UUID teamId) {

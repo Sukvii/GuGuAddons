@@ -38,7 +38,10 @@ public class QuestStructureEvents {
     @SubscribeEvent
     public static void onChunkUnload(net.neoforged.neoforge.event.level.ChunkEvent.Unload event) {
         if (event.getLevel() instanceof Level level && !level.isClientSide) {
-            QuestInterfaceBlockEntity.requestStructureRefreshForChunk(level, event.getChunk().getPos());
+            // Unload/shutdown path: only mark loaded interfaces dirty. Recomputing
+            // here (requestStructureRefresh) can synchronously access neighboring
+            // chunks and stall the server thread during "Saving worlds".
+            QuestInterfaceBlockEntity.markStructureDirtyForChunk(level, event.getChunk().getPos());
         }
     }
 }
