@@ -1,12 +1,10 @@
 package com.gugucraft.guguaddons.block.entity;
 
-import com.gugucraft.guguaddons.GuGuAddons;
 import com.gugucraft.guguaddons.block.custom.QuestInputBlock;
 import com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock;
 import com.gugucraft.guguaddons.block.custom.QuestSubmissionBlock;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModBlocks;
-import com.gugucraft.guguaddons.util.ReflectionCache;
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
 import com.simibubi.create.content.decoration.palettes.AllPaletteBlocks;
@@ -38,7 +36,6 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.neoforged.neoforge.items.IItemHandler;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -75,10 +72,6 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
             .thenComparingInt(BlockPos::getZ);
     private static final Map<Level, LoadedInterfaceState> LOADED_INTERFACE_STATES = Collections
             .synchronizedMap(new WeakHashMap<>());
-    private static final ReflectionCache.MethodRef CLIENT_EDIT_PERMISSION_HOOK = ReflectionCache.publicMethod(
-            "com.gugucraft.guguaddons.client.ftbquests.QuestInterfaceClientHooks",
-            "canEditTaskSelection",
-            TeamData.class);
 
     private final IItemHandler itemHandler = new IItemHandler() {
         @Override
@@ -262,7 +255,7 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
         }
 
         TeamData data = FTBQuestsAPI.api().getQuestFile(level.isClientSide).getNullableTeamData(teamId);
-        if (data == null || !data.canStartTasks(task.getQuest())) {
+        if (data == null || !isSubmittableTask(data, task)) {
             return stack;
         }
 
@@ -623,9 +616,14 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
     }
 
     private boolean isSuitableTask(TeamData data, QuestObjectBase object) {
-        return object instanceof Task task
-                && (data.canStartTasks(task.getQuest()) || canEditTaskSelectionClientSide(data))
-                && task.consumesResources();
+        return object instanceof Task task && isSubmittableTask(data, task);
+    }
+
+    private boolean isSubmittableTask(TeamData data, Task task) {
+        return task instanceof ItemTask
+                && task.consumesResources()
+                && data.areDependenciesComplete(task.getQuest())
+                && data.canStartTasks(task.getQuest());
     }
 
     private Component formatLine(Task task) {
@@ -636,34 +634,6 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
         Component questText = Component.literal(" [").append(task.getQuest().getTitle()).append("]")
                 .withStyle(ChatFormatting.GREEN);
         return ConfigQuestObject.formatEntry(task).copy().append(questText);
-    }
-
-    private boolean canEditTaskSelectionClientSide(TeamData data) {
-        if (level == null || !level.isClientSide) {
-            return false;
-        }
-
-        Method hook = getClientEditPermissionHook();
-        if (hook == null) {
-            return false;
-        }
-
-        try {
-            return (boolean) hook.invoke(null, data);
-        } catch (ReflectiveOperationException exception) {
-            GuGuAddons.LOGGER.debug("Failed to query client-side quest interface edit permissions", exception);
-            return false;
-        }
-    }
-
-    @Nullable
-    private static Method getClientEditPermissionHook() {
-        ReflectionCache.MethodLookup lookup = CLIENT_EDIT_PERMISSION_HOOK.lookup();
-        Method method = lookup.method();
-        if (method == null && lookup.reportFailure()) {
-            GuGuAddons.LOGGER.debug("Quest interface client edit permission hook is unavailable", lookup.failure());
-        }
-        return method;
     }
 
     private static void registerLoadedInterface(QuestInterfaceBlockEntity blockEntity) {
