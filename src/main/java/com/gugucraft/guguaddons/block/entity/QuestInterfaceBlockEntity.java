@@ -17,8 +17,10 @@ import dev.ftb.mods.ftbquests.block.neoforge.NeoForgeTaskScreenBlockEntity;
 import dev.ftb.mods.ftbquests.net.BlockConfigResponseMessage;
 import dev.ftb.mods.ftbquests.quest.QuestObjectBase;
 import dev.ftb.mods.ftbquests.quest.TeamData;
+import dev.ftb.mods.ftbquests.quest.task.FluidTask;
 import dev.ftb.mods.ftbquests.quest.task.ItemTask;
 import dev.ftb.mods.ftbquests.quest.task.Task;
+import dev.ftb.mods.ftbquests.quest.task.neoforge.ForgeEnergyTask;
 import dev.ftb.mods.ftbquests.util.ConfigQuestObject;
 import net.createmod.catnip.lang.FontHelper.Palette;
 import net.minecraft.ChatFormatting;
@@ -688,10 +690,16 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
     }
 
     private boolean isSubmittableTask(TeamData data, Task task) {
-        return task instanceof ItemTask
-                && task.consumesResources()
+        return isTaskScreenSubmittableTask(task)
                 && data.areDependenciesComplete(task.getQuest())
-                && data.canStartTasks(task.getQuest());
+                && data.canStartTasks(task.getQuest())
+                && !data.isCompleted(task);
+    }
+
+    private boolean isTaskScreenSubmittableTask(Task task) {
+        return (task instanceof ItemTask itemTask && itemTask.canInsertItem())
+                || task instanceof FluidTask
+                || task instanceof ForgeEnergyTask;
     }
 
     private Component formatLine(Task task) {
