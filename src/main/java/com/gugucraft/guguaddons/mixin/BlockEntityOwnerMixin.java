@@ -1,6 +1,7 @@
 package com.gugucraft.guguaddons.mixin;
 
 import com.gugucraft.guguaddons.stage.MachineOwnerAccess;
+import com.gugucraft.guguaddons.stage.MachineOwnerHelper;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -14,9 +15,6 @@ import java.util.UUID;
 
 @Mixin(BlockEntity.class)
 public abstract class BlockEntityOwnerMixin implements MachineOwnerAccess {
-    @Unique
-    private static final String GUGUADDONS_OWNER_KEY = "GuGuAddonsOwner";
-
     @Unique
     private UUID guguaddons$machineOwner;
 
@@ -32,13 +30,11 @@ public abstract class BlockEntityOwnerMixin implements MachineOwnerAccess {
 
     @Inject(method = "loadAdditional", at = @At("TAIL"))
     private void guguaddons$loadOwner(CompoundTag tag, HolderLookup.Provider registries, CallbackInfo ci) {
-        guguaddons$machineOwner = tag.hasUUID(GUGUADDONS_OWNER_KEY) ? tag.getUUID(GUGUADDONS_OWNER_KEY) : null;
+        guguaddons$machineOwner = MachineOwnerHelper.getOwner(tag);
     }
 
     @Inject(method = "saveAdditional", at = @At("TAIL"))
     private void guguaddons$saveOwner(CompoundTag tag, HolderLookup.Provider registries, CallbackInfo ci) {
-        if (guguaddons$machineOwner != null) {
-            tag.putUUID(GUGUADDONS_OWNER_KEY, guguaddons$machineOwner);
-        }
+        MachineOwnerHelper.setOwner(tag, guguaddons$machineOwner);
     }
 }
