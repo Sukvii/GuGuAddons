@@ -59,7 +59,7 @@
   "guguaddons.emi.abyss_catalysis.catalyst_chance": "催化剂消耗概率：%s",
   "guguaddons.emi.abyss_catalysis.machine": "需要深渊催化釜和机械幽匿尖啸体",
   "guguaddons.emi.abyss_catalysis.collapsed": "还有 %s 项折叠在此槽位中",
-  "jade.guguaddons.submission_speed": "当前提交速度：%s / s",
+  "jade.guguaddons.submission_speed": "当前提交速度：%s/s",
   "jade.guguaddons.stress_consumption": "当前应力消耗：%s SU",
   "jade.guguaddons.task_progress": "当前进度：%s%%",
   "block.guguaddons.quest_interface.tooltip.summary": "用于任务物品提交的多方块结构核心方块。",

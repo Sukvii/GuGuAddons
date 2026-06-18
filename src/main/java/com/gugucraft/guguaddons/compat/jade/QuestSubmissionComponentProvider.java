@@ -15,8 +15,10 @@ public enum QuestSubmissionComponentProvider implements IBlockComponentProvider 
     @Override
     public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
         if (accessor.getBlockEntity() instanceof QuestSubmissionBlockEntity be) {
-            int speed = be.getProcessingSpeed();
-            tooltip.add(Component.translatable("jade.guguaddons.submission_speed", speed));
+            int processingSpeed = Math.max(1, be.getProcessingSpeed());
+            int cooldown = Math.max(1, 20 / processingSpeed);
+            int submissionsPerSecond = 20 / cooldown;
+            tooltip.add(Component.translatable("jade.guguaddons.submission_speed", submissionsPerSecond));
         }
     }
 

@@ -59,7 +59,7 @@
   "guguaddons.emi.abyss_catalysis.catalyst_chance": "Catalyst consume chance: %s",
   "guguaddons.emi.abyss_catalysis.machine": "Requires an Abyss Catalytic Chamber and a Mechanical Shrieker",
   "guguaddons.emi.abyss_catalysis.collapsed": "%s more entries are folded into this slot",
-  "jade.guguaddons.submission_speed": "Current submission speed: %s / tick",
+  "jade.guguaddons.submission_speed": "Current submission speed: %s/s",
   "jade.guguaddons.stress_consumption": "Current stress consumption: %s su",
   "jade.guguaddons.task_progress": "Current progress: %s%%",
   "block.guguaddons.quest_interface.tooltip.summary": "Core block of a multiblock structure used for task item submission.",
