@@ -1,5 +1,6 @@
 package com.gugucraft.guguaddons.stage;
 
+import com.gugucraft.guguaddons.compat.astages.AStagesBlockOwner;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
@@ -26,6 +27,10 @@ public final class MachineOwnerHelper {
         if (blockEntity instanceof MachineOwnerAccess access) {
             access.guguaddons$setMachineOwner(ownerId);
             blockEntity.setChanged();
+            AStagesBlockOwner.setBlockOwner(blockEntity, ownerId);
+            if (blockEntity instanceof MachineOwnerAssignedCallback callback) {
+                callback.guguaddons$onMachineOwnerAssigned();
+            }
         }
     }
 

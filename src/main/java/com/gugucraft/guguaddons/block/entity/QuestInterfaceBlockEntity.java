@@ -5,6 +5,8 @@ import com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock;
 import com.gugucraft.guguaddons.block.custom.QuestSubmissionBlock;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModBlocks;
+import com.gugucraft.guguaddons.stage.MachineOwnerAssignedCallback;
+import com.gugucraft.guguaddons.stage.MachineOwnerHelper;
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
 import com.simibubi.create.content.decoration.palettes.AllPaletteBlocks;
@@ -22,6 +24,7 @@ import dev.ftb.mods.ftbquests.quest.task.ItemTask;
 import dev.ftb.mods.ftbquests.quest.task.Task;
 import dev.ftb.mods.ftbquests.quest.task.neoforge.ForgeEnergyTask;
 import dev.ftb.mods.ftbquests.util.ConfigQuestObject;
+import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
 import net.createmod.catnip.lang.FontHelper.Palette;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
@@ -47,7 +50,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
-public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity implements IHaveGoggleInformation {
+public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity
+        implements IHaveGoggleInformation, MachineOwnerAssignedCallback {
     private static final String[][] PATTERN = {
             {
                     "DDDDD",
@@ -146,9 +150,41 @@ public class QuestInterfaceBlockEntity extends NeoForgeTaskScreenBlockEntity imp
             return;
         }
 
+        guguaddons$bindTeamFromOwner();
         structureDirty = true;
         registerLoadedInterface(this);
         refreshCurrentState();
+    }
+
+    @Override
+    public void guguaddons$onMachineOwnerAssigned() {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        guguaddons$bindTeamFromOwner();
+    }
+
+    /**
+     * Schematicannon-printed terminals never run {@link QuestInterfaceBlock#setPlacedBy} with a real
+     * player, so their FTB team is never bound. Resolve it from the machine owner (the cannon placer)
+     * instead. Only fills an unset team so a hand-bound team is never overwritten.
+     */
+    private void guguaddons$bindTeamFromOwner() {
+        if (level == null || level.isClientSide || hasAssignedTeam(getTeamId())) {
+            return;
+        }
+
+        UUID owner = MachineOwnerHelper.getOwner(this);
+        if (owner == null || owner.equals(Util.NIL_UUID)) {
+            return;
+        }
+
+        if (!FTBTeamsAPI.api().isManagerLoaded()) {
+            return;
+        }
+
+        FTBTeamsAPI.api().getManager().getTeamForPlayerID(owner)
+                .ifPresent(team -> setTeamId(team.getId()));
     }
 
     @Override
