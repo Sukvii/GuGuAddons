@@ -123,10 +123,15 @@ public final class CreatePackageDupeGuard {
             return null;
         }
 
+        // Completion judgement is intentionally kept loose, matching vanilla Create's
+        // PackageRepackageHelper semantics: fragments of the same order may legitimately carry
+        // heterogeneous addresses and order contexts (only the last non-empty one wins on repack).
+        // Over-strict equality here previously stalled valid orders. Item conservation is still
+        // guaranteed by the atomic extract + output-content verification + rollback chain, so a
+        // looser completion check cannot duplicate items.
         Map<OrderPosition, CandidatePackage> packagesByPosition = new HashMap<>();
         Map<Integer, Boolean> finalLinkByLink = new HashMap<>();
-        PackageOrderWithCrafts orderContext = candidates.getFirst().orderContext();
-        String address = null;
+        PackageOrderWithCrafts craftingContext = null;
 
         for (CandidatePackage candidate : candidates) {
             PackageOrderData orderData = candidate.orderData();
@@ -136,24 +141,20 @@ public final class CreatePackageDupeGuard {
             if (orderData.linkIndex() < 0 || orderData.fragmentIndex() < 0) {
                 return null;
             }
-            if (address == null) {
-                address = candidate.address();
-            } else if (!Objects.equals(address, candidate.address())) {
-                return null;
-            }
 
+            // Duplicate position: keep the first-scanned candidate, leave extras in the inventory
+            // (they are not extracted, so nothing is created or destroyed).
             OrderPosition position = new OrderPosition(orderData.linkIndex(), orderData.fragmentIndex());
-            if (packagesByPosition.put(position, candidate) != null) {
-                return null;
-            }
+            packagesByPosition.putIfAbsent(position, candidate);
 
             Boolean previousFinalLink = finalLinkByLink.putIfAbsent(orderData.linkIndex(), orderData.isFinalLink());
             if (previousFinalLink != null && previousFinalLink != orderData.isFinalLink()) {
                 return null;
             }
 
-            if (!Objects.equals(orderContext, candidate.orderContext())) {
-                return null;
+            // Last non-empty context wins, mirroring PackageRepackageHelper#repack.
+            if (hasCraftingContext(candidate.orderContext())) {
+                craftingContext = candidate.orderContext();
             }
         }
 
@@ -175,10 +176,6 @@ public final class CreatePackageDupeGuard {
                     break;
                 }
 
-                if (orderedPackages.size() != candidates.size()) {
-                    return null;
-                }
-
                 int firstScanIndex = orderedPackages.stream()
                         .mapToInt(CandidatePackage::scanIndex)
                         .min()
@@ -187,7 +184,7 @@ public final class CreatePackageDupeGuard {
                         .mapToInt(CandidatePackage::scanIndex)
                         .max()
                         .orElse(Integer.MAX_VALUE);
-                if (!satisfiesCraftingContext(orderedPackages, orderContext)) {
+                if (!satisfiesCraftingContext(orderedPackages, craftingContext)) {
                     return null;
                 }
                 return new CompleteOrder(orderId, List.copyOf(orderedPackages), firstScanIndex,
