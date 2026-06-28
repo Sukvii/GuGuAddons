@@ -2,6 +2,7 @@ package com.gugucraft.guguaddons.compat.create;
 
 import com.simibubi.create.api.packager.unpacking.UnpackingHandler;
 import com.simibubi.create.content.logistics.stockTicker.PackageOrderWithCrafts;
+import com.simibubi.create.content.logistics.tableCloth.TableClothBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
@@ -30,7 +31,7 @@ public enum TableClothUnpackingHandler implements UnpackingHandler {
                          List<ItemStack> items, @Nullable PackageOrderWithCrafts orderContext,
                          boolean simulate) {
         BlockEntity targetBE = level.getBlockEntity(pos);
-        if (targetBE == null)
+        if (targetBE instanceof TableClothBlockEntity cloth && cloth.isShop())
             return false;
 
         IItemHandler targetInv = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, state, targetBE, side);
@@ -65,25 +66,9 @@ public enum TableClothUnpackingHandler implements UnpackingHandler {
             return false;
         }
 
-        // Try to insert each item
         if (simulate) {
-            // Simulate: check if all items can fit
-            int slotIndex = currentFilled;
-            for (ItemStack stack : items) {
-                if (stack.isEmpty())
-                    continue;
-
-                for (int i = 0; i < stack.getCount(); i++) {
-                    if (slotIndex >= targetInv.getSlots())
-                        return false;
-
-                    ItemStack remainder = targetInv.insertItem(slotIndex, stack.copyWithCount(1), true);
-                    if (!remainder.isEmpty())
-                        return false;
-
-                    slotIndex++;
-                }
-            }
+            // The cloth handler is stateless during simulation, so repeated simulated
+            // inserts would all see the same filled count. Capacity is the constraint.
             return true;
         } else {
             // Commit: actually insert
