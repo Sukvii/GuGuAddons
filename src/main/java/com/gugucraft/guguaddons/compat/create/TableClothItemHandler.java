@@ -78,16 +78,22 @@ public class TableClothItemHandler implements IItemHandler {
         if (be != null && be.isShop())
             return stack;
 
-        // Each cloth slot holds exactly one item. A slot that is already occupied
-        // (i.e. index < current list size) cannot accept more.
+        // Each cloth slot holds exactly one item. Only allow sequential filling:
+        // slot must equal the current number of filled slots to ensure simulate
+        // and commit phases see the same "available slot".
         int filled = be == null ? 0 : be.manuallyAddedItems.size();
-        if (slot < filled)
+
+        // Only accept insertion into the next sequential empty slot
+        if (slot != filled)
             return stack;
+
         if (filled >= SLOTS)
             return stack;
 
-        if (simulate)
+        if (simulate) {
+            // Simulate: this specific slot can accept exactly 1 item
             return stack.copyWithCount(stack.getCount() - 1);
+        }
 
         // Mutating the world (and force-creating the BE) must only happen server-side;
         // capability-driven logistics run there, mirroring Create's own guards.
@@ -127,6 +133,17 @@ public class TableClothItemHandler implements IItemHandler {
 
         if (level.isClientSide())
             return ItemStack.EMPTY;
+
+        // To maintain slot stability for arrival detection, only allow extraction
+        // from the last filled slot. This prevents the list from compacting and
+        // shifting indices, which would corrupt the before/after inventory diff
+        // used by PackagerBlockEntity.submitNewArrivals.
+        int lastFilledSlot = be.manuallyAddedItems.size() - 1;
+        if (slot != lastFilledSlot) {
+            // Middle slot extraction would shift subsequent items forward, breaking
+            // slot position assumptions. Reject extraction from non-tail slots.
+            return ItemStack.EMPTY;
+        }
 
         ItemStack removed = be.manuallyAddedItems.remove(slot).copyWithCount(1);
         be.notifyUpdate();

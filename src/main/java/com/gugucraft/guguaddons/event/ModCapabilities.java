@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.gugucraft.guguaddons.GuGuAddons;
 import com.gugucraft.guguaddons.compat.create.TableClothItemHandler;
+import com.gugucraft.guguaddons.compat.create.TableClothUnpackingHandler;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.simibubi.create.content.logistics.tableCloth.TableClothBlock;
 
@@ -70,6 +71,9 @@ public class ModCapabilities {
                 Capabilities.FluidHandler.BLOCK,
                 ModBlockEntities.ABYSS_CATALYTIC_CHAMBER_TOP.get(),
                 (blockEntity, context) -> blockEntity.getFluidCapability());
+
+        // Register table cloth unpacking handler
+        registerTableClothUnpackingHandlers();
     }
 
     /**
@@ -96,5 +100,29 @@ public class ModCapabilities {
                 Capabilities.ItemHandler.BLOCK,
                 (level, pos, state, blockEntity, context) -> new TableClothItemHandler(level, pos),
                 cloths.toArray(new Block[0]));
+    }
+
+    /**
+     * Register custom unpacking handler for all table cloth blocks to ensure
+     * packages are safely rejected when they exceed the cloth's 4-item capacity.
+     */
+    private static void registerTableClothUnpackingHandlers() {
+        List<Block> cloths = BuiltInRegistries.BLOCK.stream()
+                .filter(block -> block instanceof TableClothBlock)
+                .toList();
+
+        if (cloths.isEmpty()) {
+            GuGuAddons.LOGGER.warn("No table cloth blocks found for unpacking handler registration.");
+            return;
+        }
+
+        for (Block cloth : cloths) {
+            com.simibubi.create.api.packager.unpacking.UnpackingHandler.REGISTRY.register(
+                    cloth,
+                    TableClothUnpackingHandler.INSTANCE
+            );
+        }
+
+        GuGuAddons.LOGGER.info("Registered table cloth unpacking handler for {} cloth variants.", cloths.size());
     }
 }
