@@ -1,6 +1,9 @@
 package com.gugucraft.guguaddons.client.stock;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.UUID;
 
 import com.gugucraft.guguaddons.config.Config;
 import com.gugucraft.guguaddons.stock.ui.StockUiAction;
@@ -17,7 +20,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 @OnlyIn(Dist.CLIENT)
 public final class StockUiClientHooks {
+    private static final int MAX_RECENTLY_CLOSED_NONCES = 32;
     private static ClientSession activeSession;
+    private static final Set<UUID> RECENTLY_CLOSED_NONCES = new LinkedHashSet<>();
 
     private StockUiClientHooks() {
     }
@@ -34,8 +39,13 @@ public final class StockUiClientHooks {
     }
 
     public static void handleSnapshot(StockUiSnapshotS2CPayload payload) {
+        UUID sessionNonce = payload.sessionNonce();
+        if (RECENTLY_CLOSED_NONCES.contains(sessionNonce)) {
+            return;
+        }
         if (!Config.isEffectiveStockEnabled()) {
             closeActiveSession(false);
+            rememberClosedNonce(sessionNonce);
             return;
         }
 
@@ -45,8 +55,13 @@ public final class StockUiClientHooks {
             return;
         }
 
-        if (activeSession == null || minecraft.screen != activeSession.screen) {
-            activeSession = new ClientSession(player);
+        if (activeSession == null || !activeSession.nonce.equals(sessionNonce)) {
+            if (activeSession != null) {
+                activeSession.closeSilently(minecraft);
+            }
+            activeSession = new ClientSession(player, sessionNonce);
+            minecraft.setScreen(activeSession.screen);
+        } else if (minecraft.screen != activeSession.screen) {
             minecraft.setScreen(activeSession.screen);
         }
 
@@ -67,13 +82,24 @@ public final class StockUiClientHooks {
         session.closeSilently(minecraft);
     }
 
+    private static void rememberClosedNonce(UUID nonce) {
+        RECENTLY_CLOSED_NONCES.add(nonce);
+        while (RECENTLY_CLOSED_NONCES.size() > MAX_RECENTLY_CLOSED_NONCES) {
+            Iterator<UUID> iterator = RECENTLY_CLOSED_NONCES.iterator();
+            iterator.next();
+            iterator.remove();
+        }
+    }
+
     private static final class ClientSession {
-        private final AtomicReference<StockUiSnapshot> snapshotRef = new AtomicReference<>(StockUiSnapshot.empty());
+        private final UUID nonce;
         private final StockUiFactory.StockUiView view;
         private final StockUiScreen screen;
+        private long nextRequestId = 1L;
         private boolean suppressClosePacket;
 
-        private ClientSession(Player player) {
+        private ClientSession(Player player, UUID nonce) {
+            this.nonce = nonce;
             this.view = StockUiFactory.create(player, this::dispatchAction);
             this.screen = new StockUiScreen(
                     view.modularUI(),
@@ -82,39 +108,41 @@ public final class StockUiClientHooks {
         }
 
         private void apply(StockUiSnapshot snapshot) {
-            snapshotRef.set(snapshot);
             view.applySnapshot().accept(snapshot);
         }
 
         private void dispatchAction(StockUiAction action, int targetStock) {
-            if (!Config.isEffectiveStockEnabled()) {
+            if (action != StockUiAction.CLOSE && !Config.isEffectiveStockEnabled()) {
                 closeActiveSession(false);
                 return;
             }
 
-            StockUiSnapshot snapshot = snapshotRef.get();
+            long requestId = nextRequestId++;
+            if (requestId <= 0L) {
+                return;
+            }
             PacketDistributor.sendToServer(new StockUiActionC2SPayload(
+                    nonce,
+                    requestId,
                     action.id(),
-                    snapshot.page(),
-                    snapshot.selectedStock(),
-                    snapshot.lotIndex(),
-                    snapshot.windowIndex(),
                     targetStock));
         }
 
         private void closeSilently(Minecraft minecraft) {
             suppressClosePacket = true;
+            rememberClosedNonce(nonce);
+            if (activeSession == this) {
+                activeSession = null;
+            }
             if (minecraft.screen == screen) {
                 minecraft.setScreen(null);
                 return;
             }
-            if (activeSession == this) {
-                activeSession = null;
-            }
         }
 
         private void onScreenClosed() {
-            if (!suppressClosePacket && Config.isEffectiveStockEnabled()) {
+            if (!suppressClosePacket) {
+                rememberClosedNonce(nonce);
                 dispatchAction(StockUiAction.CLOSE, -1);
             }
             suppressClosePacket = false;
