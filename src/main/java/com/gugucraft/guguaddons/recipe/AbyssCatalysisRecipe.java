@@ -140,8 +140,8 @@ public class AbyssCatalysisRecipe implements Recipe<RecipeInput> {
             return false;
         }
 
-        IItemHandler bottomItems = layers.bottom().getItemCapability();
-        IFluidHandler bottomFluids = layers.bottom().getFluidCapability();
+        IItemHandler bottomItems = layers.bottom().getInputInventory();
+        IFluidHandler bottomFluids = layers.bottom().getInputTankCapability();
         ItemConsumptionPlan topItemPlan = planItemConsumption(layers.top().getInputInventory(),
                 abyssRecipe.getTopItemIngredients());
         ItemConsumptionPlan bottomItemPlan = planItemConsumption(bottomItems, abyssRecipe.getBottomItemIngredients());
