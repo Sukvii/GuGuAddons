@@ -1,5 +1,8 @@
 package com.gugucraft.guguaddons.compat.astages;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.alessandro.astages.infrastructure.hook.CommonEventSettings;
 import com.gugucraft.guguaddons.GuGuAddons;
 import com.gugucraft.guguaddons.item.UnknownBagItem;
@@ -53,6 +56,9 @@ public final class UnknownBagAStagesEvents {
         if (!(event.getEntity() instanceof ServerPlayer player) || player instanceof FakePlayer) {
             return;
         }
+        if (player.tickCount % 20 != 0) {
+            return;
+        }
         if (!CommonEventSettings.requireSlotCheck() && !CommonEventSettings.requireContainerCheck()) {
             return;
         }
@@ -63,6 +69,8 @@ public final class UnknownBagAStagesEvents {
             return;
         }
 
+        UnknownBagItem.StorageBatch batch = UnknownBagItem.startStorageBatch(bag, player.registryAccess());
+        List<Integer> storedSlots = new ArrayList<>();
         int mainSize = inventory.items.size();
         int equipmentLimit = mainSize + inventory.armor.size();
         for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
@@ -79,7 +87,13 @@ public final class UnknownBagAStagesEvents {
                 continue;
             }
 
-            if (UnknownBagItem.store(bag, stack, player.registryAccess())) {
+            if (batch.tryStore(stack)) {
+                storedSlots.add(slot);
+            }
+        }
+
+        if (batch.commit()) {
+            for (int slot : storedSlots) {
                 inventory.setItem(slot, ItemStack.EMPTY);
             }
         }
