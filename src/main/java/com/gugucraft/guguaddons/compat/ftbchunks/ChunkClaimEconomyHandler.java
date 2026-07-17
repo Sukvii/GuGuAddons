@@ -34,6 +34,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 @EventBusSubscriber(modid = GuGuAddons.MODID)
@@ -162,6 +163,13 @@ public class ChunkClaimEconomyHandler {
                 iterator.remove();
             }
         }
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        PENDING_SESSIONS.clear();
+        BYPASS_CLAIMS.clear();
+        NEXT_SESSION_ID.set(1);
     }
 
     private static void flushPendingRefunds(MinecraftServer server) {

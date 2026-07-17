@@ -51,6 +51,6 @@ public class GuGuAddons {
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
-        ChunkClaimEconomyHandler.init();
+        event.enqueueWork(ChunkClaimEconomyHandler::init);
     }
 }

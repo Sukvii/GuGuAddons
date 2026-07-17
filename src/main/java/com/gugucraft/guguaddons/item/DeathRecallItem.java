@@ -4,9 +4,11 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -15,15 +17,10 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.component.CustomData;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Style;
-
-import java.util.List;
 
 public class DeathRecallItem extends Item {
     public DeathRecallItem(Properties properties) {
@@ -44,10 +41,17 @@ public class DeathRecallItem extends Item {
         if (data == null)
             return null;
         CompoundTag tag = data.copyTag();
-        if (!tag.contains("DeathDim"))
+        if (!tag.contains("DeathDim", Tag.TAG_STRING)
+                || !tag.contains("DeathX", Tag.TAG_INT)
+                || !tag.contains("DeathY", Tag.TAG_INT)
+                || !tag.contains("DeathZ", Tag.TAG_INT)) {
             return null;
+        }
 
-        ResourceLocation dimLoc = ResourceLocation.parse(tag.getString("DeathDim"));
+        ResourceLocation dimLoc = ResourceLocation.tryParse(tag.getString("DeathDim"));
+        if (dimLoc == null) {
+            return null;
+        }
         int x = tag.getInt("DeathX");
         int y = tag.getInt("DeathY");
         int z = tag.getInt("DeathZ");
@@ -71,10 +75,8 @@ public class DeathRecallItem extends Item {
             return InteractionResultHolder.fail(stack);
         }
 
-        if (getDeathLocation(stack) != null) {
-            player.startUsingItem(usedHand);
-            return InteractionResultHolder.consume(stack);
-        } else {
+        GlobalPos pos = getDeathLocation(stack);
+        if (pos == null) {
             if (!level.isClientSide) {
                 player.displayClientMessage(
                         Component.translatable("message.guguaddons.recall_no_location").withStyle(ChatFormatting.RED),
@@ -82,35 +84,56 @@ public class DeathRecallItem extends Item {
             }
             return InteractionResultHolder.fail(stack);
         }
+
+        if (!level.isClientSide) {
+            MinecraftServer server = player.getServer();
+            if (server == null || server.getLevel(pos.dimension()) == null) {
+                player.displayClientMessage(
+                        Component.translatable("message.guguaddons.recall_dimension_not_found")
+                                .withStyle(ChatFormatting.RED),
+                        true);
+                return InteractionResultHolder.fail(stack);
+            }
+        }
+
+        player.startUsingItem(usedHand);
+        return InteractionResultHolder.consume(stack);
     }
 
     @Override
     public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity livingEntity) {
         if (!level.isClientSide && livingEntity instanceof ServerPlayer player) {
             GlobalPos pos = getDeathLocation(stack);
-            if (pos != null) {
-                ServerLevel targetLevel = player.getServer().getLevel(pos.dimension());
-                if (targetLevel != null) {
-                    player.teleportTo(targetLevel, pos.pos().getX() + 0.5, pos.pos().getY(), pos.pos().getZ() + 0.5,
-                            player.getYRot(), player.getXRot());
-                    player.displayClientMessage(
-                            Component.translatable("message.guguaddons.recall_teleporting")
-                                    .withStyle(ChatFormatting.GREEN),
-                            true);
-                    level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                            net.minecraft.sounds.SoundEvents.ENDERMAN_TELEPORT,
-                            net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
+            if (pos == null) {
+                player.displayClientMessage(
+                        Component.translatable("message.guguaddons.recall_no_location").withStyle(ChatFormatting.RED),
+                        true);
+                return stack;
+            }
 
-                    // Consume durability
-                    if (!player.getAbilities().instabuild) {
-                        stack.setDamageValue(Math.min(stack.getDamageValue() + 1, stack.getMaxDamage() - 1));
-                    }
-                } else {
-                    player.displayClientMessage(
-                            Component.translatable("message.guguaddons.recall_dimension_not_found")
-                                    .withStyle(ChatFormatting.RED),
-                            true);
-                }
+            MinecraftServer server = player.getServer();
+            ServerLevel targetLevel = server == null ? null : server.getLevel(pos.dimension());
+            if (targetLevel == null) {
+                player.displayClientMessage(
+                        Component.translatable("message.guguaddons.recall_dimension_not_found")
+                                .withStyle(ChatFormatting.RED),
+                        true);
+                return stack;
+            }
+
+            player.teleportTo(targetLevel, pos.pos().getX() + 0.5, pos.pos().getY(), pos.pos().getZ() + 0.5,
+                    player.getYRot(), player.getXRot());
+            player.displayClientMessage(
+                    Component.translatable("message.guguaddons.recall_teleporting")
+                            .withStyle(ChatFormatting.GREEN),
+                    true);
+            level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                    net.minecraft.sounds.SoundEvents.ENDERMAN_TELEPORT,
+                    net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
+
+            // Consume durability
+            if (!player.getAbilities().instabuild) {
+                stack.setDamageValue(Math.min(stack.getDamageValue() + 1, stack.getMaxDamage() - 1));
             }
         }
         return stack;
@@ -124,62 +147,5 @@ public class DeathRecallItem extends Item {
     @Override
     public UseAnim getUseAnimation(ItemStack stack) {
         return UseAnim.BOW;
-    }
-
-    @Override
-
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents,
-            TooltipFlag tooltipFlag) {
-        if (Screen.hasShiftDown()) {
-            Style CREATE_GOLD = Style.EMPTY.withColor(0xC7954B);
-
-            tooltipComponents.add(Component.translatable("item.guguaddons.slash_back_terminal.tooltip.summary")
-                    .withStyle(CREATE_GOLD));
-
-            tooltipComponents.add(Component.empty());
-
-            tooltipComponents.add(Component.translatable("item.guguaddons.slash_back_terminal.tooltip.condition1")
-                    .withStyle(ChatFormatting.GRAY));
-            tooltipComponents.add(Component.translatable("item.guguaddons.slash_back_terminal.tooltip.behaviour1")
-                    .withStyle(CREATE_GOLD));
-
-            tooltipComponents.add(Component.empty());
-
-            tooltipComponents.add(Component.translatable("item.guguaddons.slash_back_terminal.tooltip.condition2")
-                    .withStyle(ChatFormatting.GRAY));
-            tooltipComponents.add(Component.translatable("item.guguaddons.slash_back_terminal.tooltip.behaviour2")
-                    .withStyle(CREATE_GOLD));
-
-            tooltipComponents.add(Component.empty());
-
-            tooltipComponents.add(Component.translatable("item.guguaddons.slash_back_terminal.tooltip.condition3")
-                    .withStyle(ChatFormatting.GRAY));
-            tooltipComponents.add(Component.translatable("item.guguaddons.slash_back_terminal.tooltip.behaviour3")
-                    .withStyle(CREATE_GOLD));
-
-            tooltipComponents.add(Component.empty());
-            tooltipComponents.add(Component.empty());
-
-            tooltipComponents.add(Component.translatable("item.guguaddons.slash_back_terminal.tooltip.flavor")
-                    .withStyle(ChatFormatting.DARK_PURPLE)
-                    .withStyle(ChatFormatting.ITALIC));
-        } else {
-            tooltipComponents.add(Component.translatable("tooltip.guguaddons.hold_for_description")
-                    .withStyle(ChatFormatting.DARK_GRAY));
-        }
-
-        GlobalPos pos = getDeathLocation(stack);
-        if (pos != null) {
-            tooltipComponents
-                    .add(Component.translatable("tooltip.guguaddons.recall_location", pos.pos().toShortString())
-                            .withStyle(ChatFormatting.GRAY));
-            tooltipComponents
-                    .add(Component
-                            .translatable("tooltip.guguaddons.recall_dimension", pos.dimension().location().toString())
-                            .withStyle(ChatFormatting.GRAY));
-        } else {
-            tooltipComponents.add(
-                    Component.translatable("tooltip.guguaddons.recall_no_location").withStyle(ChatFormatting.GRAY));
-        }
     }
 }

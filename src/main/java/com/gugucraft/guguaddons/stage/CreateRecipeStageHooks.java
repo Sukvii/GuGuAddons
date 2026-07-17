@@ -52,6 +52,9 @@ public final class CreateRecipeStageHooks {
                     .filter(recipe -> RecipeGridHandler.isRecipeAllowed(recipe, craftingInput));
 
             if (craftingRecipe.isPresent()) {
+                if (!MachineRecipeStageManager.canProcess(machine, craftingRecipe.get())) {
+                    return null;
+                }
                 return craftingRecipe.get().value().assemble(craftingInput, registryAccess);
             }
         }

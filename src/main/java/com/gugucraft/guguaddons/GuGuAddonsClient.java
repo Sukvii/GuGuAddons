@@ -74,72 +74,73 @@ public class GuGuAddonsClient {
 
         static void onClientSetup(FMLClientSetupEvent event) {
                 // Client setup code
-                PonderIndex.addPlugin(new GuGuAddonsPonderPlugin());
-                ModPartialModels.init();
                 event.enqueueWork(() -> {
+                        PonderIndex.addPlugin(new GuGuAddonsPonderPlugin());
+                        ModPartialModels.init();
+
                         ItemBlockRenderTypes.setRenderLayer(ModBlocks.VACUUM_CHAMBER.get(),
                                         RenderType.cutoutMipped());
                         ItemProperties.register(ModItems.UNKNOWN_BAG.get(),
                                         ResourceLocation.fromNamespaceAndPath(GuGuAddons.MODID, "filled"),
                                         (stack, level, entity, seed) -> UnknownBagItem.hasStoredItems(stack) ? 1.0F
                                                         : 0.0F);
+
+                        dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
+                                        .builder(ModBlockEntities.QUEST_INPUT.get())
+                                        .factory(OrientedRotatingVisual.of(AllPartialModels.SHAFT_HALF))
+                                        .skipVanillaRender(be -> true)
+                                        .apply();
+
+                        dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
+                                        .builder(ModBlockEntities.VACUUM_CHAMBER.get())
+                                        .factory(VacuumChamberVisual::new)
+                                        .apply();
+
+                        dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
+                                        .builder(ModBlockEntities.CENTRIFUGE.get())
+                                        .factory(CentrifugeVisual::new)
+                                        .apply();
+
+                        dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
+                                        .builder(ModBlockEntities.MECHANICAL_SHRIEKER.get())
+                                        .factory(MechanicalShriekerVisual::new)
+                                        .apply();
+
+                        // Register Connected Textures
+                        CreateClient.MODEL_SWAPPER.getCustomBlockModels().register(ModBlocks.DEDUCTION_CASING.getId(),
+                                        model -> new CTModel(model, new EncasedCTBehaviour(DEDUCTION_CASING_CT)));
+                        CreateClient.CASING_CONNECTIVITY.makeCasing(ModBlocks.DEDUCTION_CASING.get(), DEDUCTION_CASING_CT);
+
+                        CreateClient.MODEL_SWAPPER.getCustomBlockModels().register(ModBlocks.QUEST_INTERFACE_BLOCK.getId(),
+                                        model -> new CTModel(model, new EncasedCTBehaviour(DEDUCTION_CASING_CT) {
+                                                @Override
+                                                public CTSpriteShiftEntry getShift(
+                                                                net.minecraft.world.level.block.state.BlockState state,
+                                                                net.minecraft.core.Direction direction,
+                                                                @org.jetbrains.annotations.Nullable net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {
+                                                        return direction == state.getValue(
+                                                                        com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock.FACING)
+                                                                                        ? QUEST_INTERFACE_CT
+                                                                                        : DEDUCTION_CASING_CT;
+                                                }
+                                        }));
+                        CreateClient.CASING_CONNECTIVITY.makeCasing(ModBlocks.QUEST_INTERFACE_BLOCK.get(), DEDUCTION_CASING_CT);
+
+                        CreateClient.MODEL_SWAPPER.getCustomBlockModels().register(ModBlocks.QUEST_SUBMISSION.getId(),
+                                        model -> new CTModel(model, new EncasedCTBehaviour(DEDUCTION_CASING_CT) {
+                                                @Override
+                                                public CTSpriteShiftEntry getShift(
+                                                                net.minecraft.world.level.block.state.BlockState state,
+                                                                net.minecraft.core.Direction direction,
+                                                                @org.jetbrains.annotations.Nullable net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {
+                                                        return direction == state.getValue(
+                                                                        com.gugucraft.guguaddons.block.custom.QuestSubmissionBlock.FACING)
+                                                                                        ? QUEST_SUBMISSION_CT
+                                                                                        : DEDUCTION_CASING_CT;
+                                                }
+                                        }));
+                        CreateClient.CASING_CONNECTIVITY.makeCasing(ModBlocks.QUEST_SUBMISSION.get(), DEDUCTION_CASING_CT);
                 });
-
-                dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
-                                .builder(ModBlockEntities.QUEST_INPUT.get())
-                                .factory(OrientedRotatingVisual.of(AllPartialModels.SHAFT_HALF))
-                                .skipVanillaRender(be -> true)
-                                .apply();
-
-                dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
-                                .builder(ModBlockEntities.VACUUM_CHAMBER.get())
-                                .factory(VacuumChamberVisual::new)
-                                .apply();
-
-                dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
-                                .builder(ModBlockEntities.CENTRIFUGE.get())
-                                .factory(CentrifugeVisual::new)
-                                .apply();
-
-                dev.engine_room.flywheel.lib.visualization.SimpleBlockEntityVisualizer
-                                .builder(ModBlockEntities.MECHANICAL_SHRIEKER.get())
-                                .factory(MechanicalShriekerVisual::new)
-                                .apply();
-
-                // Register Connected Textures
-                CreateClient.MODEL_SWAPPER.getCustomBlockModels().register(ModBlocks.DEDUCTION_CASING.getId(),
-                                model -> new CTModel(model, new EncasedCTBehaviour(DEDUCTION_CASING_CT)));
-                CreateClient.CASING_CONNECTIVITY.makeCasing(ModBlocks.DEDUCTION_CASING.get(), DEDUCTION_CASING_CT);
-
-                CreateClient.MODEL_SWAPPER.getCustomBlockModels().register(ModBlocks.QUEST_INTERFACE_BLOCK.getId(),
-                                model -> new CTModel(model, new EncasedCTBehaviour(DEDUCTION_CASING_CT) {
-                                        @Override
-                                        public CTSpriteShiftEntry getShift(
-                                                        net.minecraft.world.level.block.state.BlockState state,
-                                                        net.minecraft.core.Direction direction,
-                                                        @org.jetbrains.annotations.Nullable net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {
-                                                return direction == state.getValue(
-                                                                com.gugucraft.guguaddons.block.custom.QuestInterfaceBlock.FACING)
-                                                                                ? QUEST_INTERFACE_CT
-                                                                                : DEDUCTION_CASING_CT;
-                                        }
-                                }));
-                CreateClient.CASING_CONNECTIVITY.makeCasing(ModBlocks.QUEST_INTERFACE_BLOCK.get(), DEDUCTION_CASING_CT);
-
-                CreateClient.MODEL_SWAPPER.getCustomBlockModels().register(ModBlocks.QUEST_SUBMISSION.getId(),
-                                model -> new CTModel(model, new EncasedCTBehaviour(DEDUCTION_CASING_CT) {
-                                        @Override
-                                        public CTSpriteShiftEntry getShift(
-                                                        net.minecraft.world.level.block.state.BlockState state,
-                                                        net.minecraft.core.Direction direction,
-                                                        @org.jetbrains.annotations.Nullable net.minecraft.client.renderer.texture.TextureAtlasSprite sprite) {
-                                                return direction == state.getValue(
-                                                                com.gugucraft.guguaddons.block.custom.QuestSubmissionBlock.FACING)
-                                                                                ? QUEST_SUBMISSION_CT
-                                                                                : DEDUCTION_CASING_CT;
-                                        }
-                                }));
-                CreateClient.CASING_CONNECTIVITY.makeCasing(ModBlocks.QUEST_SUBMISSION.get(), DEDUCTION_CASING_CT);
         }
 
         public static void registerRenderers(

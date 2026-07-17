@@ -5,6 +5,7 @@ import com.gugucraft.guguaddons.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -25,7 +26,7 @@ public class QuestSubmissionBlockEntity extends BlockEntity {
     private BlockPos cachedControllerPos = null;
 
     private int getCooldown() {
-        return Math.max(1, 20 / processingSpeed);
+        return Math.max(1, 20 / Math.max(1, processingSpeed));
     }
 
     private final IItemHandler itemHandler = new IItemHandler() {
@@ -135,9 +136,10 @@ public class QuestSubmissionBlockEntity extends BlockEntity {
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        if (tag.contains("ProcessingSpeed")) {
-            processingSpeed = tag.getInt("ProcessingSpeed");
-        }
+        int loadedSpeed = tag.contains("ProcessingSpeed", Tag.TAG_INT) ? tag.getInt("ProcessingSpeed") : 1;
+        processingSpeed = loadedSpeed == 1 || loadedSpeed == 4 || loadedSpeed == 8 || loadedSpeed == 16
+                ? loadedSpeed
+                : 1;
     }
 
     @Nullable
