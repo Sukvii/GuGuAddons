@@ -500,7 +500,23 @@ public class AbyssCatalyticChamberBlockEntity extends SmartBlockEntity implement
         while (fluidIterator.hasNext()) {
             FluidStack fluidStack = fluidIterator.next();
             if (direction == Direction.DOWN) {
-                fluidIterator.remove();
+                IFluidHandler outputHandler = outputTank == null ? null : outputTank.getCapability();
+                if (outputHandler == null) {
+                    break;
+                }
+
+                int filled = outputHandler instanceof SmartFluidTankBehaviour.InternalFluidHandler internalHandler
+                        ? internalHandler.forceFill(fluidStack.copy(), FluidAction.EXECUTE)
+                        : outputHandler.fill(fluidStack.copy(), FluidAction.EXECUTE);
+                if (filled <= 0) {
+                    continue;
+                }
+
+                if (filled == fluidStack.getAmount()) {
+                    fluidIterator.remove();
+                } else {
+                    fluidStack.shrink(filled);
+                }
                 update = true;
                 continue;
             }

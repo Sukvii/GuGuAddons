@@ -41,6 +41,9 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class CentrifugeStructuralBlock extends DirectionalBlock
         implements IBE<CentrifugeStructuralBlockEntity>, IWrenchable, IProxyHoveringInformation {
 
@@ -157,13 +160,35 @@ public class CentrifugeStructuralBlock extends DirectionalBlock
     }
 
     public static BlockPos getMaster(BlockGetter level, BlockPos pos, BlockState state) {
-        Direction direction = state.getValue(FACING);
-        BlockPos targetedPos = pos.relative(direction);
-        BlockState targetedState = level.getBlockState(targetedPos);
-        if (targetedState.is(ModBlocks.CENTRIFUGE_STRUCTURE.get())) {
-            return getMaster(level, targetedPos, targetedState);
+        BlockPos originalPos = pos;
+        BlockPos currentPos = pos;
+        BlockState currentState = state;
+        Set<BlockPos> visited = new HashSet<>();
+
+        for (int hops = 0; hops < 2; hops++) {
+            if (!currentState.is(ModBlocks.CENTRIFUGE_STRUCTURE.get()) || !currentState.hasProperty(FACING)
+                    || !visited.add(currentPos)) {
+                return originalPos;
+            }
+
+            BlockPos targetedPos = currentPos.relative(currentState.getValue(FACING));
+            if (visited.contains(targetedPos)) {
+                return originalPos;
+            }
+
+            BlockState targetedState = level.getBlockState(targetedPos);
+            if (targetedState.is(ModBlocks.CENTRIFUGE.get())) {
+                return targetedPos;
+            }
+            if (!targetedState.is(ModBlocks.CENTRIFUGE_STRUCTURE.get())) {
+                return originalPos;
+            }
+
+            currentPos = targetedPos;
+            currentState = targetedState;
         }
-        return targetedPos;
+
+        return originalPos;
     }
 
     public boolean stillValid(BlockGetter level, BlockPos pos, BlockState state, boolean directlyAdjacent) {

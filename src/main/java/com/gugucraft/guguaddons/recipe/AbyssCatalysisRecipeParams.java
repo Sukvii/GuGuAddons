@@ -12,7 +12,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -24,10 +23,18 @@ public record AbyssCatalysisRecipeParams(
         List<AbyssCatalysisRecipeResult> results,
         HeatCondition heatRequirement
 ) {
+    private static final int MAX_LIST_SIZE = 64;
+
     private static final Codec<Float> CHANCE_CODEC = Codec.FLOAT.validate(value ->
-            value >= 0F && value <= 1F
+            isValidChance(value)
                     ? DataResult.success(value)
                     : DataResult.error(() -> "Chance must be between 0 and 1"));
+
+    private static final StreamCodec<RegistryFriendlyByteBuf, List<AbyssCatalysisRecipeIngredient>> INGREDIENT_LIST_STREAM_CODEC =
+            AbyssCatalysisRecipeIngredient.STREAM_CODEC.apply(ByteBufCodecs.list(MAX_LIST_SIZE));
+
+    private static final StreamCodec<RegistryFriendlyByteBuf, List<AbyssCatalysisRecipeResult>> RESULT_LIST_STREAM_CODEC =
+            AbyssCatalysisRecipeResult.STREAM_CODEC.apply(ByteBufCodecs.list(MAX_LIST_SIZE));
 
     private static final MapCodec<HeatCondition> HEAT_REQUIREMENT_CODEC = new MapCodec<>() {
         @Override
@@ -60,33 +67,36 @@ public record AbyssCatalysisRecipeParams(
     };
 
     public static final MapCodec<AbyssCatalysisRecipeParams> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            AbyssCatalysisRecipeIngredient.CODEC.listOf().optionalFieldOf("topIngredients", List.of())
+            AbyssCatalysisRecipeIngredient.CODEC.sizeLimitedListOf(MAX_LIST_SIZE).optionalFieldOf("topIngredients", List.of())
                     .forGetter(AbyssCatalysisRecipeParams::topIngredients),
-            AbyssCatalysisRecipeIngredient.CODEC.listOf().optionalFieldOf("bottomIngredients", List.of())
+            AbyssCatalysisRecipeIngredient.CODEC.sizeLimitedListOf(MAX_LIST_SIZE).optionalFieldOf("bottomIngredients", List.of())
                     .forGetter(AbyssCatalysisRecipeParams::bottomIngredients),
-            AbyssCatalysisRecipeIngredient.CODEC.listOf().optionalFieldOf("catalysts", List.of())
+            AbyssCatalysisRecipeIngredient.CODEC.sizeLimitedListOf(MAX_LIST_SIZE).optionalFieldOf("catalysts", List.of())
                     .forGetter(AbyssCatalysisRecipeParams::catalysts),
             CHANCE_CODEC.optionalFieldOf("chances", 1F).forGetter(AbyssCatalysisRecipeParams::chances),
-            AbyssCatalysisRecipeResult.CODEC.listOf().optionalFieldOf("results", List.of())
+            AbyssCatalysisRecipeResult.CODEC.sizeLimitedListOf(MAX_LIST_SIZE).optionalFieldOf("results", List.of())
                     .forGetter(AbyssCatalysisRecipeParams::results),
             HEAT_REQUIREMENT_CODEC.forGetter(AbyssCatalysisRecipeParams::heatRequirement)
     ).apply(instance, AbyssCatalysisRecipeParams::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, AbyssCatalysisRecipeParams> STREAM_CODEC = StreamCodec.of(
             (buffer, params) -> {
-                writeList(buffer, params.topIngredients(), AbyssCatalysisRecipeIngredient.STREAM_CODEC);
-                writeList(buffer, params.bottomIngredients(), AbyssCatalysisRecipeIngredient.STREAM_CODEC);
-                writeList(buffer, params.catalysts(), AbyssCatalysisRecipeIngredient.STREAM_CODEC);
+                INGREDIENT_LIST_STREAM_CODEC.encode(buffer, params.topIngredients());
+                INGREDIENT_LIST_STREAM_CODEC.encode(buffer, params.bottomIngredients());
+                INGREDIENT_LIST_STREAM_CODEC.encode(buffer, params.catalysts());
+                if (!isValidChance(params.chances())) {
+                    throw new io.netty.handler.codec.EncoderException("Chance must be finite and between 0 and 1");
+                }
                 ByteBufCodecs.FLOAT.encode(buffer, params.chances());
-                writeList(buffer, params.results(), AbyssCatalysisRecipeResult.STREAM_CODEC);
+                RESULT_LIST_STREAM_CODEC.encode(buffer, params.results());
                 HeatCondition.STREAM_CODEC.encode(buffer, params.heatRequirement());
             },
             buffer -> new AbyssCatalysisRecipeParams(
-                    readList(buffer, AbyssCatalysisRecipeIngredient.STREAM_CODEC),
-                    readList(buffer, AbyssCatalysisRecipeIngredient.STREAM_CODEC),
-                    readList(buffer, AbyssCatalysisRecipeIngredient.STREAM_CODEC),
-                    ByteBufCodecs.FLOAT.decode(buffer),
-                    readList(buffer, AbyssCatalysisRecipeResult.STREAM_CODEC),
+                    INGREDIENT_LIST_STREAM_CODEC.decode(buffer),
+                    INGREDIENT_LIST_STREAM_CODEC.decode(buffer),
+                    INGREDIENT_LIST_STREAM_CODEC.decode(buffer),
+                    decodeChance(buffer),
+                    RESULT_LIST_STREAM_CODEC.decode(buffer),
                     HeatCondition.STREAM_CODEC.decode(buffer))
     );
 
@@ -95,26 +105,23 @@ public record AbyssCatalysisRecipeParams(
         bottomIngredients = List.copyOf(bottomIngredients);
         catalysts = List.copyOf(catalysts);
         results = List.copyOf(results);
+        if (!isValidChance(chances)) {
+            throw new IllegalArgumentException("Chance must be finite and between 0 and 1");
+        }
         if (heatRequirement == null) {
             heatRequirement = HeatCondition.NONE;
         }
     }
 
-    private static <T> void writeList(RegistryFriendlyByteBuf buffer, List<T> list,
-                                      StreamCodec<RegistryFriendlyByteBuf, T> codec) {
-        ByteBufCodecs.VAR_INT.encode(buffer, list.size());
-        for (T value : list) {
-            codec.encode(buffer, value);
+    private static float decodeChance(RegistryFriendlyByteBuf buffer) {
+        float chance = ByteBufCodecs.FLOAT.decode(buffer);
+        if (!isValidChance(chance)) {
+            throw new io.netty.handler.codec.DecoderException("Chance must be finite and between 0 and 1");
         }
+        return chance;
     }
 
-    private static <T> List<T> readList(RegistryFriendlyByteBuf buffer,
-                                        StreamCodec<RegistryFriendlyByteBuf, T> codec) {
-        int size = ByteBufCodecs.VAR_INT.decode(buffer);
-        List<T> values = new ArrayList<>(size);
-        for (int index = 0; index < size; index++) {
-            values.add(codec.decode(buffer));
-        }
-        return values;
+    private static boolean isValidChance(float chance) {
+        return Float.isFinite(chance) && chance >= 0F && chance <= 1F;
     }
 }

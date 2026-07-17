@@ -187,7 +187,7 @@ config="${mod_id}.mixins.json"
 [[dependencies."${mod_id}"]]
     modId="lychee"
     type="required"
-    versionRange="[6.5.0,)"
+    versionRange="[${lychee_version},6.5.1)"
     ordering="AFTER"
     side="BOTH"
 
