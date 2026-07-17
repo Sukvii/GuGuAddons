@@ -82,10 +82,20 @@ public class ChunkClaimEconomyNetwork {
         }
 
         context.enqueueWork(() -> {
-            if (payload.confirmed()) {
-                ChunkClaimEconomyHandler.confirmSession(player, payload.sessionId());
-            } else {
-                ChunkClaimEconomyHandler.cancelSession(player, payload.sessionId(), false);
+            try {
+                if (payload.confirmed()) {
+                    ChunkClaimEconomyHandler.confirmSession(player, payload.sessionId());
+                } else {
+                    ChunkClaimEconomyHandler.cancelSession(player, payload.sessionId(), false);
+                }
+            } catch (Throwable t) {
+                GuGuAddons.LOGGER.error("Failed to process chunk claim decision {} for player {}", payload.sessionId(),
+                        player.getUUID(), t);
+                try {
+                    ChunkClaimEconomyHandler.sendProcessingFailure(player);
+                } catch (Throwable toastFailure) {
+                    GuGuAddons.LOGGER.error("Failed to send chunk claim processing failure toast", toastFailure);
+                }
             }
         });
     }

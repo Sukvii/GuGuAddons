@@ -141,6 +141,7 @@
   "message.guguaddons.chunk_claim_team_not_found": "声明队伍已不存在。",
   "message.guguaddons.chunk_claim_insufficient_funds": "资金不足。需要 %s。",
   "message.guguaddons.chunk_claim_result": "区块声明完成：已声明 %s/%s，花费 %s。",
+  "message.guguaddons.chunk_claim_processing_failed": "区块声明处理出现异常；已尝试按最终所有权结算，请检查区块状态。",
   "message.guguaddons.chunk_refund_received": "已收到区块经济退款：%s。",
   "message.guguaddons.chunk_unclaim_refund_received": "区块取消声明返还：%s。",
   "toast.guguaddons.chunk_claim.title": "区块声明",

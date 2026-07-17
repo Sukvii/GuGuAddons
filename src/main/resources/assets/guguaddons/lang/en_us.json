@@ -141,6 +141,7 @@
   "message.guguaddons.chunk_claim_team_not_found": "Claim team no longer exists.",
   "message.guguaddons.chunk_claim_insufficient_funds": "Insufficient funds. Need %s.",
   "message.guguaddons.chunk_claim_result": "Chunk claim complete: %s/%s claimed, spent %s.",
+  "message.guguaddons.chunk_claim_processing_failed": "Chunk claim processing encountered an error; final ownership settlement was attempted. Please check the chunk state.",
   "message.guguaddons.chunk_refund_received": "Chunk economy refund received: %s.",
   "message.guguaddons.chunk_unclaim_refund_received": "Chunk unclaim refund received: %s.",
   "toast.guguaddons.chunk_claim.title": "Chunk Claim",

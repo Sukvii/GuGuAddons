@@ -50,6 +50,7 @@ public class ChunkClaimEconomyHandler {
     private static final String MSG_NOT_ENOUGH_FUNDS = "message.guguaddons.chunk_claim_insufficient_funds";
     private static final String MSG_CLAIM_RESULT = "message.guguaddons.chunk_claim_result";
     private static final String MSG_REFUND_RECEIVED = "message.guguaddons.chunk_refund_received";
+    private static final String MSG_PROCESSING_FAILED = "message.guguaddons.chunk_claim_processing_failed";
 
     private static volatile boolean initialized = false;
 
@@ -217,6 +218,7 @@ public class ChunkClaimEconomyHandler {
             return;
         }
 
+        ChunkClaimEconomySavedData savedData = ChunkClaimEconomySavedData.get(player.serverLevel().getServer());
         int maxCost = safeMultiply(unitPrice, targets.size());
         BankAccount account = Numismatics.BANK.getOrCreateAccount(player.getUUID(), BankAccount.Type.PLAYER);
         NumismaticsAccountHelper.repairNegativeBalance(account);
@@ -225,38 +227,107 @@ public class ChunkClaimEconomyHandler {
             return;
         }
 
-        Set<ChunkKey> bypass = new HashSet<>(targets);
-        BYPASS_CLAIMS.put(player.getUUID(), bypass);
-
-        int successCount = 0;
-        ChunkClaimEconomySavedData savedData = ChunkClaimEconomySavedData.get(player.serverLevel().getServer());
+        UUID playerId = player.getUUID();
+        List<ChunkKey> actualTargets = List.of();
+        Throwable failure = null;
         try {
+            BYPASS_CLAIMS.put(playerId, new HashSet<>(targets));
             CommandSourceStack source = player.createCommandSourceStack();
             for (ChunkKey key : targets) {
-                ClaimResult result = teamData.claim(source, key.toChunkPos(), false);
-                if (result != null && result.isSuccess()) {
-                    successCount++;
-                    savedData.recordClaim(key.toChunkPos(), player.getUUID(), unitPrice);
+                try {
+                    teamData.claim(source, key.toChunkPos(), false);
+                } catch (Throwable t) {
+                    failure = appendFailure(failure, t);
                 }
             }
+        } catch (Throwable t) {
+            failure = appendFailure(failure, t);
         } finally {
-            BYPASS_CLAIMS.remove(player.getUUID());
-        }
+            BYPASS_CLAIMS.remove(playerId);
 
-        int spent = safeMultiply(unitPrice, successCount);
-        int refund = Math.max(0, maxCost - spent);
-        if (refund > 0) {
-            if (!NumismaticsAccountHelper.deposit(account, refund)) {
-                savedData.addPendingRefund(player.getUUID(), refund);
+            try {
+                actualTargets = getActuallyClaimedTargets(targets, session.teamId);
+            } catch (Throwable t) {
+                failure = appendFailure(failure, t);
+                actualTargets = List.of();
+            }
+
+            for (ChunkKey key : actualTargets) {
+                try {
+                    savedData.recordClaim(key.toChunkPos(), playerId, unitPrice);
+                } catch (Throwable t) {
+                    failure = appendFailure(failure, t);
+                }
+            }
+
+            int spent = safeMultiply(unitPrice, actualTargets.size());
+            int refund = Math.max(0, maxCost - spent);
+            if (refund > 0) {
+                boolean needsPendingRefund = false;
+                try {
+                    needsPendingRefund = !NumismaticsAccountHelper.deposit(account, refund);
+                } catch (Throwable t) {
+                    failure = appendFailure(failure, t);
+                    needsPendingRefund = true;
+                }
+                if (needsPendingRefund) {
+                    try {
+                        savedData.addPendingRefund(playerId, refund);
+                    } catch (Throwable pendingRefundFailure) {
+                        failure = appendFailure(failure, pendingRefundFailure);
+                    }
+                }
             }
         }
 
+        int successCount = actualTargets.size();
+        int spent = safeMultiply(unitPrice, successCount);
+        if (failure != null) {
+            GuGuAddons.LOGGER.error("Chunk claim session {} for player {} encountered an error; final ownership "
+                    + "settlement was attempted", sessionId, playerId, failure);
+        }
         ChunkClaimEconomyNetwork.sendToast(
                 player,
                 MSG_CLAIM_RESULT,
                 Integer.toString(successCount),
                 Integer.toString(targets.size()),
                 formatSpurs(spent));
+        if (failure != null) {
+            sendProcessingFailure(player);
+        }
+    }
+
+    static void sendProcessingFailure(ServerPlayer player) {
+        ChunkClaimEconomyNetwork.sendToast(player, MSG_PROCESSING_FAILED);
+    }
+
+    private static List<ChunkKey> getActuallyClaimedTargets(List<ChunkKey> targets, UUID teamId) throws Throwable {
+        List<ChunkKey> actualTargets = new ArrayList<>();
+        Throwable failure = null;
+        for (ChunkKey key : targets) {
+            try {
+                ClaimedChunk claimedChunk = FTBChunksAPI.api().getManager().getChunk(key.toChunkPos());
+                if (claimedChunk != null && teamId.equals(claimedChunk.getTeamData().getTeam().getId())) {
+                    actualTargets.add(key);
+                }
+            } catch (Throwable t) {
+                failure = appendFailure(failure, t);
+            }
+        }
+        if (failure != null) {
+            throw failure;
+        }
+        return actualTargets;
+    }
+
+    private static Throwable appendFailure(Throwable current, Throwable next) {
+        if (current == null) {
+            return next;
+        }
+        if (current != next) {
+            current.addSuppressed(next);
+        }
+        return current;
     }
 
     public static void cancelSession(ServerPlayer player, int sessionId, boolean notify) {
