@@ -20,8 +20,10 @@ import net.minecraft.world.level.saveddata.SavedData;
 public class ChunkClaimEconomySavedData extends SavedData {
     private static final String DATA_NAME = "guguaddons_chunk_claim_economy";
     private static final String CLAIMS_TAG = "Claims";
+    private static final String PENDING_REFUNDS_TAG = "PendingRefunds";
 
     private final Map<ChunkKey, ClaimPayment> payments = new HashMap<>();
+    private final Map<UUID, Long> pendingRefunds = new HashMap<>();
 
     public static SavedData.Factory<ChunkClaimEconomySavedData> factory() {
         return new SavedData.Factory<>(ChunkClaimEconomySavedData::new, ChunkClaimEconomySavedData::load, null);
@@ -53,6 +55,19 @@ public class ChunkClaimEconomySavedData extends SavedData {
             data.payments.put(key, payment);
         }
 
+        ListTag pendingRefundList = tag.getList(PENDING_REFUNDS_TAG, Tag.TAG_COMPOUND);
+        for (Tag raw : pendingRefundList) {
+            if (!(raw instanceof CompoundTag refundTag) || !refundTag.hasUUID("Payer")) {
+                continue;
+            }
+
+            long amount = refundTag.getLong("Amount");
+            if (amount > 0L) {
+                data.pendingRefunds.merge(refundTag.getUUID("Payer"), amount,
+                        ChunkClaimEconomySavedData::saturatedAdd);
+            }
+        }
+
         return data;
     }
 
@@ -73,6 +88,20 @@ public class ChunkClaimEconomySavedData extends SavedData {
         }
 
         tag.put(CLAIMS_TAG, list);
+
+        ListTag pendingRefundList = new ListTag();
+        for (Map.Entry<UUID, Long> entry : pendingRefunds.entrySet()) {
+            long amount = entry.getValue();
+            if (amount <= 0L) {
+                continue;
+            }
+
+            CompoundTag refundTag = new CompoundTag();
+            refundTag.putUUID("Payer", entry.getKey());
+            refundTag.putLong("Amount", amount);
+            pendingRefundList.add(refundTag);
+        }
+        tag.put(PENDING_REFUNDS_TAG, pendingRefundList);
         return tag;
     }
 
@@ -92,6 +121,39 @@ public class ChunkClaimEconomySavedData extends SavedData {
             setDirty();
         }
         return Optional.ofNullable(removed);
+    }
+
+    public void addPendingRefund(UUID payerId, long amount) {
+        if (amount <= 0L) {
+            return;
+        }
+        pendingRefunds.merge(payerId, amount, ChunkClaimEconomySavedData::saturatedAdd);
+        setDirty();
+    }
+
+    public Map<UUID, Long> getPendingRefundsSnapshot() {
+        return Map.copyOf(pendingRefunds);
+    }
+
+    public void consumePendingRefund(UUID payerId, long amount) {
+        if (amount <= 0L) {
+            return;
+        }
+
+        Long pending = pendingRefunds.get(payerId);
+        if (pending == null || pending <= 0L) {
+            return;
+        }
+        if (amount >= pending) {
+            pendingRefunds.remove(payerId);
+        } else {
+            pendingRefunds.put(payerId, pending - amount);
+        }
+        setDirty();
+    }
+
+    private static long saturatedAdd(long left, long right) {
+        return left > Long.MAX_VALUE - right ? Long.MAX_VALUE : left + right;
     }
 
     public record ClaimPayment(UUID payerId, int paidAmount) {

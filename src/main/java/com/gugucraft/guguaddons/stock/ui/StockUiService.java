@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.compat.numismatics.NumismaticsAccountHelper;
 import com.gugucraft.guguaddons.config.Config;
 import com.gugucraft.guguaddons.stock.StockCatalog;
 import com.gugucraft.guguaddons.stock.StockDefinition;
@@ -59,6 +61,7 @@ public final class StockUiService {
         market.catchUp(player.serverLevel().getGameTime());
         UUID playerId = player.getUUID();
         BankAccount account = Numismatics.BANK.getOrCreateAccount(playerId, BankAccount.Type.PLAYER);
+        NumismaticsAccountHelper.repairNegativeBalance(account);
         settleHoldingFee(player, market, account, true);
 
         switch (action) {
@@ -112,6 +115,7 @@ public final class StockUiService {
         market.catchUp(player.serverLevel().getGameTime());
 
         BankAccount account = Numismatics.BANK.getOrCreateAccount(playerId, BankAccount.Type.PLAYER);
+        NumismaticsAccountHelper.repairNegativeBalance(account);
         settleHoldingFee(player, market, account, true);
         enforceMaintenanceReserve(player, market, account, true);
         int balance = account.getBalance();
@@ -230,6 +234,7 @@ public final class StockUiService {
             return;
         }
 
+        int balanceBeforeDeduction = account.getBalance();
         if (!account.deduct(totalCost)) {
             player.displayClientMessage(
                     Component.translatable("menu.guguaddons.stock.error.insufficient_balance")
@@ -238,7 +243,7 @@ public final class StockUiService {
             return;
         }
         if (!market.addHolding(playerId, stockIndex, shares)) {
-            account.deposit(totalCost);
+            account.setBalance(balanceBeforeDeduction);
             player.displayClientMessage(
                     Component.translatable("menu.guguaddons.stock.error.position_limit").withStyle(ChatFormatting.RED),
                     true);
@@ -271,6 +276,12 @@ public final class StockUiService {
         }
 
         int net = market.quoteSellNet(stockIndex, sellShares);
+        if (!NumismaticsAccountHelper.canDeposit(account, net)) {
+            player.displayClientMessage(
+                    Component.translatable("menu.guguaddons.stock.error.balance_limit").withStyle(ChatFormatting.RED),
+                    true);
+            return;
+        }
         if (!market.removeHolding(playerId, stockIndex, sellShares)) {
             player.displayClientMessage(
                     Component.translatable("menu.guguaddons.stock.error.sell_failed").withStyle(ChatFormatting.RED),
@@ -278,7 +289,13 @@ public final class StockUiService {
             return;
         }
 
-        account.deposit(net);
+        if (!NumismaticsAccountHelper.deposit(account, net)) {
+            restoreHolding(playerId, market, stockIndex, sellShares);
+            player.displayClientMessage(
+                    Component.translatable("menu.guguaddons.stock.error.sell_failed").withStyle(ChatFormatting.RED),
+                    true);
+            return;
+        }
         market.recordExecutedSell(stockIndex, sellShares);
 
         StockDefinition definition = StockCatalog.get(stockIndex);
@@ -295,7 +312,7 @@ public final class StockUiService {
             BankAccount account,
             int stockIndex) {
         UUID playerId = player.getUUID();
-        int owned = market.removeAllHoldings(playerId, stockIndex);
+        int owned = market.getHolding(playerId, stockIndex);
         if (owned <= 0) {
             player.displayClientMessage(
                     Component.translatable("menu.guguaddons.stock.error.no_position").withStyle(ChatFormatting.RED),
@@ -304,7 +321,28 @@ public final class StockUiService {
         }
 
         int net = market.quoteSellNet(stockIndex, owned);
-        account.deposit(net);
+        if (!NumismaticsAccountHelper.canDeposit(account, net)) {
+            player.displayClientMessage(
+                    Component.translatable("menu.guguaddons.stock.error.balance_limit").withStyle(ChatFormatting.RED),
+                    true);
+            return;
+        }
+
+        int removed = market.removeAllHoldings(playerId, stockIndex);
+        if (removed != owned) {
+            restoreHolding(playerId, market, stockIndex, removed);
+            player.displayClientMessage(
+                    Component.translatable("menu.guguaddons.stock.error.sell_failed").withStyle(ChatFormatting.RED),
+                    true);
+            return;
+        }
+        if (!NumismaticsAccountHelper.deposit(account, net)) {
+            restoreHolding(playerId, market, stockIndex, removed);
+            player.displayClientMessage(
+                    Component.translatable("menu.guguaddons.stock.error.sell_failed").withStyle(ChatFormatting.RED),
+                    true);
+            return;
+        }
         market.recordExecutedSell(stockIndex, owned);
 
         StockDefinition definition = StockCatalog.get(stockIndex);
@@ -339,7 +377,7 @@ public final class StockUiService {
 
         int liquidatedPositions = 0;
         int liquidatedShares = 0;
-        int liquidatedCash = 0;
+        long liquidatedCash = 0L;
 
         while (account.getBalance() < targetFee) {
             LiquidationOutcome outcome = liquidateLargestPosition(playerId, market, account, true);
@@ -397,7 +435,7 @@ public final class StockUiService {
 
         int liquidatedPositions = 0;
         int liquidatedShares = 0;
-        int liquidatedCash = 0;
+        long liquidatedCash = 0L;
 
         for (int guard = 0; guard < StockCatalog.size(); guard++) {
             int portfolioValue = market.getPortfolioValue(playerId);
@@ -446,7 +484,7 @@ public final class StockUiService {
             return LiquidationOutcome.EMPTY;
         }
 
-        int shares = market.removeAllHoldings(playerId, stockIndex);
+        int shares = market.getHolding(playerId, stockIndex);
         if (shares <= 0) {
             return LiquidationOutcome.EMPTY;
         }
@@ -454,9 +492,32 @@ public final class StockUiService {
         int net = market.quoteSellNet(stockIndex, shares);
         int penalty = withPenalty ? computeBpsAmount(net, LIQUIDATION_PENALTY_BPS) : 0;
         int credited = Math.max(0, net - penalty);
-        account.deposit(credited);
+        if (!NumismaticsAccountHelper.canDeposit(account, credited)) {
+            return LiquidationOutcome.EMPTY;
+        }
+
+        int removed = market.removeAllHoldings(playerId, stockIndex);
+        if (removed != shares) {
+            restoreHolding(playerId, market, stockIndex, removed);
+            return LiquidationOutcome.EMPTY;
+        }
+        if (!NumismaticsAccountHelper.deposit(account, credited)) {
+            restoreHolding(playerId, market, stockIndex, removed);
+            return LiquidationOutcome.EMPTY;
+        }
         market.recordExecutedSell(stockIndex, shares);
         return new LiquidationOutcome(stockIndex, shares, credited);
+    }
+
+    private static boolean restoreHolding(UUID playerId, StockMarketSavedData market, int stockIndex, int shares) {
+        if (shares <= 0) {
+            return true;
+        }
+        if (market.addHolding(playerId, stockIndex, shares)) {
+            return true;
+        }
+        GuGuAddons.LOGGER.error("Failed to restore {} shares of stock {} for player {}", shares, stockIndex, playerId);
+        return false;
     }
 
     private static int findLargestPosition(UUID playerId, StockMarketSavedData market) {
@@ -640,7 +701,7 @@ public final class StockUiService {
         return Math.sqrt(sum / Math.max(1, count));
     }
 
-    private static String formatSpurs(int amount) {
-        return String.format(Locale.ROOT, "%,d sp", Math.max(0, amount));
+    private static String formatSpurs(long amount) {
+        return String.format(Locale.ROOT, "%,d sp", Math.max(0L, amount));
     }
 }

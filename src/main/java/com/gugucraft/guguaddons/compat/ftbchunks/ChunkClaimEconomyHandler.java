@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.gugucraft.guguaddons.GuGuAddons;
+import com.gugucraft.guguaddons.compat.numismatics.NumismaticsAccountHelper;
 import com.gugucraft.guguaddons.config.Config;
 
 import dev.architectury.event.CompoundEventResult;
@@ -39,7 +40,6 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 public class ChunkClaimEconomyHandler {
     private static final Map<UUID, PendingClaimSession> PENDING_SESSIONS = new HashMap<>();
     private static final Map<UUID, Set<ChunkKey>> BYPASS_CLAIMS = new HashMap<>();
-    private static final Map<UUID, Integer> PENDING_UNCLAIM_REFUNDS = new HashMap<>();
     private static final AtomicInteger NEXT_SESSION_ID = new AtomicInteger(1);
 
     private static final String MSG_CONFIRM_REQUIRED = "message.guguaddons.chunk_claim_confirmation_required";
@@ -49,7 +49,7 @@ public class ChunkClaimEconomyHandler {
     private static final String MSG_TEAM_NOT_FOUND = "message.guguaddons.chunk_claim_team_not_found";
     private static final String MSG_NOT_ENOUGH_FUNDS = "message.guguaddons.chunk_claim_insufficient_funds";
     private static final String MSG_CLAIM_RESULT = "message.guguaddons.chunk_claim_result";
-    private static final String MSG_UNCLAIM_REFUND = "message.guguaddons.chunk_unclaim_refund_received";
+    private static final String MSG_REFUND_RECEIVED = "message.guguaddons.chunk_refund_received";
 
     private static volatile boolean initialized = false;
 
@@ -108,8 +108,8 @@ public class ChunkClaimEconomyHandler {
             return;
         }
 
-        Optional<ChunkClaimEconomySavedData.ClaimPayment> removed = ChunkClaimEconomySavedData.get(server)
-                .removeClaim(chunk.getPos());
+        ChunkClaimEconomySavedData savedData = ChunkClaimEconomySavedData.get(server);
+        Optional<ChunkClaimEconomySavedData.ClaimPayment> removed = savedData.removeClaim(chunk.getPos());
         if (removed.isEmpty()) {
             return;
         }
@@ -120,17 +120,17 @@ public class ChunkClaimEconomyHandler {
         }
 
         ChunkClaimEconomySavedData.ClaimPayment payment = removed.get();
-        int refund = (int) Math.floor(payment.paidAmount() * ratio);
+        long refund = (long) Math.floor(payment.paidAmount() * ratio);
         if (refund <= 0) {
             return;
         }
-        PENDING_UNCLAIM_REFUNDS.merge(payment.payerId(), refund, Integer::sum);
+        savedData.addPendingRefund(payment.payerId(), refund);
     }
 
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
-        flushPendingUnclaimRefunds(server);
+        flushPendingRefunds(server);
 
         if (PENDING_SESSIONS.isEmpty()) {
             return;
@@ -163,28 +163,27 @@ public class ChunkClaimEconomyHandler {
         }
     }
 
-    private static void flushPendingUnclaimRefunds(MinecraftServer server) {
-        if (PENDING_UNCLAIM_REFUNDS.isEmpty()) {
-            return;
-        }
-
-        for (Map.Entry<UUID, Integer> entry : PENDING_UNCLAIM_REFUNDS.entrySet()) {
-            int totalRefund = Math.max(0, entry.getValue());
-            if (totalRefund <= 0) {
+    private static void flushPendingRefunds(MinecraftServer server) {
+        ChunkClaimEconomySavedData savedData = ChunkClaimEconomySavedData.get(server);
+        for (Map.Entry<UUID, Long> entry : savedData.getPendingRefundsSnapshot().entrySet()) {
+            long totalRefund = entry.getValue();
+            if (totalRefund <= 0L) {
                 continue;
             }
 
             UUID payerId = entry.getKey();
             BankAccount account = Numismatics.BANK.getOrCreateAccount(payerId, BankAccount.Type.PLAYER);
-            account.deposit(totalRefund);
+            int deposited = NumismaticsAccountHelper.depositUpToCapacity(account, totalRefund);
+            if (deposited <= 0) {
+                continue;
+            }
+            savedData.consumePendingRefund(payerId, deposited);
 
             ServerPlayer payer = server.getPlayerList().getPlayer(payerId);
             if (payer != null) {
-                ChunkClaimEconomyNetwork.sendToast(payer, MSG_UNCLAIM_REFUND, formatSpurs(totalRefund));
+                ChunkClaimEconomyNetwork.sendToast(payer, MSG_REFUND_RECEIVED, formatSpurs(deposited));
             }
         }
-
-        PENDING_UNCLAIM_REFUNDS.clear();
     }
 
     public static void confirmSession(ServerPlayer player, int sessionId) {
@@ -220,6 +219,7 @@ public class ChunkClaimEconomyHandler {
 
         int maxCost = safeMultiply(unitPrice, targets.size());
         BankAccount account = Numismatics.BANK.getOrCreateAccount(player.getUUID(), BankAccount.Type.PLAYER);
+        NumismaticsAccountHelper.repairNegativeBalance(account);
         if (!account.deduct(maxCost)) {
             ChunkClaimEconomyNetwork.sendToast(player, MSG_NOT_ENOUGH_FUNDS, formatSpurs(maxCost));
             return;
@@ -246,7 +246,9 @@ public class ChunkClaimEconomyHandler {
         int spent = safeMultiply(unitPrice, successCount);
         int refund = Math.max(0, maxCost - spent);
         if (refund > 0) {
-            account.deposit(refund);
+            if (!NumismaticsAccountHelper.deposit(account, refund)) {
+                savedData.addPendingRefund(player.getUUID(), refund);
+            }
         }
 
         ChunkClaimEconomyNetwork.sendToast(
@@ -289,8 +291,8 @@ public class ChunkClaimEconomyHandler {
         return (int) Math.min(Integer.MAX_VALUE, value);
     }
 
-    private static String formatSpurs(int amount) {
-        return String.format(Locale.ROOT, "%,d sp", Math.max(0, amount));
+    private static String formatSpurs(long amount) {
+        return String.format(Locale.ROOT, "%,d sp", Math.max(0L, amount));
     }
 
     private static class PendingClaimSession {
