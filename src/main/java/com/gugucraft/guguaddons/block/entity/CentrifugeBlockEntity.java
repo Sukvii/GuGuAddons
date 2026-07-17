@@ -1,6 +1,7 @@
 package com.gugucraft.guguaddons.block.entity;
 
 import com.gugucraft.guguaddons.recipe.CentrifugationRecipe;
+import com.gugucraft.guguaddons.recipe.RecipeOutputTransaction;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModRecipes;
 import com.gugucraft.guguaddons.stage.MachineRecipeStageManager;
@@ -315,15 +316,26 @@ public class CentrifugeBlockEntity extends KineticBlockEntity {
     public boolean acceptOutputs(List<ItemStack> outputItems, List<FluidStack> outputFluids, boolean simulate) {
         outputInv.allowInsertion();
         outputTank.allowInsertion();
-        boolean accepted = acceptOutputsInner(outputItems, outputFluids, simulate);
-        outputInv.forbidInsertion();
-        outputTank.forbidInsertion();
-        return accepted;
+        try {
+            if (!RecipeOutputTransaction.canAcceptItems(outputInv, outputItems)) {
+                return false;
+            }
+            if (!RecipeOutputTransaction.canAcceptFluids(outputTank.getCapability(), outputFluids, true)) {
+                return false;
+            }
+            if (simulate) {
+                return true;
+            }
+            return acceptOutputsInner(outputItems, outputFluids);
+        } finally {
+            outputInv.forbidInsertion();
+            outputTank.forbidInsertion();
+        }
     }
 
-    private boolean acceptOutputsInner(List<ItemStack> outputItems, List<FluidStack> outputFluids, boolean simulate) {
+    private boolean acceptOutputsInner(List<ItemStack> outputItems, List<FluidStack> outputFluids) {
         for (ItemStack itemStack : outputItems) {
-            if (!ItemHandlerHelper.insertItemStacked(outputInv, itemStack.copy(), simulate).isEmpty()) {
+            if (!ItemHandlerHelper.insertItemStacked(outputInv, itemStack.copy(), false).isEmpty()) {
                 return false;
             }
         }
@@ -337,10 +349,9 @@ public class CentrifugeBlockEntity extends KineticBlockEntity {
         }
 
         for (FluidStack fluidStack : outputFluids) {
-            FluidAction action = simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE;
             int fill = targetTank instanceof SmartFluidTankBehaviour.InternalFluidHandler internalHandler
-                    ? internalHandler.forceFill(fluidStack.copy(), action)
-                    : targetTank.fill(fluidStack.copy(), action);
+                    ? internalHandler.forceFill(fluidStack.copy(), FluidAction.EXECUTE)
+                    : targetTank.fill(fluidStack.copy(), FluidAction.EXECUTE);
             if (fill != fluidStack.getAmount()) {
                 return false;
             }

@@ -2,6 +2,7 @@ package com.gugucraft.guguaddons.block.entity;
 
 import com.gugucraft.guguaddons.recipe.CompressorRecipe;
 import com.gugucraft.guguaddons.recipe.PressurizingRecipe;
+import com.gugucraft.guguaddons.recipe.RecipeOutputTransaction;
 import com.gugucraft.guguaddons.recipe.VacuumizingRecipe;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModRecipes;
@@ -263,12 +264,20 @@ public class VacuumChamberBlockEntity extends BasinOperatingBlockEntity {
 
     public boolean acceptOutputs(List<FluidStack> outputFluids, boolean simulate) {
         outputTank.allowInsertion();
-        boolean accepted = acceptOutputsInner(outputFluids, simulate);
-        outputTank.forbidInsertion();
-        return accepted;
+        try {
+            if (!RecipeOutputTransaction.canAcceptFluids(outputTank.getCapability(), outputFluids, true)) {
+                return false;
+            }
+            if (simulate) {
+                return true;
+            }
+            return acceptOutputsInner(outputFluids);
+        } finally {
+            outputTank.forbidInsertion();
+        }
     }
 
-    private boolean acceptOutputsInner(List<FluidStack> outputFluids, boolean simulate) {
+    private boolean acceptOutputsInner(List<FluidStack> outputFluids) {
         IFluidHandler targetTank = outputTank.getCapability();
         if (outputFluids.isEmpty()) {
             return true;
@@ -278,10 +287,9 @@ public class VacuumChamberBlockEntity extends BasinOperatingBlockEntity {
         }
 
         for (FluidStack fluidStack : outputFluids) {
-            FluidAction action = simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE;
             int fill = targetTank instanceof SmartFluidTankBehaviour.InternalFluidHandler internalHandler
-                    ? internalHandler.forceFill(fluidStack.copy(), action)
-                    : targetTank.fill(fluidStack.copy(), action);
+                    ? internalHandler.forceFill(fluidStack.copy(), FluidAction.EXECUTE)
+                    : targetTank.fill(fluidStack.copy(), FluidAction.EXECUTE);
             if (fill != fluidStack.getAmount()) {
                 return false;
             }

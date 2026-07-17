@@ -1,6 +1,7 @@
 package com.gugucraft.guguaddons.recipe;
 
 import com.gugucraft.guguaddons.block.entity.VacuumChamberBlockEntity;
+import com.simibubi.create.content.processing.basin.BasinBlock;
 import com.simibubi.create.content.processing.basin.BasinBlockEntity;
 import com.simibubi.create.content.processing.basin.BasinRecipe;
 import com.simibubi.create.content.processing.burner.BlazeBurnerBlock;
@@ -9,9 +10,11 @@ import com.simibubi.create.foundation.blockEntity.behaviour.filtering.FilteringB
 import com.simibubi.create.foundation.recipe.DummyCraftingContainer;
 import com.simibubi.create.foundation.recipe.IRecipeTypeInfo;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
@@ -141,7 +144,7 @@ public abstract class CompressorRecipe extends BasinRecipe {
             }
         }
 
-        if (!basin.acceptOutputs(recipeOutputItems, recipeOutputFluids, true)) {
+        if (!canAcceptBasinOutputs(basin, recipeOutputItems, recipeOutputFluids)) {
             return false;
         }
 
@@ -168,6 +171,31 @@ public abstract class CompressorRecipe extends BasinRecipe {
         }
 
         return secondaryFluidOutput < 0 || chamber.acceptOutputs(recipeSecondaryOutputFluids, false);
+    }
+
+    private boolean canAcceptBasinOutputs(BasinBlockEntity basin, List<ItemStack> outputItems,
+                                          List<FluidStack> outputFluids) {
+        if (!basin.acceptOutputs(outputItems, outputFluids, true)) {
+            return false;
+        }
+
+        Direction direction = basin.getBlockState().getValue(BasinBlock.FACING);
+        if (direction == Direction.DOWN) {
+            return RecipeOutputTransaction.canAcceptItems(basin.getOutputInventory(), outputItems)
+                    && RecipeOutputTransaction.canAcceptFluids(basin.getTanks().getSecond().getCapability(),
+                    outputFluids, true);
+        }
+
+        if (outputFluids.isEmpty()) {
+            return true;
+        }
+
+        BlockEntity target = basin.getLevel().getBlockEntity(basin.getBlockPos().below().relative(direction));
+        IFluidHandler externalTank = target == null ? null
+                : basin.getLevel().getCapability(Capabilities.FluidHandler.BLOCK, target.getBlockPos(),
+                direction.getOpposite());
+        return externalTank != null || RecipeOutputTransaction.canAcceptFluids(
+                basin.getTanks().getSecond().getCapability(), outputFluids, true);
     }
 
     private List<ItemStack> getPotentialOutputItemsForCapacityCheck() {

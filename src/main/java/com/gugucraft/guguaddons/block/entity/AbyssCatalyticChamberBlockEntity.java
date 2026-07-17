@@ -4,6 +4,7 @@ import com.gugucraft.guguaddons.block.custom.AbyssCatalyticChamberBlock;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
 import com.gugucraft.guguaddons.registry.ModRecipes;
 import com.gugucraft.guguaddons.recipe.AbyssCatalysisRecipe;
+import com.gugucraft.guguaddons.recipe.RecipeOutputTransaction;
 import com.simibubi.create.content.processing.basin.BasinBlock;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
@@ -244,8 +245,16 @@ public class AbyssCatalyticChamberBlockEntity extends SmartBlockEntity implement
 
         Direction direction = getBlockState().getValue(AbyssCatalyticChamberBlock.FACING);
         if (direction == Direction.DOWN) {
-            return insertItemsIntoTarget(outputItems, outputInv, simulate)
-                    && fillFluidsIntoTarget(outputFluids, outputTank.getCapability(), simulate);
+            IFluidHandler targetTank = outputTank.getCapability();
+            if (!RecipeOutputTransaction.canAcceptItems(outputInv, outputItems)
+                    || !RecipeOutputTransaction.canAcceptFluids(targetTank, outputFluids, true)) {
+                return false;
+            }
+            if (simulate) {
+                return true;
+            }
+            return insertItemsIntoTarget(outputItems, outputInv)
+                    && fillFluidsIntoTarget(outputFluids, targetTank);
         }
 
         BlockEntity targetBlockEntity = level.getBlockEntity(worldPosition.below().relative(direction));
@@ -268,13 +277,17 @@ public class AbyssCatalyticChamberBlockEntity extends SmartBlockEntity implement
 
         if (!outputFluids.isEmpty() && externalTankMissing) {
             targetTank = outputTank.getCapability();
-            if (targetTank == null || !fillFluidsIntoTarget(outputFluids, targetTank, simulate)) {
+            if (!RecipeOutputTransaction.canAcceptFluids(targetTank, outputFluids, true)) {
                 return false;
             }
         }
 
         if (simulate) {
             return true;
+        }
+
+        if (externalTankMissing && !fillFluidsIntoTarget(outputFluids, targetTank)) {
+            return false;
         }
 
         for (ItemStack itemStack : outputItems) {
@@ -292,21 +305,20 @@ public class AbyssCatalyticChamberBlockEntity extends SmartBlockEntity implement
         return true;
     }
 
-    private boolean insertItemsIntoTarget(List<ItemStack> outputItems, IItemHandler target, boolean simulate) {
+    private boolean insertItemsIntoTarget(List<ItemStack> outputItems, IItemHandler target) {
         for (ItemStack itemStack : outputItems) {
-            if (!ItemHandlerHelper.insertItemStacked(target, itemStack.copy(), simulate).isEmpty()) {
+            if (!ItemHandlerHelper.insertItemStacked(target, itemStack.copy(), false).isEmpty()) {
                 return false;
             }
         }
         return true;
     }
 
-    private boolean fillFluidsIntoTarget(List<FluidStack> outputFluids, IFluidHandler target, boolean simulate) {
+    private boolean fillFluidsIntoTarget(List<FluidStack> outputFluids, IFluidHandler target) {
         for (FluidStack fluidStack : outputFluids) {
-            FluidAction action = simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE;
             int filled = target instanceof SmartFluidTankBehaviour.InternalFluidHandler internalHandler
-                    ? internalHandler.forceFill(fluidStack.copy(), action)
-                    : target.fill(fluidStack.copy(), action);
+                    ? internalHandler.forceFill(fluidStack.copy(), FluidAction.EXECUTE)
+                    : target.fill(fluidStack.copy(), FluidAction.EXECUTE);
             if (filled != fluidStack.getAmount()) {
                 return false;
             }
