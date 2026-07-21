@@ -173,7 +173,7 @@ config="${mod_id}.mixins.json"
 [[dependencies."${mod_id}"]]
     modId="astages"
     type="required"
-    versionRange="[${astages_version},)"
+    versionRange="${astages_version_range}"
     ordering="NONE"
     side="BOTH"
 

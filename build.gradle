@@ -261,6 +261,7 @@ tasks.withType(ProcessResources).configureEach {
             ftb_chunks_version     : ftb_chunks_version,
             jade_version           : jade_version,
             astages_version        : astages_version,
+            astages_version_range  : astages_version_range,
             kiwi_version           : kiwi_version,
             lychee_version         : lychee_version,
             kubejs_version         : kubejs_version,
