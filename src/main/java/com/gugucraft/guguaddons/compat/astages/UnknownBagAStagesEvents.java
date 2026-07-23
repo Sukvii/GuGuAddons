@@ -56,9 +56,6 @@ public final class UnknownBagAStagesEvents {
         if (!(event.getEntity() instanceof ServerPlayer player) || player instanceof FakePlayer) {
             return;
         }
-        if (player.tickCount % 20 != 0) {
-            return;
-        }
         if (!CommonEventSettings.requireSlotCheck() && !CommonEventSettings.requireContainerCheck()) {
             return;
         }
@@ -69,8 +66,11 @@ public final class UnknownBagAStagesEvents {
             return;
         }
 
-        UnknownBagItem.StorageBatch batch = UnknownBagItem.startStorageBatch(bag, player.registryAccess());
-        List<Integer> storedSlots = new ArrayList<>();
+        // AStages' own slot scan (NORMAL priority, same event) runs every tick and drops
+        // restricted items on the ground, so this scan must also run every tick to claim
+        // them first. Only the restriction lookup runs unconditionally; the expensive bag
+        // deserialization in startStorageBatch is deferred until a slot actually matches.
+        List<Integer> restrictedSlots = null;
         int mainSize = inventory.items.size();
         int equipmentLimit = mainSize + inventory.armor.size();
         for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
@@ -87,7 +87,19 @@ public final class UnknownBagAStagesEvents {
                 continue;
             }
 
-            if (batch.tryStore(stack)) {
+            if (restrictedSlots == null) {
+                restrictedSlots = new ArrayList<>();
+            }
+            restrictedSlots.add(slot);
+        }
+        if (restrictedSlots == null) {
+            return;
+        }
+
+        UnknownBagItem.StorageBatch batch = UnknownBagItem.startStorageBatch(bag, player.registryAccess());
+        List<Integer> storedSlots = new ArrayList<>();
+        for (int slot : restrictedSlots) {
+            if (batch.tryStore(inventory.getItem(slot))) {
                 storedSlots.add(slot);
             }
         }
