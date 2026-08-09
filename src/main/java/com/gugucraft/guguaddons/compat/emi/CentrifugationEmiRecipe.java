@@ -12,8 +12,8 @@ import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.api.widget.WidgetHolder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
 
@@ -22,11 +22,13 @@ public class CentrifugationEmiRecipe extends BasicEmiRecipe {
     private static final int HEIGHT = 112;
     private static final AnimatedCentrifugeDisplay CENTRIFUGE_DISPLAY = new AnimatedCentrifugeDisplay();
 
+    private final RecipeHolder<?> backingRecipe;
     private final CentrifugationRecipe recipe;
 
-    public CentrifugationEmiRecipe(EmiRecipeCategory category, ResourceLocation id, CentrifugationRecipe recipe) {
-        super(category, id, WIDTH, HEIGHT);
-        this.recipe = recipe;
+    public CentrifugationEmiRecipe(EmiRecipeCategory category, RecipeHolder<CentrifugationRecipe> holder) {
+        super(category, holder.id(), WIDTH, HEIGHT);
+        this.backingRecipe = holder;
+        this.recipe = holder.value();
 
         for (Ingredient ingredient : recipe.getIngredients()) {
             inputs.add(EmiIngredient.of(ingredient));
@@ -40,6 +42,11 @@ public class CentrifugationEmiRecipe extends BasicEmiRecipe {
         for (FluidStack output : recipe.getFluidResults()) {
             outputs.add(NeoForgeEmiStack.of(output));
         }
+    }
+
+    @Override
+    public RecipeHolder<?> getBackingRecipe() {
+        return backingRecipe;
     }
 
     @Override

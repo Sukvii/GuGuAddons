@@ -1,7 +1,7 @@
 package com.gugucraft.guguaddons.client.config;
 
 import com.gugucraft.guguaddons.GuGuAddons;
-import com.gugucraft.guguaddons.client.emi.EmiClientReloadHelper;
+import com.gugucraft.guguaddons.client.emi.EmiClientBakeHelper;
 import com.gugucraft.guguaddons.client.stock.StockUiClientHooks;
 import com.gugucraft.guguaddons.config.sync.ConfigSyncState;
 
@@ -17,7 +17,7 @@ public final class ClientConfigHooks {
 
     public static void onServerConfigSnapshotChanged() {
         StockUiClientHooks.onStockAvailabilityChanged();
-        EmiClientReloadHelper.requestRecipeReload("config snapshot change");
+        EmiClientBakeHelper.requestRecipeBake("config snapshot change");
     }
 
     @SubscribeEvent
@@ -30,6 +30,6 @@ public final class ClientConfigHooks {
     public static void onClientLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         StockUiClientHooks.resetSession();
         ConfigSyncState.clearServerSnapshot();
-        EmiClientReloadHelper.cancelPendingReload();
+        EmiClientBakeHelper.cancelPendingBake();
     }
 }

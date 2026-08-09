@@ -1,7 +1,10 @@
 package com.gugucraft.guguaddons.stage;
 
+import com.alessandro.astages.api.holder.AHolder;
+import com.alessandro.astages.api.wrapper.RecipeWrapper;
+import com.alessandro.astages.engine.ARestrictionManager;
+import com.alessandro.astages.engine.server.restriction.recipe.ARecipeRestriction;
 import com.gugucraft.guguaddons.GuGuAddons;
-import com.gugucraft.guguaddons.compat.astages.AStagesHelper;
 import com.gugucraft.guguaddons.compat.kubejs.MachineRecipeStageKubeEvent;
 import com.gugucraft.guguaddons.compat.kubejs.MachineRecipeStageKubeEvents;
 import com.simibubi.create.AllRecipeTypes;
@@ -19,8 +22,6 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -32,9 +33,10 @@ import java.util.WeakHashMap;
 
 public final class MachineRecipeStageManager {
     private static final ResourceLocation LYCHEE_CRAFTING_ID = id("lychee", "crafting");
+    private static final UUID UNOWNED_MACHINE_HOLDER = new UUID(0L, 0L);
     private static final Map<RecipeType<?>, Map<ResourceLocation, String>> SERVER_RESTRICTIONS = new LinkedHashMap<>();
     private static final Map<RecipeType<?>, Set<ResourceLocation>> SERVER_EXPLICIT_RECIPES = new LinkedHashMap<>();
-    private static final Map<RecipeType<?>, Map<ResourceLocation, String>> CLIENT_RESTRICTIONS = new LinkedHashMap<>();
+    private static final Set<String> REGISTERED_RESTRICTION_IDS = new LinkedHashSet<>();
     private static final Map<RecipeManager, Map<RecipeType<?>, RecipeIdLookup>> SERVER_RECIPE_IDS =
             new WeakHashMap<>();
 
@@ -79,31 +81,20 @@ public final class MachineRecipeStageManager {
     private MachineRecipeStageManager() {
     }
 
-    public static void reloadFromKubeJS(MinecraftServer server) {
+    public static void reloadFromKubeJS() {
         clearServer();
         MachineRecipeStageKubeEvents.REGISTER.post(new MachineRecipeStageKubeEvent());
-        MachineRecipeStageNetwork.syncAll(server);
+        publishRestrictions();
     }
 
-    public static void clearServer() {
+    private static void clearServer() {
+        for (String restrictionId : REGISTERED_RESTRICTION_IDS) {
+            ARestrictionManager.RECIPE_INSTANCE.removeRestriction(restrictionId);
+        }
+        REGISTERED_RESTRICTION_IDS.clear();
         SERVER_RESTRICTIONS.clear();
         SERVER_EXPLICIT_RECIPES.clear();
         SERVER_RECIPE_IDS.clear();
-    }
-
-    public static void clearClient() {
-        CLIENT_RESTRICTIONS.clear();
-    }
-
-    public static void applyClientSnapshot(Collection<MachineRecipeStageRestriction> restrictions) {
-        clearClient();
-        for (MachineRecipeStageRestriction restriction : restrictions) {
-            Map<ResourceLocation, String> byRecipe = CLIENT_RESTRICTIONS.computeIfAbsent(
-                    restriction.recipeType(), ignored -> new LinkedHashMap<>());
-            for (ResourceLocation recipeId : restriction.recipeIds()) {
-                byRecipe.put(recipeId, restriction.stageId());
-            }
-        }
     }
 
     public static void addRecipe(String recipeTypeId, String recipeId, String stageId) {
@@ -150,38 +141,34 @@ public final class MachineRecipeStageManager {
     }
 
     public static boolean canProcess(ServerPlayer player, RecipeHolder<?> holder) {
-        String stage = getStage(SERVER_RESTRICTIONS, holder);
-        return stage == null || AStagesHelper.hasStage(player, stage);
+        return holder == null || isAllowed(player, wrapper(holder));
     }
 
     public static boolean canProcess(ServerPlayer player, Level level, Recipe<?> recipe) {
-        String stage = getStage(SERVER_RESTRICTIONS, level, recipe);
-        return stage == null || AStagesHelper.hasStage(player, stage);
+        RecipeWrapper wrapper = wrapper(level, recipe);
+        return wrapper == null || isAllowed(player, wrapper);
     }
 
     public static boolean canProcess(UUID ownerId, RecipeHolder<?> holder) {
-        String stage = getStage(SERVER_RESTRICTIONS, holder);
-        return stage == null || AStagesHelper.hasStage(ownerId, stage);
+        return holder == null || isAllowed(ownerId, wrapper(holder));
     }
 
     public static boolean canProcess(BlockEntity machine, RecipeHolder<?> holder) {
-        String stage = getStage(SERVER_RESTRICTIONS, holder);
-        return stage == null || AStagesHelper.hasStage(MachineOwnerHelper.getOwner(machine), stage);
+        return holder == null || isAllowed(MachineOwnerHelper.getOwner(machine), wrapper(holder));
     }
 
     public static boolean canProcess(BlockEntity machine, Recipe<?> recipe) {
-        String stage = getStage(SERVER_RESTRICTIONS, machine, recipe);
-        return stage == null || AStagesHelper.hasStage(MachineOwnerHelper.getOwner(machine), stage);
+        RecipeWrapper wrapper = wrapper(machine, recipe);
+        return wrapper == null || isAllowed(MachineOwnerHelper.getOwner(machine), wrapper);
     }
 
     public static boolean canProcessGlobally(RecipeHolder<?> holder) {
-        String stage = getStage(SERVER_RESTRICTIONS, holder);
-        return stage == null || AStagesHelper.hasServerStage(stage);
+        return holder == null || isAllowed(AHolder.server(), wrapper(holder));
     }
 
     public static boolean canProcessGlobally(Level level, Recipe<?> recipe) {
-        String stage = getStage(SERVER_RESTRICTIONS, level, recipe);
-        return stage == null || AStagesHelper.hasServerStage(stage);
+        RecipeWrapper wrapper = wrapper(level, recipe);
+        return wrapper == null || isAllowed(AHolder.server(), wrapper);
     }
 
     public static boolean canProcessIncludingSequenced(BlockEntity machine, RecipeHolder<?> holder) {
@@ -190,30 +177,6 @@ public final class MachineRecipeStageManager {
 
     public static boolean canProcessIncludingSequenced(UUID ownerId, RecipeHolder<?> holder) {
         return canProcess(ownerId, holder) && canProcessSequencedRestriction(ownerId, holder);
-    }
-
-    public static boolean clientCanSee(RecipeType<?> recipeType, ResourceLocation recipeId) {
-        String stage = getStage(CLIENT_RESTRICTIONS, recipeType, recipeId);
-        return stage == null || clientHasStage(stage);
-    }
-
-    public static boolean clientShouldHide(RecipeHolder<?> holder) {
-        String stage = getStage(CLIENT_RESTRICTIONS, holder);
-        return stage != null && !clientHasStage(stage);
-    }
-
-    public static boolean clientShouldHide(ResourceLocation recipeId) {
-        for (Map<ResourceLocation, String> byRecipe : CLIENT_RESTRICTIONS.values()) {
-            String stage = byRecipe.get(recipeId);
-            if (stage != null && !clientHasStage(stage)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public static List<MachineRecipeStageRestriction> serverSnapshot() {
-        return snapshot(SERVER_RESTRICTIONS);
     }
 
     public static List<String> supportedRecipeTypeIds() {
@@ -304,43 +267,24 @@ public final class MachineRecipeStageManager {
         return (List) recipeManager.getAllRecipesFor((RecipeType) recipeType);
     }
 
-    private static String getStage(Map<RecipeType<?>, Map<ResourceLocation, String>> restrictions,
-                                   RecipeHolder<?> holder) {
-        if (holder == null) {
-            return null;
-        }
-        return getStage(restrictions, holder.value().getType(), holder.id());
-    }
-
-    private static String getStage(Map<RecipeType<?>, Map<ResourceLocation, String>> restrictions,
-                                   RecipeType<?> recipeType, ResourceLocation recipeId) {
-        Map<ResourceLocation, String> byRecipe = restrictions.get(recipeType);
-        return byRecipe == null ? null : byRecipe.get(recipeId);
-    }
-
-    private static String getStage(Map<RecipeType<?>, Map<ResourceLocation, String>> restrictions,
-                                   BlockEntity machine, Recipe<?> recipe) {
+    private static RecipeWrapper wrapper(BlockEntity machine, Recipe<?> recipe) {
         if (machine == null || recipe == null || machine.getLevel() == null) {
             return null;
         }
-
-        return getStage(restrictions, machine.getLevel(), recipe);
+        return wrapper(machine.getLevel(), recipe);
     }
 
-    private static String getStage(Map<RecipeType<?>, Map<ResourceLocation, String>> restrictions,
-                                   Level level, Recipe<?> recipe) {
+    private static RecipeWrapper wrapper(Level level, Recipe<?> recipe) {
         if (level == null || recipe == null) {
             return null;
         }
-
         RecipeType<?> recipeType = recipe.getType();
-        Map<ResourceLocation, String> byRecipe = restrictions.get(recipeType);
-        if (byRecipe == null || byRecipe.isEmpty()) {
-            return null;
-        }
-
         ResourceLocation recipeId = getRecipeId(level.getRecipeManager(), recipeType, recipe);
-        return recipeId == null ? null : byRecipe.get(recipeId);
+        return recipeId == null ? null : new RecipeWrapper(recipeType, recipeId);
+    }
+
+    private static RecipeWrapper wrapper(RecipeHolder<?> holder) {
+        return new RecipeWrapper(holder.value().getType(), holder.id());
     }
 
     private static ResourceLocation getRecipeId(RecipeManager recipeManager, RecipeType<?> recipeType,
@@ -363,8 +307,8 @@ public final class MachineRecipeStageManager {
     }
 
     private static boolean canProcessSequencedRestriction(UUID ownerId, RecipeHolder<?> holder) {
-        String stage = getStage(SERVER_RESTRICTIONS, AllRecipeTypes.SEQUENCED_ASSEMBLY.getType(), holder.id());
-        return stage == null || AStagesHelper.hasStage(ownerId, stage);
+        return holder == null
+                || isAllowed(ownerId, new RecipeWrapper(AllRecipeTypes.SEQUENCED_ASSEMBLY.getType(), holder.id()));
     }
 
     private static boolean matchesRequestedRecipeType(ResourceLocation requestedTypeId, RecipeHolder<?> holder) {
@@ -376,28 +320,52 @@ public final class MachineRecipeStageManager {
         return LYCHEE_CRAFTING_ID.equals(serializerId);
     }
 
-    private static boolean clientHasStage(String stage) {
-        return AStagesHelper.clientHasStage(stage);
+    private static boolean isAllowed(AHolder holder, RecipeWrapper wrapper) {
+        return ARestrictionManager.RECIPE_INSTANCE.getRestriction(holder, wrapper) == null;
     }
 
-    private static List<MachineRecipeStageRestriction> snapshot(
-            Map<RecipeType<?>, Map<ResourceLocation, String>> restrictions) {
-        List<MachineRecipeStageRestriction> snapshot = new ArrayList<>();
-        for (Map.Entry<RecipeType<?>, Map<ResourceLocation, String>> typeEntry : restrictions.entrySet()) {
-            Map<String, List<ResourceLocation>> idsByStage = new LinkedHashMap<>();
+    private static boolean isAllowed(ServerPlayer player, RecipeWrapper wrapper) {
+        AHolder holder = player == null
+                ? AHolder.player(UNOWNED_MACHINE_HOLDER)
+                : AHolder.serverAndPlayer(player);
+        return isAllowed(holder, wrapper);
+    }
+
+    private static boolean isAllowed(UUID ownerId, RecipeWrapper wrapper) {
+        if (ownerId == null) {
+            return isAllowed(AHolder.player(UNOWNED_MACHINE_HOLDER), wrapper);
+        }
+        if (isAllowed(AHolder.server(), wrapper)) {
+            return true;
+        }
+        return isAllowed(AHolder.player(ownerId), wrapper);
+    }
+
+    private static void publishRestrictions() {
+        int restrictionIndex = 0;
+        for (Map.Entry<RecipeType<?>, Map<ResourceLocation, String>> typeEntry : SERVER_RESTRICTIONS.entrySet()) {
+            Map<String, List<ResourceLocation>> recipesByStage = new LinkedHashMap<>();
             for (Map.Entry<ResourceLocation, String> recipeEntry : typeEntry.getValue().entrySet()) {
-                idsByStage.computeIfAbsent(recipeEntry.getValue(), ignored -> new ArrayList<>())
+                recipesByStage.computeIfAbsent(recipeEntry.getValue(), ignored -> new ArrayList<>())
                         .add(recipeEntry.getKey());
             }
 
-            for (Map.Entry<String, List<ResourceLocation>> stageEntry : idsByStage.entrySet()) {
-                List<ResourceLocation> ids = stageEntry.getValue().stream()
-                        .sorted(Comparator.comparing(ResourceLocation::toString))
-                        .toList();
-                snapshot.add(new MachineRecipeStageRestriction(stageEntry.getKey(), typeEntry.getKey(), ids));
+            for (Map.Entry<String, List<ResourceLocation>> stageEntry : recipesByStage.entrySet()) {
+                String restrictionId = GuGuAddons.MODID + ":machine_recipe_stage/" + restrictionIndex++;
+                ARecipeRestriction restriction = new ARecipeRestriction(restrictionId, stageEntry.getKey());
+                for (ResourceLocation recipeId : stageEntry.getValue()) {
+                    restriction.restrict(new RecipeWrapper(typeEntry.getKey(), recipeId));
+                }
+                ARestrictionManager.RECIPE_INSTANCE.addRestriction(restriction);
+                REGISTERED_RESTRICTION_IDS.add(restrictionId);
+                restriction.markAsDirty();
             }
         }
-        return snapshot;
+
+        if (restrictionIndex == 0) {
+            new ARecipeRestriction(GuGuAddons.MODID + ":machine_recipe_stage/refresh", "internal")
+                    .markAsDirty();
+        }
     }
 
     private static ResourceLocation parseId(String id, String label) {

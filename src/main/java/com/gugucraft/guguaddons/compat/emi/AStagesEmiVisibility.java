@@ -1,153 +1,119 @@
 package com.gugucraft.guguaddons.compat.emi;
 
+import com.alessandro.astages.api.holder.AClientHolder;
+import com.alessandro.astages.api.util.AStagesClientUtils;
 import com.alessandro.astages.api.wrapper.RecipeWrapper;
 import com.alessandro.astages.engine.AClientRestrictionManager;
 import com.alessandro.astages.engine.client.restriction.recipe.AClientRecipeModRestriction;
 import com.alessandro.astages.engine.client.restriction.recipe.AClientRecipeRestriction;
-import com.gugucraft.guguaddons.compat.astages.AStagesHelper;
-import com.gugucraft.guguaddons.stage.MachineRecipeStageManager;
 import dev.emi.emi.api.recipe.EmiRecipe;
-import dev.emi.emi.api.stack.EmiStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeType;
 
-import java.lang.reflect.Field;
 import java.util.List;
-import java.util.Set;
 
+/**
+ * Narrow compatibility fallback for TMRV recipes, which do not expose an EMI backing recipe.
+ * AStages 2.5 handles all normal item, fluid, and backed recipe visibility itself.
+ */
 public final class AStagesEmiVisibility {
     private static final String TMRV_RECIPE_CLASS = "dev.nolij.toomanyrecipeviewers.impl.recipe.TMRVRecipe";
+    private static final String TMRV_NAMESPACE = "toomanyrecipeviewers";
 
     private AStagesEmiVisibility() {
     }
 
-    public static boolean shouldHideMachineRecipe(EmiRecipe recipe) {
-        if (recipe == null) {
+    public static boolean shouldHideTmrvRecipe(EmiRecipe recipe) {
+        ResourceLocation originalId = tmrvOriginalId(recipe);
+        if (originalId == null) {
             return false;
         }
 
-        if (MachineRecipeStageManager.clientShouldHide(recipe.getBackingRecipe())) {
-            return true;
-        }
-
-        for (ResourceLocation recipeId : candidateRecipeIds(recipe)) {
-            if (MachineRecipeStageManager.clientShouldHide(recipeId)) {
+        for (ResourceLocation recipeId : candidateRecipeIds(recipe, originalId)) {
+            RecipeHolder<?> holder = findRecipe(recipeId);
+            if (holder != null && isRestricted(holder)) {
+                return true;
+            }
+            if (holder == null && isRestrictedWithoutBackingRecipe(recipeId)) {
                 return true;
             }
         }
         return false;
     }
 
-    public static boolean shouldHideRecipe(EmiRecipe recipe) {
-        if (recipe == null) {
-            return false;
+    private static RecipeHolder<?> findRecipe(ResourceLocation recipeId) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) {
+            return null;
         }
+        return minecraft.level.getRecipeManager().byKey(recipeId).orElse(null);
+    }
 
-        RecipeHolder<?> holder = recipe.getBackingRecipe();
-        if (holder != null && shouldHideRecipe(holder.value().getType(), holder.id())) {
-            return true;
-        }
+    private static boolean isRestricted(RecipeHolder<?> holder) {
+        RecipeWrapper wrapper = new RecipeWrapper(holder.value().getType(), holder.id());
+        return AClientRestrictionManager.RECIPE_INSTANCE.getRestriction(AClientHolder.serverAndPlayer(), wrapper) != null;
+    }
 
-        for (ResourceLocation recipeId : candidateRecipeIds(recipe)) {
-            if (shouldHideRecipe(null, recipeId)) {
+    private static boolean isRestrictedWithoutBackingRecipe(ResourceLocation recipeId) {
+        for (AClientRecipeRestriction restriction :
+                AClientRestrictionManager.RECIPE_INSTANCE.getRegistry().getRecipeRestrictions()) {
+            if (!restriction.getRecipes().contains(recipeId)) {
+                continue;
+            }
+            if (restriction.getType() == null) {
+                continue;
+            }
+            RecipeWrapper wrapper = new RecipeWrapper(restriction.getType(), recipeId);
+            if (AClientRestrictionManager.RECIPE_INSTANCE.getRestriction(
+                    AClientHolder.serverAndPlayer(), wrapper) != null) {
                 return true;
             }
         }
-        return false;
-    }
-
-    public static boolean shouldHideStack(EmiStack stack) {
-        if (stack == null || stack.isEmpty()) {
-            return false;
-        }
-
-        ItemStack itemStack = stack.getItemStack();
-        if (!itemStack.isEmpty()) {
-            return missesAnyStage(AClientRestrictionManager.ITEM_INSTANCE.getStagesForStack(itemStack));
-        }
-
-        ResourceLocation id = stack.getId();
-        return id != null && missesAnyStage(
-                AClientRestrictionManager.ITEM_INSTANCE.getStagesForResourceLocation(id));
-    }
-
-    private static boolean shouldHideRecipe(RecipeType<?> recipeType, ResourceLocation recipeId) {
-        RecipeWrapper wrapper = recipeType == null ? null : new RecipeWrapper(recipeType, recipeId);
 
         for (AClientRecipeModRestriction restriction :
                 AClientRestrictionManager.RECIPE_INSTANCE.getRegistry().getModRestrictions()) {
-            if (isRestrictedByMod(restriction, wrapper, recipeId) && missingStage(restriction.getStage())) {
+            if (restriction.getModId().equals(recipeId.getNamespace())
+                    && !restriction.getIgnoredRecipeIds().contains(recipeId)
+                    && !AStagesClientUtils.hasStage(AClientHolder.serverAndPlayer(), restriction.getStage())) {
                 return true;
             }
         }
-
-        for (AClientRecipeRestriction restriction :
-                AClientRestrictionManager.RECIPE_INSTANCE.getRegistry().getRecipeRestrictions()) {
-            if (isRestrictedRecipe(restriction, wrapper, recipeType, recipeId) && missingStage(restriction.getStage())) {
-                return true;
-            }
-        }
-
         return false;
     }
 
-    private static List<ResourceLocation> candidateRecipeIds(EmiRecipe recipe) {
-        ResourceLocation id = recipe.getId();
-        ResourceLocation tmrvOriginalId = tmrvOriginalId(recipe);
-
-        if (id == null) {
-            return tmrvOriginalId == null ? List.of() : List.of(tmrvOriginalId);
+    private static List<ResourceLocation> candidateRecipeIds(EmiRecipe recipe, ResourceLocation originalId) {
+        ResourceLocation emiId = recipe.getId();
+        if (emiId == null || emiId.equals(originalId)) {
+            return List.of(originalId);
         }
-        if (tmrvOriginalId == null || tmrvOriginalId.equals(id)) {
-            return List.of(id);
-        }
-        return List.of(id, tmrvOriginalId);
+        return List.of(emiId, originalId);
     }
 
     private static ResourceLocation tmrvOriginalId(EmiRecipe recipe) {
-        if (!TMRV_RECIPE_CLASS.equals(recipe.getClass().getName())) {
+        if (recipe == null || !TMRV_RECIPE_CLASS.equals(recipe.getClass().getName())) {
+            return null;
+        }
+        return originalIdFromSyntheticTmrvId(recipe.getId());
+    }
+
+    private static ResourceLocation originalIdFromSyntheticTmrvId(ResourceLocation syntheticId) {
+        if (syntheticId == null || !TMRV_NAMESPACE.equals(syntheticId.getNamespace())) {
             return null;
         }
 
-        try {
-            Field field = recipe.getClass().getField("originalId");
-            Object value = field.get(recipe);
-            return value instanceof ResourceLocation id ? id : null;
-        } catch (ReflectiveOperationException ignored) {
+        String syntheticPath = syntheticId.getPath();
+        if (!syntheticPath.startsWith("/")) {
             return null;
         }
-    }
 
-    private static boolean isRestrictedByMod(AClientRecipeModRestriction restriction, RecipeWrapper wrapper,
-                                             ResourceLocation recipeId) {
-        if (wrapper != null) {
-            return restriction.isRestricted(wrapper);
+        int namespaceEnd = syntheticPath.indexOf('/', 1);
+        if (namespaceEnd <= 1 || namespaceEnd == syntheticPath.length() - 1) {
+            return null;
         }
-        return restriction.getModId().equals(recipeId.getNamespace())
-                && !restriction.getIgnoredRecipeIds().contains(recipeId);
-    }
 
-    private static boolean isRestrictedRecipe(AClientRecipeRestriction restriction, RecipeWrapper wrapper,
-                                              RecipeType<?> recipeType, ResourceLocation recipeId) {
-        if (wrapper != null) {
-            return restriction.isRestricted(wrapper);
-        }
-        return (recipeType == null || restriction.getType() == recipeType)
-                && restriction.getRecipes().contains(recipeId);
-    }
-
-    private static boolean missesAnyStage(Set<String> stages) {
-        for (String stage : stages) {
-            if (missingStage(stage)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean missingStage(String stage) {
-        return stage != null && !stage.isBlank() && !AStagesHelper.clientHasStage(stage);
+        String namespace = syntheticPath.substring(1, namespaceEnd);
+        String path = syntheticPath.substring(namespaceEnd + 1);
+        return ResourceLocation.tryParse(namespace + ":" + path);
     }
 }

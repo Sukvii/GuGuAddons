@@ -23,6 +23,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
 
@@ -47,15 +48,17 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
     private static final int OUTPUT_MAX_SLOTS = 6;
     private static final AnimatedAbyssCatalyticChamberDisplay MACHINE_DISPLAY = new AnimatedAbyssCatalyticChamberDisplay();
 
+    private final RecipeHolder<?> backingRecipe;
     private final AbyssCatalysisRecipe recipe;
     private final List<DisplayEntry> topInputs;
     private final List<DisplayEntry> catalystInputs;
     private final List<DisplayEntry> bottomInputs;
     private final List<DisplayEntry> outputEntries;
 
-    public AbyssCatalysisEmiRecipe(EmiRecipeCategory category, ResourceLocation id, AbyssCatalysisRecipe recipe) {
-        super(category, id, WIDTH, HEIGHT);
-        this.recipe = recipe;
+    public AbyssCatalysisEmiRecipe(EmiRecipeCategory category, RecipeHolder<AbyssCatalysisRecipe> holder) {
+        super(category, holder.id(), WIDTH, HEIGHT);
+        this.backingRecipe = holder;
+        this.recipe = holder.value();
         this.topInputs = collectInputs(recipe.getTopItemIngredients(), recipe.getTopFluidIngredients());
         this.catalystInputs = collectInputs(recipe.getCatalystItemIngredients(), recipe.getCatalystFluidIngredients());
         this.bottomInputs = collectInputs(recipe.getBottomItemIngredients(), recipe.getBottomFluidIngredients());
@@ -70,6 +73,11 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
         for (FluidStack output : recipe.getFluidResults()) {
             outputs.add(NeoForgeEmiStack.of(output));
         }
+    }
+
+    @Override
+    public RecipeHolder<?> getBackingRecipe() {
+        return backingRecipe;
     }
 
     @Override

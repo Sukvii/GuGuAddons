@@ -15,8 +15,8 @@ import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.api.widget.WidgetHolder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
 
@@ -27,14 +27,16 @@ public class CompressorEmiRecipe extends BasicEmiRecipe {
     private static final int HEIGHT = 104;
     private static final AnimatedVacuumChamberDisplay VACUUM_DISPLAY = new AnimatedVacuumChamberDisplay();
 
+    private final RecipeHolder<?> backingRecipe;
     private final CompressorRecipe recipe;
     private final boolean pressurizingMode;
     private final AnimatedBlazeBurnerDisplay heater = new AnimatedBlazeBurnerDisplay();
 
-    public CompressorEmiRecipe(EmiRecipeCategory category, ResourceLocation id, CompressorRecipe recipe,
+    public CompressorEmiRecipe(EmiRecipeCategory category, RecipeHolder<? extends CompressorRecipe> holder,
             boolean pressurizingMode) {
-        super(category, id, WIDTH, HEIGHT);
-        this.recipe = recipe;
+        super(category, holder.id(), WIDTH, HEIGHT);
+        this.backingRecipe = holder;
+        this.recipe = holder.value();
         this.pressurizingMode = pressurizingMode;
 
         for (Ingredient ingredient : recipe.getIngredients()) {
@@ -49,6 +51,11 @@ public class CompressorEmiRecipe extends BasicEmiRecipe {
         for (FluidStack output : recipe.getFluidResults()) {
             outputs.add(NeoForgeEmiStack.of(output));
         }
+    }
+
+    @Override
+    public RecipeHolder<?> getBackingRecipe() {
+        return backingRecipe;
     }
 
     @Override

@@ -12,51 +12,51 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import java.lang.reflect.Method;
 
 @EventBusSubscriber(modid = GuGuAddons.MODID, value = Dist.CLIENT)
-public final class EmiClientReloadHelper {
-    private static final int RELOAD_DELAY_TICKS = 2;
+public final class EmiClientBakeHelper {
+    private static final int BAKE_DELAY_TICKS = 2;
     private static final ReflectionCache.MethodRef EMI_IS_LOADED_METHOD = ReflectionCache.publicMethod(
             "dev.emi.emi.runtime.EmiReloadManager",
             "isLoaded");
-    private static final ReflectionCache.MethodRef EMI_RELOAD_METHOD = ReflectionCache.publicMethod(
-            "dev.emi.emi.runtime.EmiReloadManager",
-            "reload");
+    private static final ReflectionCache.MethodRef EMI_BAKE_METHOD = ReflectionCache.publicMethod(
+            "dev.emi.emi.registry.EmiRecipes",
+            "bake");
 
-    private static boolean pendingReload;
-    private static boolean reloadQueued;
+    private static boolean pendingBake;
+    private static boolean bakeQueued;
     private static int pendingDelayTicks;
     private static String pendingReason = "client state change";
 
-    private EmiClientReloadHelper() {
+    private EmiClientBakeHelper() {
     }
 
-    public static void requestRecipeReload(String reason) {
+    public static void requestRecipeBake(String reason) {
         if (!ModList.get().isLoaded("emi")) {
             return;
         }
 
-        pendingReload = true;
-        pendingDelayTicks = Math.max(pendingDelayTicks, RELOAD_DELAY_TICKS);
+        pendingBake = true;
+        pendingDelayTicks = Math.max(pendingDelayTicks, BAKE_DELAY_TICKS);
         if (reason != null && !reason.isBlank()) {
             pendingReason = reason;
         }
         scheduleIfReady();
     }
 
-    public static void cancelPendingReload() {
-        pendingReload = false;
+    public static void cancelPendingBake() {
+        pendingBake = false;
         pendingDelayTicks = 0;
         pendingReason = "client state change";
     }
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        if (pendingReload) {
+        if (pendingBake) {
             scheduleIfReady();
         }
     }
 
     private static void scheduleIfReady() {
-        if (!pendingReload || reloadQueued || !isClientWorldReady() || !isEmiLoaded()) {
+        if (!pendingBake || bakeQueued || !isClientWorldReady() || !isEmiLoaded()) {
             return;
         }
 
@@ -65,15 +65,15 @@ public final class EmiClientReloadHelper {
             return;
         }
 
-        pendingReload = false;
-        reloadQueued = true;
+        pendingBake = false;
+        bakeQueued = true;
         Minecraft.getInstance().execute(() -> {
-            reloadQueued = false;
+            bakeQueued = false;
             if (!isClientWorldReady()) {
-                pendingReload = true;
+                pendingBake = true;
                 return;
             }
-            reload();
+            bake();
         });
     }
 
@@ -99,20 +99,20 @@ public final class EmiClientReloadHelper {
         }
     }
 
-    private static void reload() {
+    private static void bake() {
         try {
-            ReflectionCache.MethodLookup lookup = EMI_RELOAD_METHOD.lookup();
-            Method reloadMethod = lookup.method();
-            if (reloadMethod == null) {
+            ReflectionCache.MethodLookup lookup = EMI_BAKE_METHOD.lookup();
+            Method bakeMethod = lookup.method();
+            if (bakeMethod == null) {
                 if (lookup.reportFailure()) {
-                    GuGuAddons.LOGGER.warn("Failed to refresh EMI recipes after {}", pendingReason,
+                    GuGuAddons.LOGGER.warn("Failed to rebake EMI recipes after {}", pendingReason,
                             lookup.failure());
                 }
                 return;
             }
-            reloadMethod.invoke(null);
+            bakeMethod.invoke(null);
         } catch (Throwable t) {
-            GuGuAddons.LOGGER.warn("Failed to refresh EMI recipes after {}", pendingReason, t);
+            GuGuAddons.LOGGER.warn("Failed to rebake EMI recipes after {}", pendingReason, t);
         }
     }
 }

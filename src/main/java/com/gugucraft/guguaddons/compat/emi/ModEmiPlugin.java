@@ -9,7 +9,6 @@ import com.gugucraft.guguaddons.recipe.VacuumizingRecipe;
 import com.gugucraft.guguaddons.registry.ModBlocks;
 import com.gugucraft.guguaddons.registry.ModItems;
 import com.gugucraft.guguaddons.registry.ModRecipes;
-import com.gugucraft.guguaddons.stage.MachineRecipeStageManager;
 import com.simibubi.create.AllBlocks;
 import dev.emi.emi.api.EmiEntrypoint;
 import dev.emi.emi.api.EmiPlugin;
@@ -68,9 +67,7 @@ public class ModEmiPlugin implements EmiPlugin {
 
     @Override
     public void register(EmiRegistry registry) {
-        registry.removeRecipes(recipe -> AStagesEmiVisibility.shouldHideMachineRecipe(recipe)
-                || AStagesEmiVisibility.shouldHideRecipe(recipe));
-        registry.removeEmiStacks(AStagesEmiVisibility::shouldHideStack);
+        registry.removeRecipes(AStagesEmiVisibility::shouldHideTmrvRecipe);
 
         registerSlashBackSmithing(registry);
         registerVacuumizing(registry);
@@ -158,9 +155,8 @@ public class ModEmiPlugin implements EmiPlugin {
         registry.getRecipeManager()
                 .getAllRecipesFor(recipeType)
                 .stream()
-                .filter(holder -> MachineRecipeStageManager.clientCanSee(recipeType, holder.id()))
                 .forEach(holder -> registry.addRecipe(
-                        new CompressorEmiRecipe(VACUUMIZING_CATEGORY, holder.id(), holder.value(), false)));
+                        new CompressorEmiRecipe(VACUUMIZING_CATEGORY, holder, false)));
     }
 
     @SuppressWarnings("unchecked")
@@ -174,9 +170,8 @@ public class ModEmiPlugin implements EmiPlugin {
         registry.getRecipeManager()
                 .getAllRecipesFor(recipeType)
                 .stream()
-                .filter(holder -> MachineRecipeStageManager.clientCanSee(recipeType, holder.id()))
                 .forEach(holder -> registry.addRecipe(
-                        new CompressorEmiRecipe(PRESSURIZING_CATEGORY, holder.id(), holder.value(), true)));
+                        new CompressorEmiRecipe(PRESSURIZING_CATEGORY, holder, true)));
     }
 
     @SuppressWarnings("unchecked")
@@ -189,9 +184,8 @@ public class ModEmiPlugin implements EmiPlugin {
         registry.getRecipeManager()
                 .getAllRecipesFor(recipeType)
                 .stream()
-                .filter(holder -> MachineRecipeStageManager.clientCanSee(recipeType, holder.id()))
                 .forEach(holder -> registry.addRecipe(
-                        new CentrifugationEmiRecipe(CENTRIFUGATION_CATEGORY, holder.id(), holder.value())));
+                        new CentrifugationEmiRecipe(CENTRIFUGATION_CATEGORY, holder)));
     }
 
     @SuppressWarnings("unchecked")
@@ -205,8 +199,7 @@ public class ModEmiPlugin implements EmiPlugin {
         registry.getRecipeManager()
                 .getAllRecipesFor(recipeType)
                 .stream()
-                .filter(holder -> MachineRecipeStageManager.clientCanSee(recipeType, holder.id()))
                 .forEach(holder -> registry.addRecipe(
-                        new AbyssCatalysisEmiRecipe(ABYSS_CATALYSIS_CATEGORY, holder.id(), holder.value())));
+                        new AbyssCatalysisEmiRecipe(ABYSS_CATALYSIS_CATEGORY, holder)));
     }
 }
