@@ -13,10 +13,7 @@ public final class MachineOwnerHelper {
     }
 
     public static UUID getOwner(BlockEntity blockEntity) {
-        if (blockEntity instanceof MachineOwnerAccess access) {
-            return access.guguaddons$getMachineOwner();
-        }
-        return null;
+        return AStagesBlockOwner.getBlockOwner(blockEntity);
     }
 
     public static UUID getOwner(CompoundTag tag) {
@@ -24,13 +21,19 @@ public final class MachineOwnerHelper {
     }
 
     public static void setOwner(BlockEntity blockEntity, UUID ownerId) {
-        if (blockEntity instanceof MachineOwnerAccess access) {
-            access.guguaddons$setMachineOwner(ownerId);
-            blockEntity.setChanged();
-            AStagesBlockOwner.setBlockOwner(blockEntity, ownerId);
-            if (blockEntity instanceof MachineOwnerAssignedCallback callback) {
-                callback.guguaddons$onMachineOwnerAssigned();
-            }
+        if (blockEntity == null || ownerId == null) {
+            return;
+        }
+        AStagesBlockOwner.setBlockOwner(blockEntity, ownerId);
+        if (blockEntity instanceof MachineOwnerAssignedCallback callback) {
+            callback.guguaddons$onMachineOwnerAssigned();
+        }
+    }
+
+    public static void migrateLegacyOwner(BlockEntity blockEntity, CompoundTag tag) {
+        UUID legacyOwner = getOwner(tag);
+        if (legacyOwner != null && getOwner(blockEntity) == null) {
+            setOwner(blockEntity, legacyOwner);
         }
     }
 
