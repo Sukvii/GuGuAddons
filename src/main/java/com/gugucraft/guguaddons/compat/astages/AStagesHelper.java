@@ -70,7 +70,7 @@ public final class AStagesHelper {
 
     public static boolean isUnknownPickupItem(ServerPlayer player, ItemStack stack) {
         ABaseItemRestriction<?, ?> restriction = getPickupRestriction(player, stack);
-        return restriction != null && restriction.isDisabled(Attributes.PICKING_UP);
+        return restriction != null && restriction.isDisabled(Attributes.PICKUP);
     }
 
     public static boolean isStillUnknownItem(ServerPlayer player, ItemStack stack) {

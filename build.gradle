@@ -142,12 +142,12 @@ tasks.register('syncOptionalClientRuntimeMods') {
         def modsDir = clientModsDir.asFile
         modsDir.mkdirs()
 
-        delete(fileTree(modsDir) {
-            include "tmrv-*.jar"
-            include "toomanyrecipeviewers-*.jar"
-        })
-
         if (enableTmrvRuntime.get()) {
+            delete(fileTree(modsDir) {
+                include "tmrv-*.jar"
+                include "toomanyrecipeviewers-*.jar"
+            })
+
             def tmrvJars = configurations.tmrvRuntime.resolve().findAll { it.name.startsWith('tmrv-') }
             if (tmrvJars.isEmpty()) {
                 throw new GradleException("Unable to resolve TMRV runtime jar ${tmrv_version}")
