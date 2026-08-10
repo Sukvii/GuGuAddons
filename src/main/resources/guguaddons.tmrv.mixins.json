@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "com.gugucraft.guguaddons.mixin.tmrv",
+  "compatibilityLevel": "JAVA_21",
+  "plugin": "com.gugucraft.guguaddons.compat.tmrv.TmrvMixinConfigPlugin",
+  "mixins": [],
+  "client": [
+    "TooManyRecipeViewersMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
