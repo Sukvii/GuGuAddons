@@ -13,7 +13,8 @@ public final class NumismaticsAccountHelper {
             GuGuAddons.LOGGER.warn("Repairing negative Numismatics balance for account {} ({}) from {}",
                     account.id, account.type, balance);
             account.setBalance(Integer.MAX_VALUE);
-            return Integer.MAX_VALUE;
+            // Numismatics 1.1 stores overflow separately and caps the visible balance.
+            return account.getBalance();
         }
         return balance;
     }

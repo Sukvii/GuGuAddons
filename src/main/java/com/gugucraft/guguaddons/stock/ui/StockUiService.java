@@ -235,7 +235,7 @@ public final class StockUiService {
         }
 
         int balanceBeforeDeduction = account.getBalance();
-        if (!account.deduct(totalCost)) {
+        if (!account.deduct(totalCost, false)) {
             player.displayClientMessage(
                     Component.translatable("menu.guguaddons.stock.error.insufficient_balance")
                             .withStyle(ChatFormatting.RED),
@@ -391,7 +391,7 @@ public final class StockUiService {
 
         int chargedFee = Math.min(targetFee, Math.max(0, account.getBalance()));
         if (chargedFee > 0) {
-            account.deduct(chargedFee);
+            account.deduct(chargedFee, false);
         }
 
         if (!notify) {

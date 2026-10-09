@@ -230,7 +230,7 @@ public class ChunkClaimEconomyHandler {
         int maxCost = safeMultiply(unitPrice, targets.size());
         BankAccount account = Numismatics.BANK.getOrCreateAccount(player.getUUID(), BankAccount.Type.PLAYER);
         NumismaticsAccountHelper.repairNegativeBalance(account);
-        if (!account.deduct(maxCost)) {
+        if (!account.deduct(maxCost, false)) {
             ChunkClaimEconomyNetwork.sendToast(player, MSG_NOT_ENOUGH_FUNDS, formatSpurs(maxCost));
             return;
         }

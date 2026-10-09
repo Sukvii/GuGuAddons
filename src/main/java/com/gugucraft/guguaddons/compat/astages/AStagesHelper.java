@@ -48,7 +48,8 @@ public final class AStagesHelper {
         if (player == null || stack == null || stack.isEmpty()) {
             return null;
         }
-        return ARestrictionManager.ITEM_INSTANCE.getRestriction(AHolder.player(player), stack);
+        // Match AStages 2.5.3 pickup checks, including stages unlocked for the server.
+        return ARestrictionManager.ITEM_INSTANCE.getRestriction(AHolder.serverAndPlayer(player), stack);
     }
 
     private static ABaseItemRestriction<?, ?> getItemRestriction(ServerPlayer player, ItemStack stack) {
