@@ -33,6 +33,20 @@ def enableTmrvRuntime = providers.gradleProperty('guguaddons.withTmrv')
 
 repositories {
     // Add here additional repositories if required by some of the dependencies below.
+    // TMRV prereleases are published on GitHub only. Pin the release tag and MC 1.21.1 asset.
+    exclusiveContent {
+        forRepository {
+            ivy {
+                name = 'TmrvGitHubReleases'
+                url = 'https://github.com/Nolij/TooManyRecipeViewers/releases/download'
+                patternLayout {
+                    artifact 'release/[revision]/[artifact]-[revision]+mc.21.1.[ext]'
+                }
+                metadataSources { artifact() }
+            }
+        }
+        filter { includeModule('dev.nolij', 'toomanyrecipeviewers') }
+    }
     mavenCentral() // LWJGL Yoga
     maven { url = "https://maven.firstdark.dev/snapshots" } // LDLIB2
     maven { url = "https://maven.createmod.net" } // Create, Ponder, Flywheel
@@ -148,7 +162,9 @@ tasks.register('syncOptionalClientRuntimeMods') {
                 include "toomanyrecipeviewers-*.jar"
             })
 
-            def tmrvJars = configurations.tmrvRuntime.resolve().findAll { it.name.startsWith('tmrv-') }
+            def tmrvJars = configurations.tmrvRuntime.resolve().findAll {
+                it.name.startsWith('tmrv-') || it.name.startsWith('toomanyrecipeviewers-')
+            }
             if (tmrvJars.isEmpty()) {
                 throw new GradleException("Unable to resolve TMRV runtime jar ${tmrv_version}")
             }
@@ -187,7 +203,7 @@ dependencies {
     runtimeOnly "org.lwjgl:lwjgl-yoga:${lwjgl_yoga_version}:natives-macos"
     runtimeOnly "org.lwjgl:lwjgl-yoga:${lwjgl_yoga_version}:natives-macos-arm64"
     compileOnly "org.appliedenergistics.yoga:yoga:1.0.0"
-    compileOnly "dev.vfyjxf:taffy:1.1.3"
+    compileOnly "dev.vfyjxf:taffy:1.1.4"
 
     // EMI
     implementation "dev.emi:emi-neoforge:${emi_version}"
@@ -221,7 +237,7 @@ dependencies {
     implementation "dev.latvian.mods:kubejs-neoforge:${kubejs_version}"
 
     // TMRV is only used for opt-in EMI+TMRV/no-JEI dev-client validation.
-    tmrvRuntime "maven.modrinth:tmrv:${tmrv_version}"
+    tmrvRuntime("dev.nolij:toomanyrecipeviewers:${tmrv_version}") { transitive = false }
 
     // Example mod dependency using a mod jar from ./libs with a flat dir repository
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
