@@ -190,7 +190,7 @@ config="guguaddons.tmrv.mixins.json"
 [[dependencies."${mod_id}"]]
     modId="lychee"
     type="required"
-    versionRange="[${lychee_version},6.5.4)"
+    versionRange="[${lychee_version},6.7.1)"
     ordering="AFTER"
     side="BOTH"
 

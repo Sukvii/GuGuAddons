@@ -1,37 +1,24 @@
 package com.gugucraft.guguaddons.mixin.lychee;
 
-import com.google.common.cache.Cache;
 import com.gugucraft.guguaddons.compat.lychee.LycheeRecipeStageHooks;
-import net.minecraft.world.item.crafting.CraftingInput;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.world.item.crafting.Recipe;
-import net.minecraft.world.level.Level;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import snownee.lychee.recipes.ShapedCraftingRecipe;
 import snownee.lychee.util.context.LycheeContext;
 
 @Mixin(ShapedCraftingRecipe.class)
 public abstract class ShapedCraftingRecipeMixin {
-    @Shadow
-    @Final
-    private static Cache<CraftingInput, LycheeContext> CONTEXT_CACHE;
-
-    @Inject(method = "matches(Lnet/minecraft/world/item/crafting/CraftingInput;Lnet/minecraft/world/level/Level;)Z",
-            at = @At("RETURN"), cancellable = true)
-    private void guguaddons$hideLockedCraftingRecipe(CraftingInput input, Level level,
-                                                     CallbackInfoReturnable<Boolean> cir) {
-        if (!cir.getReturnValue()) {
-            return;
+    @ModifyExpressionValue(method = "updateContextAndGet", at = @At(value = "INVOKE",
+            target = "Lsnownee/lychee/recipes/ShapedCraftingRecipe$ResolvableContext;resolve(Lnet/minecraft/world/level/Level;)Lsnownee/lychee/util/context/LycheeContext;"))
+    private LycheeContext guguaddons$rejectLockedCraftingContext(LycheeContext context) {
+        // Lychee 6.7 resolves a container-specific context before matching or assembling.
+        // Preserve its cache so rejecting one recipe cannot erase the player's context
+        // for another candidate. The caller handles a null context as an unavailable recipe.
+        if (context != null && !LycheeRecipeStageHooks.canCraft(context, context.level(), (Recipe<?>) (Object) this)) {
+            return null;
         }
-
-        LycheeContext context = CONTEXT_CACHE.getIfPresent(input);
-        if (!LycheeRecipeStageHooks.canCraft(context, level, (Recipe<?>) (Object) this)) {
-            CONTEXT_CACHE.invalidate(input);
-            cir.setReturnValue(false);
-        }
+        return context;
     }
 }
