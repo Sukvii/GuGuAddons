@@ -13,6 +13,9 @@ import net.neoforged.neoforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Item-handler capability for Create's table cloth (create:*_table_cloth).
  *
@@ -113,6 +116,91 @@ public class TableClothItemHandler implements IItemHandler {
         return stack.copyWithCount(stack.getCount() - 1);
     }
 
+    private static int getBatchCapacity(@Nullable TableClothBlockEntity cloth) {
+        if (cloth == null)
+            return SLOTS;
+        if (cloth.isShop())
+            return -1;
+
+        List<ItemStack> current = cloth.manuallyAddedItems;
+        if (current.size() > SLOTS)
+            return -1;
+
+        // Normal Create cloth entries are dense and contain one item each.
+        // Reject unexpected data instead of compacting or rewriting it here.
+        for (ItemStack entry : current) {
+            if (entry.isEmpty() || entry.getCount() != 1)
+                return -1;
+        }
+        return SLOTS - current.size();
+    }
+
+    /**
+     * Accepts a complete unpacking batch without mutating the input list or stacks.
+     * A false return never appends items from this batch.
+     */
+    boolean insertAll(List<ItemStack> items, boolean simulate) {
+        BlockState state = level.getBlockState(pos);
+        if (!(state.getBlock() instanceof TableClothBlock))
+            return false;
+
+        TableClothBlockEntity cloth = be();
+        // An empty cloth may lack a BE. A state claiming to have one while
+        // none is available is not a valid target for this batch.
+        if (cloth == null && state.getValue(TableClothBlock.HAS_BE))
+            return false;
+
+        int available = getBatchCapacity(cloth);
+        if (available < 0)
+            return false;
+
+        // Subtract from the four-item capacity instead of summing arbitrary
+        // counts into an int. Oversized batches fail before any allocation.
+        int remaining = available;
+        for (ItemStack stack : items) {
+            if (stack.isEmpty())
+                continue;
+            int count = stack.getCount();
+            if (count > remaining)
+                return false;
+            remaining -= count;
+        }
+
+        int itemCount = available - remaining;
+        if (simulate || itemCount == 0)
+            return true;
+        if (level.isClientSide())
+            return false;
+
+        // At most four copies, in the same order as the incoming stacks.
+        List<ItemStack> additions = new ArrayList<>(itemCount);
+        for (ItemStack stack : items) {
+            if (stack.isEmpty())
+                continue;
+            for (int i = 0; i < stack.getCount(); i++)
+                additions.add(stack.copyWithCount(1));
+        }
+
+        if (cloth == null) {
+            cloth = createBlockEntity();
+            if (cloth == null)
+                return false;
+        }
+
+        // Creating a BE can invoke world callbacks. Recheck the current
+        // target and capacity before the sole write to the item list.
+        if (!(level.getBlockState(pos).getBlock() instanceof TableClothBlock))
+            return false;
+        if (level.getBlockEntity(pos) != cloth)
+            return false;
+        if (getBatchCapacity(cloth) < itemCount)
+            return false;
+
+        cloth.manuallyAddedItems.addAll(additions);
+        cloth.notifyUpdate();
+        return true;
+    }
+
     @Override
     public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
         if (amount <= 0 || slot < 0 || slot >= SLOTS)
@@ -128,22 +216,17 @@ public class TableClothItemHandler implements IItemHandler {
         if (present.isEmpty())
             return ItemStack.EMPTY;
 
+        // Preserve tail-only extraction. Simulation must obey the same rule
+        // because callers may rely on its result before committing extraction.
+        int lastFilledSlot = be.manuallyAddedItems.size() - 1;
+        if (slot != lastFilledSlot)
+            return ItemStack.EMPTY;
+
         if (simulate)
             return present.copyWithCount(1);
 
         if (level.isClientSide())
             return ItemStack.EMPTY;
-
-        // To maintain slot stability for arrival detection, only allow extraction
-        // from the last filled slot. This prevents the list from compacting and
-        // shifting indices, which would corrupt the before/after inventory diff
-        // used by PackagerBlockEntity.submitNewArrivals.
-        int lastFilledSlot = be.manuallyAddedItems.size() - 1;
-        if (slot != lastFilledSlot) {
-            // Middle slot extraction would shift subsequent items forward, breaking
-            // slot position assumptions. Reject extraction from non-tail slots.
-            return ItemStack.EMPTY;
-        }
 
         ItemStack removed = be.manuallyAddedItems.remove(slot).copyWithCount(1);
         be.notifyUpdate();

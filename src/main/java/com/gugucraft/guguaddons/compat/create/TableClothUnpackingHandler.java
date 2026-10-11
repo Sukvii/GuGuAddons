@@ -2,7 +2,6 @@ package com.gugucraft.guguaddons.compat.create;
 
 import com.simibubi.create.api.packager.unpacking.UnpackingHandler;
 import com.simibubi.create.content.logistics.stockTicker.PackageOrderWithCrafts;
-import com.simibubi.create.content.logistics.tableCloth.TableClothBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
@@ -31,67 +30,13 @@ public enum TableClothUnpackingHandler implements UnpackingHandler {
                          List<ItemStack> items, @Nullable PackageOrderWithCrafts orderContext,
                          boolean simulate) {
         BlockEntity targetBE = level.getBlockEntity(pos);
-        if (targetBE instanceof TableClothBlockEntity cloth && cloth.isShop())
-            return false;
-
         IItemHandler targetInv = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, state, targetBE, side);
-        if (targetInv == null)
+        if (!(targetInv instanceof TableClothItemHandler clothHandler))
             return false;
 
-        // Cloth constraint: max 4 items, 1 per slot
-        if (!(targetInv instanceof TableClothItemHandler)) {
-            // Fallback to default if somehow not our handler
-            return false;
-        }
-
-        // Count non-empty items in the package
-        int itemCount = 0;
-        for (ItemStack stack : items) {
-            if (!stack.isEmpty()) {
-                itemCount += stack.getCount();
-            }
-        }
-
-        // Count current filled slots
-        int currentFilled = 0;
-        for (int slot = 0; slot < targetInv.getSlots(); slot++) {
-            if (!targetInv.getStackInSlot(slot).isEmpty())
-                currentFilled++;
-        }
-
-        int availableSlots = targetInv.getSlots() - currentFilled;
-
-        // Reject if package has more items than available slots
-        if (itemCount > availableSlots) {
-            return false;
-        }
-
-        if (simulate) {
-            // The cloth handler is stateless during simulation, so repeated simulated
-            // inserts would all see the same filled count. Capacity is the constraint.
-            return true;
-        } else {
-            // Commit: actually insert
-            int slotIndex = currentFilled;
-            for (ItemStack stack : items) {
-                if (stack.isEmpty())
-                    continue;
-
-                for (int i = 0; i < stack.getCount(); i++) {
-                    if (slotIndex >= targetInv.getSlots())
-                        return false;
-
-                    ItemStack remainder = targetInv.insertItem(slotIndex, stack.copyWithCount(1), false);
-                    if (!remainder.isEmpty())
-                        return false;
-
-                    slotIndex++;
-                }
-            }
-
-            // Clear the items list to signal everything was consumed
+        boolean inserted = clothHandler.insertAll(items, simulate);
+        if (inserted && !simulate)
             items.clear();
-            return true;
-        }
+        return inserted;
     }
 }

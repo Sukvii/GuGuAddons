@@ -7,11 +7,13 @@ import com.simibubi.create.content.logistics.BigItemStack;
 import com.simibubi.create.content.logistics.box.PackageItem;
 import com.simibubi.create.content.logistics.box.PackageItem.PackageOrderData;
 import com.simibubi.create.content.logistics.packager.InventorySummary;
+import com.simibubi.create.content.logistics.packager.repackager.PackageRepackageHelper;
 import com.simibubi.create.content.logistics.packager.repackager.RepackagerBlockEntity;
 import com.simibubi.create.content.logistics.stockTicker.PackageOrder;
 import com.simibubi.create.content.logistics.stockTicker.PackageOrderWithCrafts;
 import com.simibubi.create.content.logistics.stockTicker.PackageOrderWithCrafts.CraftingEntry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -281,17 +283,18 @@ public final class CreatePackageDupeGuard {
                 }
             }
 
-            repackager.repackageHelper.clear();
+            List<ItemStack> fragments = new ArrayList<>(extracted.size());
             for (int packageIndex = 0; packageIndex < extracted.size(); packageIndex++) {
                 ItemStack fragment = extracted.get(packageIndex).stack().copy();
                 if (order.normalizedContext() != null) {
                     PackageItem.setOrder(fragment, order.orderId(), 0, true, packageIndex,
                             packageIndex == extracted.size() - 1, order.normalizedContext());
                 }
-                repackager.repackageHelper.addPackageFragment(fragment);
+                fragments.add(fragment);
             }
 
-            outputs = repackager.repackageHelper.repack(order.orderId(), repackager.getLevel().getRandom());
+            outputs = repackValidatedFragments(repackager.repackageHelper, order.orderId(), fragments,
+                    repackager.getLevel().getRandom());
         } catch (RuntimeException exception) {
             rollbackOrDrop(repackager, inventory, extracted, "exception while repackaging fragments");
             GuGuAddons.LOGGER.error("Create repackager dupe guard aborted repackaging at {}",
@@ -499,6 +502,43 @@ public final class CreatePackageDupeGuard {
                 remainder, pos, reason);
         Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
                 remainder.copy());
+    }
+
+    private static List<BigItemStack> repackValidatedFragments(PackageRepackageHelper originalHelper, int orderId,
+            List<ItemStack> fragments, RandomSource random) {
+        originalHelper.clear();
+
+        // Preserve behaviour if another integration supplied its own subclass.
+        if (originalHelper.getClass() != PackageRepackageHelper.class) {
+            for (ItemStack fragment : fragments)
+                originalHelper.addPackageFragment(fragment);
+            return originalHelper.repack(orderId, random);
+        }
+
+        return new ValidatedRepackageHelper().repackValidated(orderId, fragments, random);
+    }
+
+    private static final class ValidatedRepackageHelper extends PackageRepackageHelper {
+        private List<BigItemStack> repackValidated(int orderId, List<ItemStack> fragments, RandomSource random) {
+            if (orderId == -1 || fragments.isEmpty())
+                throw new IllegalArgumentException("Expected a validated non-empty order");
+
+            for (ItemStack fragment : fragments) {
+                if (!PackageItem.isPackage(fragment)
+                        || PackageItem.getOrderId(fragment) != orderId) {
+                    throw new IllegalArgumentException("Fragment does not match validated order");
+                }
+            }
+
+            // Keep the exact order supplied by the existing guard. The list
+            // is a local snapshot, and its ItemStacks are already private copies.
+            collectedPackages.put(orderId, new ArrayList<>(fragments));
+            try {
+                return super.repack(orderId, random);
+            } finally {
+                clear();
+            }
+        }
     }
 
     private record CandidatePackage(int slot, int scanIndex, ItemStack stack, int orderId,
