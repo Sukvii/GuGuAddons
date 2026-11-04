@@ -59,6 +59,9 @@ public class GuGuAddonsClient {
                                         "block/quest_submission_front_connected"));
 
         public GuGuAddonsClient(IEventBus modEventBus, ModContainer container) {
+                // Flywheel must know these models before ModelEvent.RegisterAdditional fires.
+                ModPartialModels.init();
+
                 modEventBus.addListener(GuGuAddonsClient::onClientSetup);
                 modEventBus.addListener(GuGuAddonsClient::registerRenderers);
                 modEventBus.addListener(GuGuAddonsClient::registerClientExtensions);
@@ -76,7 +79,6 @@ public class GuGuAddonsClient {
                 // Client setup code
                 event.enqueueWork(() -> {
                         PonderIndex.addPlugin(new GuGuAddonsPonderPlugin());
-                        ModPartialModels.init();
 
                         ItemBlockRenderTypes.setRenderLayer(ModBlocks.VACUUM_CHAMBER.get(),
                                         RenderType.cutoutMipped());
