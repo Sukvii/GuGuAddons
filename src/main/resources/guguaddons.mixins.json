@@ -28,6 +28,7 @@
     "lychee.ShapedCraftingRecipeMixin"
   ],
   "client": [
+    "arsnouveau.ScryEventsMixin",
     "emi.EmiRecipesMixin",
     "emi.EmiRecipeManagerMixin",
     "emi.EMIRemoveEntriesKubeEventMixin"

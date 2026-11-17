@@ -207,6 +207,7 @@ dependencies {
 
     // EMI
     implementation "dev.emi:emi-neoforge:${emi_version}"
+    compileOnly("maven.modrinth:ars-nouveau:5.13.3") { transitive = false }
 
     // Create
     implementation("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
