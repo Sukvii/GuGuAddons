@@ -13,6 +13,7 @@
     "create.ItemDrainBlockEntityMixin",
     "create.MechanicalCrafterBlockEntityMixin",
     "create.MechanicalPressBlockEntityMixin",
+    "create.OthersideRailwayMixin",
     "create.MillstoneBlockEntityMixin",
     "create.PackagerBlockEntityMixin",
     "create.RepackagerBlockEntityMixin",

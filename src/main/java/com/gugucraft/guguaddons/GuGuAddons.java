@@ -21,6 +21,14 @@ import com.gugucraft.guguaddons.compat.ftbchunks.ChunkClaimEconomyNetwork;
 import com.gugucraft.guguaddons.config.Config;
 import com.gugucraft.guguaddons.config.sync.ConfigSyncNetwork;
 import com.gugucraft.guguaddons.stock.ui.StockUiNetwork;
+import com.simibubi.create.api.contraption.train.PortalTrackProvider;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Portal;
+import net.neoforged.fml.ModList;
 
 @Mod(GuGuAddons.MODID)
 public class GuGuAddons {
@@ -50,6 +58,15 @@ public class GuGuAddons {
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
-        event.enqueueWork(ChunkClaimEconomyHandler::init);
+        event.enqueueWork(() -> {
+            ChunkClaimEconomyHandler.init();
+            if (ModList.get().isLoaded("deeperdarker")) {
+                var portal = BuiltInRegistries.BLOCK.get(ResourceLocation.fromNamespaceAndPath("deeperdarker", "otherside_portal"));
+                ResourceKey<Level> otherside = ResourceKey.create(Registries.DIMENSION,
+                        ResourceLocation.fromNamespaceAndPath("deeperdarker", "otherside"));
+                PortalTrackProvider.REGISTRY.register(portal,
+                        (level, face) -> PortalTrackProvider.fromPortal(level, face, Level.OVERWORLD, otherside, (Portal) portal));
+            }
+        });
     }
 }

@@ -1,0 +1,5 @@
+{
+  "criteria": {
+    "ride_through_portal": { "trigger": "minecraft:impossible" }
+  }
+}
