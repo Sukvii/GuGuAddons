@@ -21,7 +21,7 @@ public final class EmiClientBakeHelper {
             "dev.emi.emi.registry.EmiRecipes",
             "bake");
 
-    private static boolean pendingBake;
+    private static volatile boolean pendingBake;
     private static boolean bakeQueued;
     private static int pendingDelayTicks;
     private static String pendingReason = "client state change";
@@ -46,6 +46,11 @@ public final class EmiClientBakeHelper {
         pendingBake = false;
         pendingDelayTicks = 0;
         pendingReason = "client state change";
+    }
+
+    public static void onRecipeBakeStarted() {
+        // This bake includes earlier updates; updates arriving during it still request another bake.
+        pendingBake = false;
     }
 
     @SubscribeEvent

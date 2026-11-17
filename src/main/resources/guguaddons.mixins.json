@@ -26,7 +26,11 @@
     "lychee.LycheeRecipeTypeMixin",
     "lychee.ShapedCraftingRecipeMixin"
   ],
-  "client": [],
+  "client": [
+    "emi.EmiRecipesMixin",
+    "emi.EmiRecipeManagerMixin",
+    "emi.EMIRemoveEntriesKubeEventMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }
