@@ -1,0 +1,7 @@
+{
+  "values": {
+    "guguaddons:abyss_settling": { "frequency": 4 },
+    "guguaddons:abyss_activating": { "frequency": 8 },
+    "guguaddons:abyss_condensing": { "frequency": 14 }
+  }
+}

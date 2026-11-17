@@ -122,83 +122,53 @@ public class AbyssCatalysisRecipe implements Recipe<RecipeInput> {
         return results;
     }
 
-    public static boolean match(AbyssCatalyticChamberBlockEntity chamber, Recipe<?> recipe) {
-        return applyInternal(chamber, recipe, true);
-    }
-
-    public static boolean apply(AbyssCatalyticChamberBlockEntity chamber, Recipe<?> recipe) {
-        return applyInternal(chamber, recipe, false);
-    }
-
-    private static boolean applyInternal(AbyssCatalyticChamberBlockEntity chamber, Recipe<?> recipe, boolean test) {
-        if (!(recipe instanceof AbyssCatalysisRecipe abyssRecipe)) {
+    public boolean processStage(ChamberLayers layers, Stage stage, boolean simulate) {
+        if (stage == Stage.SETTLING && (!layers.bottom().canContinueProcessing() || !hasRequiredHeat(layers))) {
             return false;
         }
-
-        ChamberLayers layers = getLayers(chamber);
-        if (layers == null || !layers.bottom().canContinueProcessing() || !hasRequiredHeat(layers, abyssRecipe)) {
+        AbyssCatalyticChamberBlockEntity input = switch (stage) {
+            case SETTLING -> layers.bottom();
+            case ACTIVATING -> layers.middle();
+            case CONDENSING -> layers.top();
+        };
+        ItemConsumptionPlan itemPlan = planItemConsumption(input.getInputInventory(), switch (stage) {
+            case SETTLING -> bottomItemIngredients;
+            case ACTIVATING -> catalystItemIngredients;
+            case CONDENSING -> topItemIngredients;
+        });
+        List<FluidStack> fluidPlan = planFluidConsumption(input.getInputTankCapability(), switch (stage) {
+            case SETTLING -> bottomFluidIngredients;
+            case ACTIVATING -> catalystFluidIngredients;
+            case CONDENSING -> topFluidIngredients;
+        });
+        if (itemPlan == null || fluidPlan == null) {
             return false;
         }
-
-        IItemHandler bottomItems = layers.bottom().getInputInventory();
-        IFluidHandler bottomFluids = layers.bottom().getInputTankCapability();
-        ItemConsumptionPlan topItemPlan = planItemConsumption(layers.top().getInputInventory(),
-                abyssRecipe.getTopItemIngredients());
-        ItemConsumptionPlan bottomItemPlan = planItemConsumption(bottomItems, abyssRecipe.getBottomItemIngredients());
-        ItemConsumptionPlan catalystItemPlan = planItemConsumption(layers.middle().getInputInventory(),
-                abyssRecipe.getCatalystItemIngredients());
-        if (topItemPlan == null || bottomItemPlan == null || catalystItemPlan == null) {
-            return false;
-        }
-
-        List<FluidStack> topFluidPlan = planFluidConsumption(layers.top().getInputTankCapability(),
-                abyssRecipe.getTopFluidIngredients());
-        List<FluidStack> bottomFluidPlan = planFluidConsumption(bottomFluids, abyssRecipe.getBottomFluidIngredients());
-        List<FluidStack> catalystFluidPlan = planFluidConsumption(layers.middle().getInputTankCapability(),
-                abyssRecipe.getCatalystFluidIngredients());
-        if (topFluidPlan == null || bottomFluidPlan == null || catalystFluidPlan == null) {
-            return false;
-        }
-
-        boolean consumeCatalysts = test
-                ? abyssRecipe.getCatalystConsumptionChance() > 0F
-                : layers.level().random.nextFloat() < abyssRecipe.getCatalystConsumptionChance();
-        List<ItemStack> recipeOutputItems = test ? abyssRecipe.getGuaranteedOutputCapacityItems()
-                : abyssRecipe.rollItemResults(layers.level().random);
-        recipeOutputItems = new ArrayList<>(recipeOutputItems);
-        addRemainingItems(recipeOutputItems, topItemPlan);
-        addRemainingItems(recipeOutputItems, bottomItemPlan);
-        if (consumeCatalysts) {
-            addRemainingItems(recipeOutputItems, catalystItemPlan);
-        }
-
-        List<FluidStack> recipeOutputFluids = copyFluidResults(abyssRecipe.getFluidResults());
-        if (!layers.bottom().acceptOutputs(recipeOutputItems, recipeOutputFluids, true)) {
-            return false;
-        }
-
-        if (test) {
+        if (stage == Stage.ACTIVATING && getCatalystConsumptionChance() == 0) {
             return true;
         }
-
-        if (!executeItemConsumption(layers.top().getInputInventory(), topItemPlan)
-                || !executeItemConsumption(bottomItems, bottomItemPlan)
-                || !RecipeFluidDrainPlan.execute(layers.top().getInputTankCapability(), topFluidPlan)
-                || !RecipeFluidDrainPlan.execute(bottomFluids, bottomFluidPlan)) {
+        List<ItemStack> outputItems = stage == Stage.CONDENSING ? getGuaranteedOutputCapacityItems() : new ArrayList<>();
+        addRemainingItems(outputItems, itemPlan);
+        List<FluidStack> outputFluids = stage == Stage.CONDENSING ? copyFluidResults(fluidResults) : List.of();
+        if (!layers.bottom().acceptOutputs(outputItems, outputFluids, true)) {
             return false;
         }
-
-        if (consumeCatalysts && (!executeItemConsumption(layers.middle().getInputInventory(), catalystItemPlan)
-                || !RecipeFluidDrainPlan.execute(layers.middle().getInputTankCapability(), catalystFluidPlan))) {
+        if (simulate) {
+            return true;
+        }
+        if (stage == Stage.ACTIVATING && layers.level().random.nextFloat() >= getCatalystConsumptionChance()) {
+            return true;
+        }
+        if (stage == Stage.CONDENSING) {
+            outputItems = rollItemResults(layers.level().random);
+            addRemainingItems(outputItems, itemPlan);
+        }
+        if (!executeItemConsumption(input.getInputInventory(), itemPlan)
+                || !RecipeFluidDrainPlan.execute(input.getInputTankCapability(), fluidPlan)) {
             return false;
         }
-
-        if (!layers.bottom().acceptOutputs(recipeOutputItems, recipeOutputFluids, false)) {
-            return false;
-        }
-
-        layers.top().notifyContentsChanged();
-        layers.middle().notifyContentsChanged();
+        layers.bottom().acceptOutputs(outputItems, outputFluids, false);
+        input.notifyContentsChanged();
         layers.bottom().notifyContentsChanged();
         return true;
     }
@@ -214,14 +184,14 @@ public class AbyssCatalysisRecipe implements Recipe<RecipeInput> {
         return results;
     }
 
-    private static boolean hasRequiredHeat(ChamberLayers layers, AbyssCatalysisRecipe recipe) {
-        return recipe.getRequiredHeat()
+    public boolean hasRequiredHeat(ChamberLayers layers) {
+        return getRequiredHeat()
                 .testBlazeBurner(BasinBlockEntity.getHeatLevelOf(layers.level()
                         .getBlockState(layers.bottom().getBlockPos().below())));
     }
 
     @Nullable
-    private static ChamberLayers getLayers(AbyssCatalyticChamberBlockEntity chamber) {
+    public static ChamberLayers getLayers(AbyssCatalyticChamberBlockEntity chamber) {
         Level level = chamber.getLevel();
         if (level == null) {
             return null;
@@ -403,7 +373,11 @@ public class AbyssCatalysisRecipe implements Recipe<RecipeInput> {
         return List.copyOf(fluidResults);
     }
 
-    private record ChamberLayers(Level level, AbyssCatalyticChamberBlockEntity bottom,
+    public enum Stage {
+        SETTLING, ACTIVATING, CONDENSING
+    }
+
+    public record ChamberLayers(Level level, AbyssCatalyticChamberBlockEntity bottom,
             AbyssCatalyticChamberBlockEntity middle, AbyssCatalyticChamberBlockEntity top) {
     }
 

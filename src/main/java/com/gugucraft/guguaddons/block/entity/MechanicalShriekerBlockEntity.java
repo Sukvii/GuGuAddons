@@ -1,10 +1,12 @@
 package com.gugucraft.guguaddons.block.entity;
 
-import com.gugucraft.guguaddons.block.custom.AbyssCatalyticChamberBlock;
 import com.gugucraft.guguaddons.block.custom.MechanicalShriekerBlock;
 import com.gugucraft.guguaddons.particle.MechanicalShriekerParticleOptions;
 import com.gugucraft.guguaddons.recipe.AbyssCatalysisRecipe;
+import com.gugucraft.guguaddons.recipe.AbyssCatalysisRecipe.ChamberLayers;
+import com.gugucraft.guguaddons.recipe.AbyssCatalysisRecipe.Stage;
 import com.gugucraft.guguaddons.registry.ModBlockEntities;
+import com.gugucraft.guguaddons.registry.ModGameEvents;
 import com.gugucraft.guguaddons.registry.ModRecipes;
 import com.gugucraft.guguaddons.stage.MachineRecipeStageManager;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
@@ -13,6 +15,7 @@ import net.createmod.catnip.math.VecHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.particles.ParticleTypes;
@@ -21,10 +24,12 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -32,14 +37,13 @@ import java.util.List;
 import java.util.Optional;
 
 public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
-    private static final int RUNNING_TICKS = 40;
-    private static final int PROCESSING_START_TICK = 20;
-    private static final int DEFAULT_PROCESSING_DURATION = 100;
+    private static final ResourceLocation DREGS_ID = ResourceLocation.fromNamespaceAndPath("kubejs", "sculk_dregs");
 
-    public int runningTicks;
-    public int processingTicks = -1;
+    public int processingTicks;
     public int renderingTicks;
     public boolean running;
+    private Stage processingStage;
+    private boolean batchFailed;
 
     private boolean chamberContentsChanged = true;
     private RecipeHolder<AbyssCatalysisRecipe> activeRecipe;
@@ -64,77 +68,89 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
             return;
         }
 
-        if (runningTicks >= RUNNING_TICKS) {
-            running = false;
-            runningTicks = 0;
-            processingTicks = -1;
-            renderingTicks = 0;
-            setShrieking(false);
-            chamberContentsChanged = true;
-            clearActiveRecipe();
-            sendData();
+        if (level.isClientSide) {
+            if (running && ++renderingTicks >= 20) {
+                renderParticles(getBlockState().getValue(MechanicalShriekerBlock.FACING));
+                renderingTicks = 0;
+            }
             return;
         }
-
         Optional<AbyssCatalyticChamberBlockEntity> chamber = getChamber();
-        if (chamber.isEmpty()) {
-            onChamberRemoved();
-            return;
-        }
-
-        float speed = Math.abs(getSpeed());
-        if (speed <= 0 || !isSpeedRequirementFulfilled()) {
-            if (running) {
-                onChamberRemoved();
-                sendData();
-            } else {
-                setShrieking(false);
+        ChamberLayers layers = chamber.map(AbyssCatalysisRecipe::getLayers).orElse(null);
+        if (layers == null) {
+            if (processingStage != null) {
+                finishBatch();
             }
             return;
         }
-
-        if (!running && !level.isClientSide && speed > 0
-                && (chamberContentsChanged || level.getGameTime() % 20 == 0)) {
-            boolean forceCandidateRefresh = chamberContentsChanged;
-            chamberContentsChanged = false;
-            if (tryStartProcessingChamber(chamber.get(), forceCandidateRefresh)) {
-                startProcessingChamber();
-            }
-        }
-
-        if (!running) {
-            setShrieking(false);
-            return;
-        }
-
-        setShrieking(true);
-
-        if (level.isClientSide && renderingTicks == PROCESSING_START_TICK) {
-            renderParticles(getBlockState().getValue(MechanicalShriekerBlock.FACING));
-            renderingTicks = 0;
-        }
-
-        if ((!level.isClientSide || isVirtual()) && runningTicks == PROCESSING_START_TICK) {
-            if (processingTicks < 0) {
-                processingTicks = calculateProcessingTicks(speed);
-                level.playSound(null, worldPosition, SoundEvents.SCULK_SHRIEKER_SHRIEK, SoundSource.BLOCKS, 2.0f,
-                        speed < 65 ? .75f : 1.5f);
-            } else {
-                processingTicks--;
-                if (processingTicks == 0) {
-                    runningTicks++;
-                    processingTicks = -1;
-                    applyChamberRecipe(chamber.get());
-                    sendData();
+        if (processingStage != null && processingStage != Stage.CONDENSING && !batchFailed) {
+            for (int slot = 0; slot < layers.top().getInputInventory().getSlots(); slot++) {
+                if (!layers.top().getInputInventory().getStackInSlot(slot).isEmpty()) {
+                    batchFailed = true;
+                    setChanged();
+                    break;
                 }
             }
         }
-
-        if (runningTicks != PROCESSING_START_TICK) {
-            runningTicks++;
+        if (batchFailed) {
+            setRunning(false);
+            List<ItemStack> waste = List.of(new ItemStack(BuiltInRegistries.ITEM.get(DREGS_ID)));
+            if (layers.bottom().acceptOutputs(waste, List.of(), true)) {
+                layers.bottom().acceptOutputs(waste, List.of(), false);
+                layers.bottom().notifyContentsChanged();
+                finishBatch();
+            }
+            return;
         }
-        if (renderingTicks != PROCESSING_START_TICK) {
-            renderingTicks++;
+        float speed = Math.abs(getSpeed());
+        if (speed <= 0 || !isSpeedRequirementFulfilled()) {
+            setRunning(false);
+            return;
+        }
+        if (processingStage == null) {
+            if (chamberContentsChanged || level.getGameTime() % 20 == 0) {
+                RecipeHolder<AbyssCatalysisRecipe> recipe = findMatchingRecipe(layers, chamberContentsChanged);
+                chamberContentsChanged = false;
+                if (recipe != null && recipe.value().processStage(layers, Stage.SETTLING, false)) {
+                    setActiveRecipe(recipe);
+                    startStage(Stage.SETTLING, layers, speed);
+                }
+            }
+            return;
+        }
+        RecipeHolder<AbyssCatalysisRecipe> recipe = resolveActiveRecipe();
+        if (recipe == null || !MachineRecipeStageManager.canProcess(this, recipe)
+                || !recipe.value().hasRequiredHeat(layers)) {
+            setRunning(false);
+            return;
+        }
+        setRunning(true);
+        if (processingTicks > 0) {
+            processingTicks--;
+            setChanged();
+            if (processingTicks > 0) {
+                return;
+            }
+        }
+        switch (processingStage) {
+            case SETTLING -> {
+                if (recipe.value().processStage(layers, Stage.ACTIVATING, true)) {
+                    startStage(Stage.ACTIVATING, layers, speed);
+                }
+            }
+            case ACTIVATING -> {
+                if (recipe.value().processStage(layers, Stage.ACTIVATING, false)) {
+                    startStage(Stage.CONDENSING, layers, speed);
+                }
+            }
+            case CONDENSING -> {
+                if (chamberContentsChanged || level.getGameTime() % 20 == 0) {
+                    chamberContentsChanged = false;
+                    if (recipe.value().processStage(layers, Stage.CONDENSING, false)) {
+                        finishBatch();
+                    }
+                }
+            }
         }
     }
 
@@ -142,10 +158,6 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
     public void onSpeedChanged(float prevSpeed) {
         super.onSpeedChanged(prevSpeed);
         chamberContentsChanged = true;
-        if (level != null && !level.isClientSide && !isSpeedRequirementFulfilled() && running) {
-            onChamberRemoved();
-            sendData();
-        }
     }
 
     public void onChamberContentsChanged() {
@@ -153,12 +165,6 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
         invalidateRecipeCandidateCache();
         setChanged();
         sendData();
-    }
-
-    public boolean consumeChamberContentsChanged() {
-        boolean changed = chamberContentsChanged;
-        chamberContentsChanged = false;
-        return changed;
     }
 
     public Optional<AbyssCatalyticChamberBlockEntity> getChamber() {
@@ -172,122 +178,82 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
             return Optional.empty();
         }
 
-        BlockPos bottomPos = chamber.getBottomPos();
-        if (!AbyssCatalyticChamberBlock.isValidChamber(level, bottomPos)) {
-            return Optional.empty();
-        }
         return Optional.of(chamber);
     }
 
-    public void startProcessingChamber() {
-        if (running && runningTicks <= PROCESSING_START_TICK) {
-            return;
-        }
-
-        running = true;
-        runningTicks = 0;
+    private void startStage(Stage stage, ChamberLayers layers, float speed) {
+        processingStage = stage;
+        processingTicks = stage == Stage.CONDENSING ? 0 : Math.max(1, Mth.ceil(40 * 64 / speed));
         renderingTicks = 0;
-        processingTicks = -1;
-        setShrieking(true);
-        sendData();
-    }
-
-    public boolean continueWithPreviousRecipe() {
-        runningTicks = PROCESSING_START_TICK;
-        renderingTicks = PROCESSING_START_TICK;
-        return true;
-    }
-
-    protected boolean isRunning() {
-        return running;
-    }
-
-    protected boolean tryStartProcessingChamber(AbyssCatalyticChamberBlockEntity chamber) {
-        return tryStartProcessingChamber(chamber, chamberContentsChanged);
-    }
-
-    protected boolean tryStartProcessingChamber(AbyssCatalyticChamberBlockEntity chamber,
-            boolean forceCandidateRefresh) {
-        RecipeHolder<AbyssCatalysisRecipe> matchingRecipe = findMatchingRecipe(chamber, forceCandidateRefresh);
-        setActiveRecipe(matchingRecipe);
-        return matchingRecipe != null;
-    }
-
-    protected void applyChamberRecipe(AbyssCatalyticChamberBlockEntity chamber) {
-        RecipeHolder<AbyssCatalysisRecipe> recipe = resolveActiveRecipe();
-        if (recipe == null || !MachineRecipeStageManager.canProcess(this, recipe)
-                || !AbyssCatalysisRecipe.apply(chamber, recipe.value())) {
-            clearActiveRecipe();
-            chamberContentsChanged = true;
-            setChanged();
-            return;
-        }
-
-        if (AbyssCatalysisRecipe.match(chamber, recipe.value())
-                && MachineRecipeStageManager.canProcess(this, recipe)) {
-            continueWithPreviousRecipe();
-        } else {
-            clearActiveRecipe();
-            chamberContentsChanged = true;
-        }
-
+        chamberContentsChanged = true;
+        setRunning(true);
+        level.gameEvent(switch (stage) {
+            case SETTLING -> ModGameEvents.ABYSS_SETTLING;
+            case ACTIVATING -> ModGameEvents.ABYSS_ACTIVATING;
+            case CONDENSING -> ModGameEvents.ABYSS_CONDENSING;
+        }, layers.bottom().getBlockPos(), GameEvent.Context.of(layers.bottom().getBlockState()));
+        level.playSound(null, worldPosition, SoundEvents.SCULK_SHRIEKER_SHRIEK, SoundSource.BLOCKS, 2.0f,
+                speed < 65 ? .75f : 1.5f);
         setChanged();
-    }
-
-    protected void onChamberRemoved() {
-        clearActiveRecipe();
-        if (!running) {
-            return;
-        }
-
-        runningTicks = RUNNING_TICKS;
-        running = false;
-        processingTicks = -1;
-        renderingTicks = 0;
-        setShrieking(false);
         sendData();
     }
 
-    private RecipeHolder<AbyssCatalysisRecipe> findMatchingRecipe(AbyssCatalyticChamberBlockEntity chamber,
+    private void finishBatch() {
+        clearActiveRecipe();
+        processingStage = null;
+        batchFailed = false;
+        processingTicks = 0;
+        renderingTicks = 0;
+        chamberContentsChanged = true;
+        setRunning(false);
+        setChanged();
+        sendData();
+    }
+
+    private void setRunning(boolean value) {
+        if (running == value) {
+            return;
+        }
+        running = value;
+        setShrieking(value);
+        sendData();
+    }
+
+    private RecipeHolder<AbyssCatalysisRecipe> findMatchingRecipe(ChamberLayers layers,
             boolean forceCandidateRefresh) {
-        if (level == null) {
-            return null;
-        }
-
-        ChamberContentSignature signature = createChamberContentSignature(chamber);
-        if (signature == null) {
-            invalidateRecipeCandidateCache();
-            return null;
-        }
-
+        ChamberContentSignature signature = createChamberContentSignature(layers);
         RecipeManager recipeManager = level.getRecipeManager();
         if (forceCandidateRefresh || !signature.equals(cachedCandidateSignature)
                 || recipeManager != cachedCandidateRecipeManager) {
-            rebuildRecipeCandidates(chamber, signature, recipeManager);
+            rebuildRecipeCandidates(layers, signature, recipeManager);
         }
 
         RecipeHolder<AbyssCatalysisRecipe> bestMatch = null;
         int bestWeight = -1;
+        boolean bestHasCatalyst = false;
         for (RecipeHolder<AbyssCatalysisRecipe> holder : cachedRecipeCandidates) {
-            AbyssCatalysisRecipe recipe = holder.value();
-            int weight = recipeWeight(recipe);
-            if (weight <= bestWeight) {
+            if (!MachineRecipeStageManager.canProcess(this, holder)) {
                 continue;
             }
-            if (MachineRecipeStageManager.canProcess(this, holder)) {
+            AbyssCatalysisRecipe recipe = holder.value();
+            int weight = recipeWeight(recipe);
+            boolean hasCatalyst = recipe.processStage(layers, Stage.ACTIVATING, true);
+            if (bestMatch == null || hasCatalyst && !bestHasCatalyst
+                    || hasCatalyst == bestHasCatalyst && weight > bestWeight) {
                 bestMatch = holder;
                 bestWeight = weight;
+                bestHasCatalyst = hasCatalyst;
             }
         }
 
         return bestMatch;
     }
 
-    private void rebuildRecipeCandidates(AbyssCatalyticChamberBlockEntity chamber, ChamberContentSignature signature,
+    private void rebuildRecipeCandidates(ChamberLayers layers, ChamberContentSignature signature,
             RecipeManager recipeManager) {
         List<RecipeHolder<AbyssCatalysisRecipe>> candidates = new ArrayList<>();
         for (RecipeHolder<AbyssCatalysisRecipe> holder : getAbyssCatalysisRecipes()) {
-            if (AbyssCatalysisRecipe.match(chamber, holder.value())) {
+            if (holder.value().processStage(layers, Stage.SETTLING, true)) {
                 candidates.add(holder);
             }
         }
@@ -297,22 +263,10 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
         cachedRecipeCandidates = List.copyOf(candidates);
     }
 
-    private ChamberContentSignature createChamberContentSignature(AbyssCatalyticChamberBlockEntity chamber) {
-        if (level == null) {
-            return null;
-        }
-
-        BlockPos bottomPos = chamber.getBottomPos();
-        if (!AbyssCatalyticChamberBlock.isValidChamber(level, bottomPos)
-                || !(level.getBlockEntity(bottomPos) instanceof AbyssCatalyticChamberBlockEntity bottom)
-                || !(level.getBlockEntity(bottomPos.above()) instanceof AbyssCatalyticChamberBlockEntity middle)
-                || !(level.getBlockEntity(bottomPos.above(2)) instanceof AbyssCatalyticChamberBlockEntity top)) {
-            return null;
-        }
-
-        return new ChamberContentSignature(bottom.getBlockPos(), middle.getBlockPos(), top.getBlockPos(),
-                bottom.getContentsVersion(), middle.getContentsVersion(), top.getContentsVersion(),
-                level.getBlockState(bottomPos.below()));
+    private ChamberContentSignature createChamberContentSignature(ChamberLayers layers) {
+        return new ChamberContentSignature(layers.bottom().getBlockPos(), layers.middle().getBlockPos(), layers.top().getBlockPos(),
+                layers.bottom().getContentsVersion(), layers.middle().getContentsVersion(), layers.top().getContentsVersion(),
+                level.getBlockState(layers.bottom().getBlockPos().below()));
     }
 
     private void invalidateRecipeCandidateCache() {
@@ -369,16 +323,6 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
                 + recipe.getCatalystFluidIngredients().size();
     }
 
-    private int calculateProcessingTicks(float speed) {
-        if (speed <= 0) {
-            return 1;
-        }
-
-        float recipeSpeed = DEFAULT_PROCESSING_DURATION / 100f;
-        int speedRatio = Math.max(1, (int) (512 / speed));
-        return Mth.clamp(Mth.log2(speedRatio) * Mth.ceil(recipeSpeed * 15) + 1, 1, 512);
-    }
-
     private void setShrieking(boolean shrieking) {
         if (level == null || level.isClientSide) {
             return;
@@ -419,14 +363,15 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
 
     @Override
     protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
-        running = tag.getBoolean("Running");
-        runningTicks = tag.getInt("Ticks");
+        processingStage = tag.contains("ProcessingStage") ? Stage.valueOf(tag.getString("ProcessingStage")) : null;
+        running = processingStage != null && tag.getBoolean("Running");
         processingTicks = tag.getInt("ProcessingTicks");
         renderingTicks = tag.getInt("RenderingTicks");
         chamberContentsChanged = tag.getBoolean("ChamberContentsChanged");
         activeRecipeId = tag.contains("ActiveRecipe") ? ResourceLocation.tryParse(tag.getString("ActiveRecipe"))
                 : null;
         activeRecipe = null;
+        batchFailed = tag.getBoolean("BatchFailed");
         invalidateRecipeCandidateCache();
         super.read(tag, registries, clientPacket);
     }
@@ -434,10 +379,13 @@ public class MechanicalShriekerBlockEntity extends KineticBlockEntity {
     @Override
     protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         tag.putBoolean("Running", running);
-        tag.putInt("Ticks", runningTicks);
         tag.putInt("ProcessingTicks", processingTicks);
         tag.putInt("RenderingTicks", renderingTicks);
         tag.putBoolean("ChamberContentsChanged", chamberContentsChanged);
+        tag.putBoolean("BatchFailed", batchFailed);
+        if (processingStage != null) {
+            tag.putString("ProcessingStage", processingStage.name());
+        }
         if (activeRecipeId != null) {
             tag.putString("ActiveRecipe", activeRecipeId.toString());
         }

@@ -52,33 +52,6 @@ public class AbyssCatalyticChamberScenes {
                 .placeNearTarget();
         scene.idle(55);
 
-        scene.overlay().showControls(util.vector().blockSurface(top, Direction.WEST), Pointing.RIGHT, 28)
-                .withItem(new ItemStack(Items.ECHO_SHARD));
-        scene.overlay().showText(60)
-                .text("guguaddons.ponder.abyss_catalytic_chamber.text_2")
-                .pointAt(util.vector().centerOf(top))
-                .placeNearTarget()
-                .colored(PonderPalette.BLUE);
-        scene.idle(45);
-
-        scene.overlay().showControls(util.vector().blockSurface(middle, Direction.WEST), Pointing.RIGHT, 28)
-                .withItem(new ItemStack(Items.LAVA_BUCKET));
-        scene.overlay().showText(60)
-                .text("guguaddons.ponder.abyss_catalytic_chamber.text_3")
-                .pointAt(util.vector().centerOf(middle))
-                .placeNearTarget()
-                .colored(PonderPalette.FAST);
-        scene.idle(45);
-
-        scene.overlay().showControls(util.vector().blockSurface(bottom, Direction.WEST), Pointing.RIGHT, 28)
-                .withItem(new ItemStack(Items.SCULK));
-        scene.overlay().showText(60)
-                .text("guguaddons.ponder.abyss_catalytic_chamber.text_4")
-                .pointAt(util.vector().centerOf(bottom))
-                .placeNearTarget()
-                .colored(PonderPalette.GREEN);
-        scene.idle(45);
-
         scene.overlay().showText(55)
                 .text("guguaddons.ponder.abyss_catalytic_chamber.text_5")
                 .pointAt(util.vector().centerOf(burner))
@@ -104,6 +77,46 @@ public class AbyssCatalyticChamberScenes {
                 .placeNearTarget()
                 .colored(PonderPalette.GREEN);
         scene.idle(55);
+
+        scene.overlay().showControls(util.vector().blockSurface(bottom, Direction.WEST), Pointing.RIGHT, 28)
+                .withItem(new ItemStack(Items.SCULK));
+        scene.effects().indicateSuccess(bottom);
+        scene.overlay().showText(90)
+                .attachKeyFrame()
+                .text("guguaddons.ponder.abyss_catalytic_chamber.text_4")
+                .pointAt(util.vector().centerOf(bottom))
+                .placeNearTarget()
+                .colored(PonderPalette.GREEN);
+        scene.idle(95);
+
+        scene.overlay().showControls(util.vector().blockSurface(middle, Direction.WEST), Pointing.RIGHT, 28)
+                .withItem(new ItemStack(Items.LAVA_BUCKET));
+        scene.effects().indicateSuccess(bottom);
+        scene.overlay().showText(90)
+                .text("guguaddons.ponder.abyss_catalytic_chamber.text_3")
+                .pointAt(util.vector().centerOf(middle))
+                .placeNearTarget()
+                .colored(PonderPalette.FAST);
+        scene.idle(95);
+
+        scene.effects().indicateSuccess(bottom);
+        scene.overlay().showText(90)
+                .text("guguaddons.ponder.abyss_catalytic_chamber.text_2")
+                .pointAt(util.vector().centerOf(top))
+                .placeNearTarget()
+                .colored(PonderPalette.BLUE);
+        scene.idle(25);
+        scene.overlay().showControls(util.vector().blockSurface(top, Direction.WEST), Pointing.RIGHT, 28)
+                .withItem(new ItemStack(Items.ECHO_SHARD));
+        scene.idle(70);
+
+        scene.overlay().showText(100)
+                .attachKeyFrame()
+                .text("guguaddons.ponder.abyss_catalytic_chamber.text_7")
+                .pointAt(util.vector().centerOf(top))
+                .placeNearTarget()
+                .colored(PonderPalette.RED);
+        scene.idle(105);
 
         scene.markAsFinished();
         scene.idle(20);

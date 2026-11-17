@@ -34,7 +34,7 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
     private static final ResourceLocation WIDGETS = ResourceLocation.fromNamespaceAndPath(GuGuAddons.MODID,
             "textures/gui/jei/abyss_catalysis_widgets.png");
     private static final int WIDTH = 193;
-    private static final int HEIGHT = 163;
+    private static final int HEIGHT = 201;
     private static final int SLOT_STEP = 19;
     private static final int LEFT_X = 8;
     private static final int RIGHT_X = 131;
@@ -221,11 +221,20 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
             MACHINE_DISPLAY.drawHeater(draw, WIDTH / 2 - 5, 105, requiredHeat.visualizeAsBlazeBurner());
         }
         MACHINE_DISPLAY.drawMachine(draw, WIDTH / 2 - 5, 32);
+        draw.drawString(Minecraft.getInstance().font, Component.translatable("guguaddons.emi.abyss_catalysis.stage_1"),
+                8, 166, 0x8DD1D1, false);
+        draw.drawString(Minecraft.getInstance().font, Component.translatable("guguaddons.emi.abyss_catalysis.stage_2"),
+                8, 177, 0x8DD1D1, false);
+        draw.drawString(Minecraft.getInstance().font, Component.translatable("guguaddons.emi.abyss_catalysis.stage_3"),
+                8, 188, 0x8DD1D1, false);
     }
 
     private List<Component> machineTooltip() {
         return List.of(
                 Component.translatable("guguaddons.emi.abyss_catalysis.machine"),
+                Component.translatable("guguaddons.emi.abyss_catalysis.timing"),
+                Component.translatable("guguaddons.emi.abyss_catalysis.waiting"),
+                Component.translatable("guguaddons.emi.abyss_catalysis.failure").withStyle(ChatFormatting.RED),
                 Component.translatable("guguaddons.emi.abyss_catalysis.heat",
                         CreateLang.translateDirect(recipe.getRequiredHeat().getTranslationKey()))
         );
