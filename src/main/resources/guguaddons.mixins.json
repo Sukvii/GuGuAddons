@@ -3,6 +3,7 @@
   "package": "com.gugucraft.guguaddons.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "astages.ARecipeManagerAccessor",
     "BlockEntityOwnerMigrationMixin",
     "create.AirCurrentMixin",
     "create.BasinOperatingBlockEntityMixin",

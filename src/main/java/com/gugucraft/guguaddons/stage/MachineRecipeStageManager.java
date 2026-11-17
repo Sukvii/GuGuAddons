@@ -1,9 +1,13 @@
 package com.gugucraft.guguaddons.stage;
 
 import com.alessandro.astages.api.holder.AHolder;
+import com.alessandro.astages.api.holder.AStageHolder;
+import com.alessandro.astages.api.constant.AStageType;
 import com.alessandro.astages.api.wrapper.RecipeWrapper;
 import com.alessandro.astages.engine.ARestrictionManager;
 import com.alessandro.astages.engine.server.restriction.recipe.ARecipeRestriction;
+import com.alessandro.astages.engine.server.restriction.recipe.ARecipeModRestriction;
+import com.gugucraft.guguaddons.mixin.astages.ARecipeManagerAccessor;
 import com.gugucraft.guguaddons.GuGuAddons;
 import com.gugucraft.guguaddons.compat.kubejs.MachineRecipeStageKubeEvent;
 import com.gugucraft.guguaddons.compat.kubejs.MachineRecipeStageKubeEvents;
@@ -163,12 +167,12 @@ public final class MachineRecipeStageManager {
     }
 
     public static boolean canProcessGlobally(RecipeHolder<?> holder) {
-        return holder == null || isAllowed(AHolder.server(), wrapper(holder));
+        return holder == null || isAllowed(AHolder.server().getStages(), wrapper(holder));
     }
 
     public static boolean canProcessGlobally(Level level, Recipe<?> recipe) {
         RecipeWrapper wrapper = wrapper(level, recipe);
-        return wrapper == null || isAllowed(AHolder.server(), wrapper);
+        return wrapper == null || isAllowed(AHolder.server().getStages(), wrapper);
     }
 
     public static boolean canProcessIncludingSequenced(BlockEntity machine, RecipeHolder<?> holder) {
@@ -320,25 +324,40 @@ public final class MachineRecipeStageManager {
         return LYCHEE_CRAFTING_ID.equals(serializerId);
     }
 
-    private static boolean isAllowed(AHolder holder, RecipeWrapper wrapper) {
-        return ARestrictionManager.RECIPE_INSTANCE.getRestriction(holder, wrapper) == null;
+    private static boolean isAllowed(AStageHolder holder, RecipeWrapper wrapper) {
+        Set<String> serverStages = holder.getForType(AStageType.SERVER);
+        Set<String> playerStages = holder.getForType(AStageType.PLAYER);
+        for (ARecipeRestriction restriction : ((ARecipeManagerAccessor) ARestrictionManager.RECIPE_INSTANCE)
+                .guguaddons$getRecipeCache().get(wrapper.recipe())) {
+            if (restriction.getType() == wrapper.type()
+                    && !serverStages.contains(restriction.getStage())
+                    && !playerStages.contains(restriction.getStage())) {
+                return false;
+            }
+        }
+        for (ARecipeModRestriction restriction : ARestrictionManager.RECIPE_INSTANCE.getRegistry().getModRestrictions()) {
+            if (restriction.isRestricted(wrapper)
+                    && !serverStages.contains(restriction.getStage())
+                    && !playerStages.contains(restriction.getStage())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean isAllowed(ServerPlayer player, RecipeWrapper wrapper) {
         AHolder holder = player == null
                 ? AHolder.player(UNOWNED_MACHINE_HOLDER)
                 : AHolder.serverAndPlayer(player);
-        return isAllowed(holder, wrapper);
+        return isAllowed(holder.getStages(), wrapper);
     }
 
     private static boolean isAllowed(UUID ownerId, RecipeWrapper wrapper) {
-        if (ownerId == null) {
-            return isAllowed(AHolder.player(UNOWNED_MACHINE_HOLDER), wrapper);
+        AStageHolder stages = AHolder.player(ownerId == null ? UNOWNED_MACHINE_HOLDER : ownerId).getStages();
+        if (ownerId != null) {
+            stages.hold(AStageType.SERVER, AHolder.server().getStages().getForType(AStageType.SERVER));
         }
-        if (isAllowed(AHolder.server(), wrapper)) {
-            return true;
-        }
-        return isAllowed(AHolder.player(ownerId), wrapper);
+        return isAllowed(stages, wrapper);
     }
 
     private static void publishRestrictions() {

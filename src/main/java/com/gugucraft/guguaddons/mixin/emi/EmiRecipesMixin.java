@@ -1,6 +1,7 @@
 package com.gugucraft.guguaddons.mixin.emi;
 
 import com.gugucraft.guguaddons.client.emi.EmiClientBakeHelper;
+import com.gugucraft.guguaddons.compat.emi.AStagesEmiVisibility;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,5 +14,6 @@ public abstract class EmiRecipesMixin {
     @Inject(method = "bake()V", at = @At("HEAD"))
     private static void guguaddons$consumePendingBake(CallbackInfo ci) {
         EmiClientBakeHelper.onRecipeBakeStarted();
+        AStagesEmiVisibility.refreshRestrictions();
     }
 }

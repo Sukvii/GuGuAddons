@@ -1,6 +1,7 @@
 package com.gugucraft.guguaddons.client.compat.astages;
 
 import com.alessandro.astages.api.event.update.ClientRecipeUpdateEvent;
+import com.alessandro.astages.api.event.sync.ClientStageEvent;
 import com.gugucraft.guguaddons.GuGuAddons;
 import com.gugucraft.guguaddons.client.emi.EmiClientBakeHelper;
 import net.neoforged.api.distmarker.Dist;
@@ -15,5 +16,10 @@ public final class AStagesRecipeClientEvents {
     @SubscribeEvent
     public static void onRecipeRestrictionsChanged(ClientRecipeUpdateEvent event) {
         EmiClientBakeHelper.requestRecipeBake("AStages recipe restriction update");
+    }
+
+    @SubscribeEvent
+    public static void onStagesChanged(ClientStageEvent event) {
+        EmiClientBakeHelper.requestRecipeBake("AStages stage update");
     }
 }

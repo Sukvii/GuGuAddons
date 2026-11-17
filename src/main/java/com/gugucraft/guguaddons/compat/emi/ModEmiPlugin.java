@@ -67,7 +67,7 @@ public class ModEmiPlugin implements EmiPlugin {
 
     @Override
     public void register(EmiRegistry registry) {
-        registry.removeRecipes(AStagesEmiVisibility::shouldHideTmrvRecipe);
+        registry.removeRecipes(AStagesEmiVisibility::shouldHideRecipe);
 
         registerSlashBackSmithing(registry);
         registerVacuumizing(registry);
