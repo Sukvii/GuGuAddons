@@ -40,6 +40,7 @@ public final class WardenChamberRenderer {
         }
         if (warden.lastTick != anchor.getLevel().getGameTime()) {
             warden.lastTick = anchor.getLevel().getGameTime();
+            warden.setOldPosAndRot();
             warden.tickCount++;
             warden.tick();
             warden.setPos(Vec3.atBottomCenterOf(anchor.getBlockPos()));
