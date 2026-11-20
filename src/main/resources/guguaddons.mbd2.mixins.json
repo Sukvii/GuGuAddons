@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "com.gugucraft.guguaddons.mixin.mbd2",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "MBDMachineBlockMixin",
+    "MBDMachineMixin",
+    "MBDMultiblockMachineMixin",
+    "ProxyPartBlockMixin",
+    "RedstoneSignalConditionMixin"
+  ],
+  "injectors": { "defaultRequire": 1 }
+}

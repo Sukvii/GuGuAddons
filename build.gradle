@@ -74,6 +74,10 @@ repositories {
     }
     maven { url = "https://maven.ftb.dev/releases" }
     maven { url = "https://api.modrinth.com/maven" } // Jade
+    exclusiveContent {
+        forRepository { maven { url = 'https://www.cursemaven.com' } }
+        filter { includeModule('curse.maven', 'multiblocked2-1104057') }
+    }
 }
 
 base {
@@ -208,6 +212,7 @@ dependencies {
     // EMI
     implementation "dev.emi:emi-neoforge:${emi_version}"
     compileOnly("maven.modrinth:ars-nouveau:5.13.3") { transitive = false }
+    compileOnly 'curse.maven:multiblocked2-1104057:8859279' // MBD2 21.1.2
 
     // Create
     implementation("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
