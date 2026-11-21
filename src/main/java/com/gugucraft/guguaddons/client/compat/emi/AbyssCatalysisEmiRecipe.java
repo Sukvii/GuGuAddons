@@ -1,7 +1,6 @@
 package com.gugucraft.guguaddons.client.compat.emi;
 
 import com.gugucraft.guguaddons.recipe.AbyssCatalysisRecipe;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.content.processing.burner.BlazeBurnerBlock;
@@ -34,21 +33,23 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
     // Layout follows Create's basin categories (BasinCategory): 177 wide, 19 px slot pitch, Create slot textures,
     // the animated machine in the middle and Create's heat bar along the bottom.
     private static final int WIDTH = 177;
-    private static final int HEIGHT = 130;
+    private static final int HEIGHT = 124;
     private static final int SLOT_STEP = 19;
 
-    // Process strip: one column per stage in process order (1 settle / 2 activate / 3 condense), which feed the
-    // bottom / middle / top tier of the chamber respectively.
+    // Process strip: one column per step in process order (I settle / II activate / III condense), which feed the
+    // bottom / middle / top tier of the chamber respectively. Like Create's sequenced assembly, each column only
+    // shows a grey roman numeral; the step name, tier, frequency and rules are in the numeral's tooltip.
     private static final int COLUMN_WIDTH = 59;
-    private static final int TITLE_Y = 2;
+    private static final int NUMERAL_Y = 2;
     private static final int STAGE_SLOT_Y = 12;
-    private static final int DETAIL_Y = 32;
     private static final int STAGE_MAX_SLOTS = 3;
+    private static final String[] NUMERALS = {"I", "II", "III"};
+    private static final int NUMERAL_COLOR = 0x888888;
 
     // Machine: shrieker on top of the three tiers, blaze burner below; centred near x 88 like Create's basin.
     private static final int MACHINE_SCALE = 15;
     private static final int MACHINE_X = 78;
-    private static final int MACHINE_Y = 60;
+    private static final int MACHINE_Y = 54;
     private static final int MACHINE_CENTER_X = MACHINE_X + Math.round(MACHINE_SCALE * 0.65F);
     private static final int MACHINE_RIGHT = MACHINE_X + Math.round(MACHINE_SCALE * 1.31F);
     private static final int MACHINE_TOP = MACHINE_Y - MACHINE_SCALE - Math.round(MACHINE_SCALE * 0.27F);
@@ -61,9 +62,6 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
     private static final int OUTPUT_MAX_SLOTS = 4;
     private static final int HEAT_BAR_Y = HEIGHT - 20;
 
-    private static final int TITLE_COLOR = 0x1F7A7A;
-    private static final int DETAIL_COLOR = 0x666666;
-    private static final String[] TIER_MARKS = {"③", "②", "①"};
     private static final AnimatedAbyssCatalyticChamberDisplay MACHINE_DISPLAY = new AnimatedAbyssCatalyticChamberDisplay();
 
     private final RecipeHolder<?> backingRecipe;
@@ -108,9 +106,9 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
                 stageTooltip(2, Component.translatable("guguaddons.emi.abyss_catalysis.timing"),
                         Component.translatable("guguaddons.emi.abyss_catalysis.catalyst_chance",
                                 percent(recipe.getCatalystConsumptionChance())),
-                        Component.translatable("guguaddons.emi.abyss_catalysis.waiting")));
+                        Component.translatable("guguaddons.emi.abyss_catalysis.stage_2.waiting")));
         addStage(widgets, 2, topInputs, false, Component.translatable("guguaddons.emi.abyss_catalysis.top"),
-                stageTooltip(3, Component.translatable("guguaddons.emi.abyss_catalysis.waiting"),
+                stageTooltip(3, Component.translatable("guguaddons.emi.abyss_catalysis.stage_3.waiting"),
                         Component.translatable("guguaddons.emi.abyss_catalysis.failure").withStyle(ChatFormatting.RED)));
         addOutputs(widgets);
         addHeatCatalysts(widgets);
@@ -123,7 +121,7 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
     private void addStage(WidgetHolder widgets, int column, List<DisplayEntry> entries, boolean catalyst,
             Component sectionTooltip, List<Component> titleTooltip) {
         int columnX = column * COLUMN_WIDTH;
-        widgets.addTooltipText(titleTooltip, columnX, TITLE_Y - 1, COLUMN_WIDTH, 10);
+        widgets.addTooltipText(titleTooltip, columnX, NUMERAL_Y - 1, COLUMN_WIDTH, 10);
         if (entries.isEmpty()) {
             return;
         }
@@ -135,7 +133,9 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
     private static List<Component> stageTooltip(int stage, Component... lines) {
         List<Component> tooltip = new ArrayList<>(lines.length + 2);
         tooltip.add(Component.translatable("guguaddons.emi.abyss_catalysis.stage_" + stage));
-        tooltip.add(Component.translatable("guguaddons.emi.abyss_catalysis.stage_" + stage + ".detail")
+        tooltip.add(Component.translatable("guguaddons.emi.abyss_catalysis.stage_" + stage + ".tier")
+                .withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("guguaddons.emi.abyss_catalysis.stage_" + stage + ".frequency")
                 .withStyle(ChatFormatting.GRAY));
         tooltip.addAll(List.of(lines));
         return tooltip;
@@ -185,7 +185,7 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
                 .appendTooltip(Component.translatable("guguaddons.emi.abyss_catalysis.collapsed", hiddenCount));
         slot.drawBack(false);
         if (catalyst) {
-            appendStochasticTooltip(slot, recipe.getCatalystConsumptionChance());
+            slot.appendTooltip(catalystTooltip(recipe.getCatalystConsumptionChance()));
         }
         if (output) {
             slot.recipeContext(this);
@@ -207,8 +207,16 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
             appendStochasticTooltip(slot, entry.ingredient().getChance());
         }
         if (catalyst) {
-            appendStochasticTooltip(slot, recipe.getCatalystConsumptionChance());
+            slot.appendTooltip(catalystTooltip(recipe.getCatalystConsumptionChance()));
         }
+    }
+
+    /** Catalysts stay in the middle tier; spell out that the chance is the chance of being consumed per batch. */
+    private static Component catalystTooltip(float chance) {
+        Component component = chance == 0F
+                ? CreateLang.translateDirect("recipe.deploying.not_consumed")
+                : Component.translatable("guguaddons.emi.abyss_catalysis.catalyst_consume", percent(chance));
+        return component.copy().withStyle(ChatFormatting.GOLD);
     }
 
     private static AllGuiTextures slotTexture(boolean catalyst, boolean chance) {
@@ -246,13 +254,11 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
         HeatCondition requiredHeat = recipe.getRequiredHeat();
         boolean noHeat = requiredHeat == HeatCondition.NONE;
 
-        // Process strip: titles and "tier / frequency" details, centred in each column
-        for (int stage = 1; stage <= 3; stage++) {
-            int centerX = (stage - 1) * COLUMN_WIDTH + COLUMN_WIDTH / 2;
-            drawCentered(draw, font, Component.translatable("guguaddons.emi.abyss_catalysis.stage_" + stage),
-                    centerX, TITLE_Y, COLUMN_WIDTH - 2, TITLE_COLOR);
-            drawCentered(draw, font, Component.translatable("guguaddons.emi.abyss_catalysis.stage_" + stage + ".detail"),
-                    centerX, DETAIL_Y, COLUMN_WIDTH - 2, DETAIL_COLOR);
+        // Process strip: grey roman numerals centred over each column (Create's sequenced assembly style)
+        for (int column = 0; column < NUMERALS.length; column++) {
+            Component numeral = Component.literal(NUMERALS[column]);
+            draw.drawString(font, numeral, column * COLUMN_WIDTH + (COLUMN_WIDTH - font.width(numeral)) / 2,
+                    NUMERAL_Y, NUMERAL_COLOR, false);
         }
 
         // Shadow / glow under the machine and Create's heat bar (same order and offsets as BasinCategory)
@@ -268,13 +274,6 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
         // Arrow from the machine to the outputs
         if (!outputEntries.isEmpty()) {
             drawArrow(draw, MACHINE_RIGHT + 3, outputStartX() - 3, MACHINE_MIDDLE_Y - 5);
-        }
-
-        // Tier marks: which stage works on which tier
-        for (int tier = 0; tier < 3; tier++) {
-            Component mark = Component.literal(TIER_MARKS[tier]);
-            draw.drawString(font, mark, MACHINE_X - 4 - font.width(mark), MACHINE_Y + tier * MACHINE_SCALE + 4,
-                    TITLE_COLOR, false);
         }
 
         if (!noHeat) {
@@ -298,31 +297,13 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
                 length, arrow.getHeight());
     }
 
-    /** Centred text, shrunk to fit when wider than {@code maxWidth} (translations vary in length). */
-    private static void drawCentered(GuiGraphics draw, Font font, Component text, int centerX, int y, int maxWidth,
-            int color) {
-        int width = font.width(text);
-        if (width <= maxWidth) {
-            draw.drawString(font, text, centerX - width / 2, y, color, false);
-            return;
-        }
-        float scale = (float) maxWidth / width;
-        PoseStack pose = draw.pose();
-        pose.pushPose();
-        pose.translate(centerX - maxWidth / 2F, y + font.lineHeight * (1 - scale) / 2F, 0);
-        pose.scale(scale, scale, 1);
-        draw.drawString(font, text, 0, 0, color, false);
-        pose.popPose();
-    }
-
     private List<Component> machineTooltip() {
+        // Step details live in the numeral tooltips; the machine tooltip keeps the setup and the failure rule
         return List.of(
                 Component.translatable("guguaddons.emi.abyss_catalysis.machine"),
-                Component.translatable("guguaddons.emi.abyss_catalysis.timing"),
-                Component.translatable("guguaddons.emi.abyss_catalysis.waiting"),
-                Component.translatable("guguaddons.emi.abyss_catalysis.failure").withStyle(ChatFormatting.RED),
                 Component.translatable("guguaddons.emi.abyss_catalysis.heat",
-                        CreateLang.translateDirect(recipe.getRequiredHeat().getTranslationKey()))
+                        CreateLang.translateDirect(recipe.getRequiredHeat().getTranslationKey())),
+                Component.translatable("guguaddons.emi.abyss_catalysis.failure").withStyle(ChatFormatting.RED)
         );
     }
 
