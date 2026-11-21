@@ -31,7 +31,13 @@ final class AnimatedAbyssCatalyticChamberDisplay {
             .secondLightRotation(-20.0f, -50.0f)
             .build();
 
-    void drawMachine(GuiGraphics graphics, int xOffset, int yOffset) {
+    /**
+     * Draws the mechanical shrieker directly on top of the three chamber tiers (a valid build: the chamber also
+     * accepts the shrieker one block higher). With the GUI tilt, a block at local y {@code k} covers screen rows
+     * {@code yOffset + (k - 1) * scale .. yOffset + k * scale} (plus its top face), so the shrieker sits just above
+     * {@code yOffset} and the tiers cover {@code yOffset .. yOffset + 3 * scale}.
+     */
+    void drawMachine(GuiGraphics graphics, int xOffset, int yOffset, int scale) {
         PoseStack poseStack = graphics.pose();
         RenderSystem.enableDepthTest();
         poseStack.pushPose();
@@ -39,7 +45,6 @@ final class AnimatedAbyssCatalyticChamberDisplay {
         poseStack.mulPose(Axis.XP.rotationDegrees(-15.5f));
         poseStack.mulPose(Axis.YP.rotationDegrees(22.5f));
 
-        int scale = 23;
         blockElement(ModPartialModels.MECHANICAL_SHRIEKER_INNER)
                 .rotateBlock(180, getCurrentAngle() * 2, 0)
                 .atLocal(0, 0, 0)
@@ -52,22 +57,22 @@ final class AnimatedAbyssCatalyticChamberDisplay {
                 .scale(scale)
                 .render(graphics);
         blockElement(ModBlocks.ABYSS_CATALYTIC_CHAMBER_TOP.get().defaultBlockState())
-                .atLocal(0, 2, 0)
+                .atLocal(0, 1, 0)
                 .scale(scale)
                 .render(graphics);
         blockElement(ModBlocks.ABYSS_CATALYTIC_CHAMBER_MIDDLE.get().defaultBlockState())
-                .atLocal(0, 3, 0)
+                .atLocal(0, 2, 0)
                 .scale(scale)
                 .render(graphics);
         blockElement(ModBlocks.ABYSS_CATALYTIC_CHAMBER.get().defaultBlockState())
-                .atLocal(0, 4, 0)
+                .atLocal(0, 3, 0)
                 .scale(scale)
                 .render(graphics);
 
         poseStack.popPose();
     }
 
-    void drawHeater(GuiGraphics graphics, int xOffset, int yOffset, BlazeBurnerBlock.HeatLevel heatLevel) {
+    void drawHeater(GuiGraphics graphics, int xOffset, int yOffset, int scale, BlazeBurnerBlock.HeatLevel heatLevel) {
         PoseStack poseStack = graphics.pose();
         RenderSystem.enableDepthTest();
         poseStack.pushPose();
@@ -75,7 +80,6 @@ final class AnimatedAbyssCatalyticChamberDisplay {
         poseStack.mulPose(Axis.XP.rotationDegrees(-15.5f));
         poseStack.mulPose(Axis.YP.rotationDegrees(22.5f));
 
-        int scale = 23;
         float offset = (Mth.sin(AnimationTickHolder.getRenderTime() / 16f) + 0.5f) / 16f;
 
         blockElement(AllBlocks.BLAZE_BURNER.getDefaultState()

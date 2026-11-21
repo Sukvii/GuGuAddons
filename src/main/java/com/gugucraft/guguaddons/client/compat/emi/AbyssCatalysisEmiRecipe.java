@@ -1,7 +1,7 @@
 package com.gugucraft.guguaddons.client.compat.emi;
 
-import com.gugucraft.guguaddons.GuGuAddons;
 import com.gugucraft.guguaddons.recipe.AbyssCatalysisRecipe;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.simibubi.create.AllBlocks;
 import com.simibubi.create.AllItems;
 import com.simibubi.create.content.processing.burner.BlazeBurnerBlock;
@@ -18,10 +18,10 @@ import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.api.widget.SlotWidget;
 import dev.emi.emi.api.widget.WidgetHolder;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.neoforged.neoforge.fluids.FluidStack;
@@ -31,21 +31,39 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
-    private static final ResourceLocation WIDGETS = ResourceLocation.fromNamespaceAndPath(GuGuAddons.MODID,
-            "textures/gui/jei/abyss_catalysis_widgets.png");
-    private static final int WIDTH = 193;
-    private static final int HEIGHT = 201;
+    // Layout follows Create's basin categories (BasinCategory): 177 wide, 19 px slot pitch, Create slot textures,
+    // the animated machine in the middle and Create's heat bar along the bottom.
+    private static final int WIDTH = 177;
+    private static final int HEIGHT = 130;
     private static final int SLOT_STEP = 19;
-    private static final int LEFT_X = 8;
-    private static final int RIGHT_X = 131;
-    private static final int BOTTOM_INPUT_Y = 101;
-    private static final int CATALYST_Y = 83;
-    private static final int OUTPUT_Y = 121;
-    private static final int LEFT_COLUMNS = 4;
-    private static final int RIGHT_COLUMNS = 3;
-    private static final int INPUT_MAX_SLOTS = 8;
-    private static final int CATALYST_MAX_SLOTS = 6;
-    private static final int OUTPUT_MAX_SLOTS = 6;
+
+    // Process strip: one column per stage in process order (1 settle / 2 activate / 3 condense), which feed the
+    // bottom / middle / top tier of the chamber respectively.
+    private static final int COLUMN_WIDTH = 59;
+    private static final int TITLE_Y = 2;
+    private static final int STAGE_SLOT_Y = 12;
+    private static final int DETAIL_Y = 32;
+    private static final int STAGE_MAX_SLOTS = 3;
+
+    // Machine: shrieker on top of the three tiers, blaze burner below; centred near x 88 like Create's basin.
+    private static final int MACHINE_SCALE = 15;
+    private static final int MACHINE_X = 78;
+    private static final int MACHINE_Y = 60;
+    private static final int MACHINE_CENTER_X = MACHINE_X + Math.round(MACHINE_SCALE * 0.65F);
+    private static final int MACHINE_RIGHT = MACHINE_X + Math.round(MACHINE_SCALE * 1.31F);
+    private static final int MACHINE_TOP = MACHINE_Y - MACHINE_SCALE - Math.round(MACHINE_SCALE * 0.27F);
+    private static final int MACHINE_BOTTOM = MACHINE_Y + 3 * MACHINE_SCALE;
+    private static final int MACHINE_MIDDLE_Y = MACHINE_Y + MACHINE_SCALE * 3 / 2;
+    private static final int HEATER_Y = MACHINE_Y + 2 * MACHINE_SCALE + Math.round(MACHINE_SCALE * 0.17F);
+
+    private static final int OUTPUT_X = 140;
+    private static final int OUTPUT_COLUMNS = 2;
+    private static final int OUTPUT_MAX_SLOTS = 4;
+    private static final int HEAT_BAR_Y = HEIGHT - 20;
+
+    private static final int TITLE_COLOR = 0x1F7A7A;
+    private static final int DETAIL_COLOR = 0x666666;
+    private static final String[] TIER_MARKS = {"③", "②", "①"};
     private static final AnimatedAbyssCatalyticChamberDisplay MACHINE_DISPLAY = new AnimatedAbyssCatalyticChamberDisplay();
 
     private final RecipeHolder<?> backingRecipe;
@@ -84,23 +102,248 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
     public void addWidgets(WidgetHolder widgets) {
         widgets.addDrawable(0, 0, WIDTH, HEIGHT, (draw, mouseX, mouseY, delta) -> drawBackground(draw));
 
-        int bottomRows = visibleRows(bottomInputs, LEFT_COLUMNS, INPUT_MAX_SLOTS);
-        int topOffset = -40 + (bottomRows > 1 ? -SLOT_STEP : 0);
-        int outputRows = visibleRows(outputEntries, RIGHT_COLUMNS, OUTPUT_MAX_SLOTS);
-
-        addCompactGroup(widgets, bottomInputs, LEFT_X, BOTTOM_INPUT_Y, LEFT_COLUMNS, INPUT_MAX_SLOTS, false,
-                true, false, Component.translatable("guguaddons.emi.abyss_catalysis.bottom"));
-        addCompactGroup(widgets, topInputs, LEFT_X, BOTTOM_INPUT_Y + topOffset, LEFT_COLUMNS, INPUT_MAX_SLOTS, false,
-                true, false, Component.translatable("guguaddons.emi.abyss_catalysis.top"));
-        addCompactGroup(widgets, outputEntries, RIGHT_X, OUTPUT_Y, RIGHT_COLUMNS, OUTPUT_MAX_SLOTS, false,
-                false, true, Component.translatable("guguaddons.emi.abyss_catalysis.results"));
-        addCompactGroup(widgets, catalystInputs, RIGHT_X, CATALYST_Y + (outputRows > 1 ? -23 : 0),
-                RIGHT_COLUMNS, CATALYST_MAX_SLOTS, true, false, false,
-                Component.translatable("guguaddons.emi.abyss_catalysis.catalysts_short"));
-
+        addStage(widgets, 0, bottomInputs, false, Component.translatable("guguaddons.emi.abyss_catalysis.bottom"),
+                stageTooltip(1, Component.translatable("guguaddons.emi.abyss_catalysis.timing")));
+        addStage(widgets, 1, catalystInputs, true, Component.translatable("guguaddons.emi.abyss_catalysis.catalysts_short"),
+                stageTooltip(2, Component.translatable("guguaddons.emi.abyss_catalysis.timing"),
+                        Component.translatable("guguaddons.emi.abyss_catalysis.catalyst_chance",
+                                percent(recipe.getCatalystConsumptionChance())),
+                        Component.translatable("guguaddons.emi.abyss_catalysis.waiting")));
+        addStage(widgets, 2, topInputs, false, Component.translatable("guguaddons.emi.abyss_catalysis.top"),
+                stageTooltip(3, Component.translatable("guguaddons.emi.abyss_catalysis.waiting"),
+                        Component.translatable("guguaddons.emi.abyss_catalysis.failure").withStyle(ChatFormatting.RED)));
+        addOutputs(widgets);
         addHeatCatalysts(widgets);
-        widgets.addTooltipText(machineTooltip(), 72, 20, 50, 118);
+        widgets.addTooltipText(machineTooltip(), MACHINE_X - 2, MACHINE_TOP, MACHINE_RIGHT - MACHINE_X + 4,
+                MACHINE_BOTTOM - MACHINE_TOP);
     }
+
+    // ---------------------------------------------------------------- process strip
+
+    private void addStage(WidgetHolder widgets, int column, List<DisplayEntry> entries, boolean catalyst,
+            Component sectionTooltip, List<Component> titleTooltip) {
+        int columnX = column * COLUMN_WIDTH;
+        widgets.addTooltipText(titleTooltip, columnX, TITLE_Y - 1, COLUMN_WIDTH, 10);
+        if (entries.isEmpty()) {
+            return;
+        }
+        int shown = Math.min(entries.size(), STAGE_MAX_SLOTS);
+        int startX = columnX + (COLUMN_WIDTH - (shown * SLOT_STEP - 1)) / 2;
+        addSlots(widgets, entries, startX, STAGE_SLOT_Y, STAGE_MAX_SLOTS, STAGE_MAX_SLOTS, catalyst, sectionTooltip);
+    }
+
+    private static List<Component> stageTooltip(int stage, Component... lines) {
+        List<Component> tooltip = new ArrayList<>(lines.length + 2);
+        tooltip.add(Component.translatable("guguaddons.emi.abyss_catalysis.stage_" + stage));
+        tooltip.add(Component.translatable("guguaddons.emi.abyss_catalysis.stage_" + stage + ".detail")
+                .withStyle(ChatFormatting.GRAY));
+        tooltip.addAll(List.of(lines));
+        return tooltip;
+    }
+
+    // ---------------------------------------------------------------- outputs
+
+    private void addOutputs(WidgetHolder widgets) {
+        if (outputEntries.isEmpty()) {
+            return;
+        }
+        int shown = Math.min(outputEntries.size(), OUTPUT_MAX_SLOTS);
+        int columns = Math.min(shown, OUTPUT_COLUMNS);
+        int rows = (shown + OUTPUT_COLUMNS - 1) / OUTPUT_COLUMNS;
+        addSlots(widgets, outputEntries, outputStartX(), MACHINE_MIDDLE_Y - (rows * SLOT_STEP - 1) / 2, columns,
+                OUTPUT_MAX_SLOTS, false, Component.translatable("guguaddons.emi.abyss_catalysis.results"));
+    }
+
+    private int outputStartX() {
+        int columns = Math.min(Math.min(outputEntries.size(), OUTPUT_MAX_SLOTS), OUTPUT_COLUMNS);
+        return OUTPUT_X + (WIDTH - OUTPUT_X - (columns * SLOT_STEP - 1)) / 2;
+    }
+
+    // ---------------------------------------------------------------- slots
+
+    private void addSlots(WidgetHolder widgets, List<DisplayEntry> entries, int startX, int startY, int columns,
+            int maxSlots, boolean catalyst, Component sectionTooltip) {
+        boolean collapsed = entries.size() > maxSlots;
+        int visible = collapsed ? maxSlots - 1 : entries.size();
+        for (int index = 0; index < visible; index++) {
+            addEntry(widgets, entries.get(index), slotX(startX, columns, index), slotY(startY, columns, index),
+                    catalyst, sectionTooltip);
+        }
+        if (!collapsed) {
+            return;
+        }
+
+        int x = slotX(startX, columns, visible);
+        int y = slotY(startY, columns, visible);
+        List<DisplayEntry> hiddenEntries = entries.subList(visible, entries.size());
+        int hiddenCount = hiddenEntries.size();
+        boolean output = hiddenEntries.get(0).output();
+        boolean chance = hiddenEntries.stream().anyMatch(entry -> entry.output() && entry.ingredient().getChance() != 1F);
+        addSlotBackground(widgets, x, y, slotTexture(catalyst, chance));
+        SlotWidget slot = widgets.addSlot(EmiIngredient.of(hiddenEntries.stream().map(DisplayEntry::ingredient).toList()), x, y)
+                .appendTooltip(sectionTooltip)
+                .appendTooltip(Component.translatable("guguaddons.emi.abyss_catalysis.collapsed", hiddenCount));
+        slot.drawBack(false);
+        if (catalyst) {
+            appendStochasticTooltip(slot, recipe.getCatalystConsumptionChance());
+        }
+        if (output) {
+            slot.recipeContext(this);
+            appendStochasticTooltip(slot, hiddenEntries.get(0).ingredient().getChance());
+        }
+        addOverflowOverlay(widgets, x, y, hiddenCount);
+    }
+
+    private void addEntry(WidgetHolder widgets, DisplayEntry entry, int x, int y, boolean catalyst,
+            Component sectionTooltip) {
+        addSlotBackground(widgets, x, y, slotTexture(catalyst, entry.output() && entry.ingredient().getChance() != 1F));
+        SlotWidget slot = entry.tank()
+                ? widgets.addTank(entry.ingredient(), x, y, 18, 18, entry.capacity())
+                : widgets.addSlot(entry.ingredient(), x, y);
+        slot.drawBack(false);
+        slot.appendTooltip(sectionTooltip);
+        if (entry.output()) {
+            slot.recipeContext(this);
+            appendStochasticTooltip(slot, entry.ingredient().getChance());
+        }
+        if (catalyst) {
+            appendStochasticTooltip(slot, recipe.getCatalystConsumptionChance());
+        }
+    }
+
+    private static AllGuiTextures slotTexture(boolean catalyst, boolean chance) {
+        if (catalyst) {
+            return AllGuiTextures.JEI_CATALYST_SLOT;
+        }
+        return chance ? AllGuiTextures.JEI_CHANCE_SLOT : AllGuiTextures.JEI_SLOT;
+    }
+
+    private static void addSlotBackground(WidgetHolder widgets, int x, int y, AllGuiTextures texture) {
+        widgets.addDrawable(x, y, 18, 18, (draw, mouseX, mouseY, delta) -> texture.render(draw, 0, 0));
+    }
+
+    private void addOverflowOverlay(WidgetHolder widgets, int x, int y, int hiddenCount) {
+        widgets.addDrawable(x, y, 18, 18, (draw, mouseX, mouseY, delta) -> {
+            String text = "+" + hiddenCount;
+            int width = Minecraft.getInstance().font.width(text);
+            draw.fill(1, 10, 17, 18, 0xAA000000);
+            draw.drawString(Minecraft.getInstance().font, text, 17 - width, 10, 0xFFFFFF, false);
+        });
+    }
+
+    private static int slotX(int startX, int columns, int index) {
+        return startX + index % columns * SLOT_STEP;
+    }
+
+    private static int slotY(int startY, int columns, int index) {
+        return startY + index / columns * SLOT_STEP;
+    }
+
+    // ---------------------------------------------------------------- background
+
+    private void drawBackground(GuiGraphics draw) {
+        Font font = Minecraft.getInstance().font;
+        HeatCondition requiredHeat = recipe.getRequiredHeat();
+        boolean noHeat = requiredHeat == HeatCondition.NONE;
+
+        // Process strip: titles and "tier / frequency" details, centred in each column
+        for (int stage = 1; stage <= 3; stage++) {
+            int centerX = (stage - 1) * COLUMN_WIDTH + COLUMN_WIDTH / 2;
+            drawCentered(draw, font, Component.translatable("guguaddons.emi.abyss_catalysis.stage_" + stage),
+                    centerX, TITLE_Y, COLUMN_WIDTH - 2, TITLE_COLOR);
+            drawCentered(draw, font, Component.translatable("guguaddons.emi.abyss_catalysis.stage_" + stage + ".detail"),
+                    centerX, DETAIL_Y, COLUMN_WIDTH - 2, DETAIL_COLOR);
+        }
+
+        // Shadow / glow under the machine and Create's heat bar (same order and offsets as BasinCategory)
+        if (noHeat) {
+            AllGuiTextures.JEI_SHADOW.render(draw, MACHINE_CENTER_X - 26, MACHINE_BOTTOM - 4);
+        } else {
+            AllGuiTextures.JEI_LIGHT.render(draw, MACHINE_CENTER_X - 26, HEAT_BAR_Y + 8);
+        }
+        (noHeat ? AllGuiTextures.JEI_NO_HEAT_BAR : AllGuiTextures.JEI_HEAT_BAR).render(draw, 4, HEAT_BAR_Y);
+        draw.drawString(font, CreateLang.translateDirect(requiredHeat.getTranslationKey()), 9, HEAT_BAR_Y + 6,
+                requiredHeat.getColor(), false);
+
+        // Arrow from the machine to the outputs
+        if (!outputEntries.isEmpty()) {
+            drawArrow(draw, MACHINE_RIGHT + 3, outputStartX() - 3, MACHINE_MIDDLE_Y - 5);
+        }
+
+        // Tier marks: which stage works on which tier
+        for (int tier = 0; tier < 3; tier++) {
+            Component mark = Component.literal(TIER_MARKS[tier]);
+            draw.drawString(font, mark, MACHINE_X - 4 - font.width(mark), MACHINE_Y + tier * MACHINE_SCALE + 4,
+                    TITLE_COLOR, false);
+        }
+
+        if (!noHeat) {
+            MACHINE_DISPLAY.drawHeater(draw, MACHINE_X, HEATER_Y, MACHINE_SCALE, requiredHeat.visualizeAsBlazeBurner());
+        }
+        MACHINE_DISPLAY.drawMachine(draw, MACHINE_X, MACHINE_Y, MACHINE_SCALE);
+    }
+
+    /** Create's 42 px arrow, cut from the tail end when the gap is shorter. */
+    private static void drawArrow(GuiGraphics draw, int startX, int endX, int y) {
+        AllGuiTextures arrow = AllGuiTextures.JEI_ARROW;
+        int length = endX - startX;
+        if (length >= arrow.getWidth()) {
+            arrow.render(draw, endX - arrow.getWidth(), y);
+            return;
+        }
+        if (length <= 0) {
+            return;
+        }
+        draw.blit(arrow.getLocation(), startX, y, arrow.getStartX() + arrow.getWidth() - length, arrow.getStartY(),
+                length, arrow.getHeight());
+    }
+
+    /** Centred text, shrunk to fit when wider than {@code maxWidth} (translations vary in length). */
+    private static void drawCentered(GuiGraphics draw, Font font, Component text, int centerX, int y, int maxWidth,
+            int color) {
+        int width = font.width(text);
+        if (width <= maxWidth) {
+            draw.drawString(font, text, centerX - width / 2, y, color, false);
+            return;
+        }
+        float scale = (float) maxWidth / width;
+        PoseStack pose = draw.pose();
+        pose.pushPose();
+        pose.translate(centerX - maxWidth / 2F, y + font.lineHeight * (1 - scale) / 2F, 0);
+        pose.scale(scale, scale, 1);
+        draw.drawString(font, text, 0, 0, color, false);
+        pose.popPose();
+    }
+
+    private List<Component> machineTooltip() {
+        return List.of(
+                Component.translatable("guguaddons.emi.abyss_catalysis.machine"),
+                Component.translatable("guguaddons.emi.abyss_catalysis.timing"),
+                Component.translatable("guguaddons.emi.abyss_catalysis.waiting"),
+                Component.translatable("guguaddons.emi.abyss_catalysis.failure").withStyle(ChatFormatting.RED),
+                Component.translatable("guguaddons.emi.abyss_catalysis.heat",
+                        CreateLang.translateDirect(recipe.getRequiredHeat().getTranslationKey()))
+        );
+    }
+
+    // ---------------------------------------------------------------- heat catalysts (Create's positions)
+
+    private void addHeatCatalysts(WidgetHolder widgets) {
+        HeatCondition requiredHeat = recipe.getRequiredHeat();
+        if (!requiredHeat.testBlazeBurner(BlazeBurnerBlock.HeatLevel.NONE)) {
+            addHeatSlot(widgets, EmiStack.of(AllBlocks.BLAZE_BURNER.get()), 134);
+        }
+        if (!requiredHeat.testBlazeBurner(BlazeBurnerBlock.HeatLevel.KINDLED)) {
+            addHeatSlot(widgets, EmiStack.of(AllItems.BLAZE_CAKE.get()), 153);
+        }
+    }
+
+    private static void addHeatSlot(WidgetHolder widgets, EmiStack stack, int x) {
+        addSlotBackground(widgets, x, HEAT_BAR_Y + 1, AllGuiTextures.JEI_SLOT);
+        widgets.addSlot(stack, x, HEAT_BAR_Y + 1).drawBack(false);
+    }
+
+    // ---------------------------------------------------------------- data
 
     private void addInputs(List<DisplayEntry> entries) {
         entries.stream().map(DisplayEntry::ingredient).forEach(inputs::add);
@@ -130,151 +373,8 @@ public class AbyssCatalysisEmiRecipe extends BasicEmiRecipe {
         return entries;
     }
 
-    private void addCompactGroup(WidgetHolder widgets, List<DisplayEntry> entries, int x, int y, int columns,
-            int maxSlots, boolean catalysts, boolean rightAlignSmall, boolean centerSmall, Component sectionTooltip) {
-        if (entries.isEmpty()) {
-            return;
-        }
-
-        boolean collapsed = entries.size() > maxSlots;
-        int displaySize = collapsed ? maxSlots : entries.size();
-        int visibleEntries = collapsed ? maxSlots - 1 : entries.size();
-        for (int index = 0; index < visibleEntries; index++) {
-            addEntry(widgets, entries.get(index), x, y, columns, index, displaySize, catalysts, rightAlignSmall,
-                    centerSmall, sectionTooltip);
-        }
-
-        if (!collapsed) {
-            return;
-        }
-
-        int overflowIndex = visibleEntries;
-        int overflowX = slotX(x, columns, overflowIndex, displaySize, rightAlignSmall, centerSmall);
-        int overflowY = slotY(y, columns, overflowIndex);
-        int hiddenCount = entries.size() - visibleEntries;
-        List<EmiIngredient> hidden = entries.subList(visibleEntries, entries.size()).stream()
-                .map(DisplayEntry::ingredient)
-                .toList();
-        boolean chance = entries.subList(visibleEntries, entries.size()).stream()
-                .anyMatch(entry -> entry.output() && entry.ingredient().getChance() != 1F);
-
-        addCreateSlotBackground(widgets, overflowX, overflowY, chance);
-        SlotWidget slot = widgets.addSlot(EmiIngredient.of(hidden), overflowX, overflowY)
-                .appendTooltip(sectionTooltip)
-                .appendTooltip(Component.translatable("guguaddons.emi.abyss_catalysis.collapsed", hiddenCount));
-        slot.drawBack(false);
-        if (catalysts) {
-            appendStochasticTooltip(slot, recipe.getCatalystConsumptionChance());
-        }
-        if (entries.get(visibleEntries).output()) {
-            slot.recipeContext(this);
-            appendStochasticTooltip(slot, entries.get(visibleEntries).ingredient().getChance());
-        }
-        addOverflowOverlay(widgets, overflowX, overflowY, hiddenCount);
-    }
-
-    private void addEntry(WidgetHolder widgets, DisplayEntry entry, int x, int y, int columns, int index,
-            int displaySize, boolean catalyst, boolean rightAlignSmall, boolean centerSmall, Component sectionTooltip) {
-        int slotX = slotX(x, columns, index, displaySize, rightAlignSmall, centerSmall);
-        int slotY = slotY(y, columns, index);
-        addCreateSlotBackground(widgets, slotX, slotY, entry.output() && entry.ingredient().getChance() != 1F);
-        SlotWidget slot = entry.tank()
-                ? widgets.addTank(entry.ingredient(), slotX, slotY, 18, 18, entry.capacity())
-                : widgets.addSlot(entry.ingredient(), slotX, slotY);
-        slot.drawBack(false);
-        slot.appendTooltip(sectionTooltip);
-        if (entry.output()) {
-            slot.recipeContext(this);
-            appendStochasticTooltip(slot, entry.ingredient().getChance());
-        }
-        if (catalyst) {
-            appendStochasticTooltip(slot, recipe.getCatalystConsumptionChance());
-        }
-    }
-
-    private void addOverflowOverlay(WidgetHolder widgets, int x, int y, int hiddenCount) {
-        widgets.addDrawable(x, y, 18, 18, (draw, mouseX, mouseY, delta) -> {
-            String text = "+" + hiddenCount;
-            int width = Minecraft.getInstance().font.width(text);
-            draw.fill(1, 10, 17, 18, 0xAA000000);
-            draw.drawString(Minecraft.getInstance().font, text, 17 - width, 10, 0xFFFFFF, false);
-        });
-    }
-
-    private void drawBackground(GuiGraphics draw) {
-        HeatCondition requiredHeat = recipe.getRequiredHeat();
-        int outputRows = visibleRows(outputEntries, RIGHT_COLUMNS, OUTPUT_MAX_SLOTS);
-        if (outputRows <= 1) {
-            AllGuiTextures.JEI_DOWN_ARROW.render(draw, 144, 104);
-        } else {
-            draw.blit(WIDGETS, 125, 80, 19, 21, 17, 15);
-        }
-
-        boolean noHeat = requiredHeat == HeatCondition.NONE;
-        AllGuiTextures shadow = noHeat ? AllGuiTextures.JEI_SHADOW : AllGuiTextures.JEI_LIGHT;
-        shadow.render(draw, 81, 108 + (noHeat ? 10 : 30));
-        draw.blit(WIDGETS, 12, 140, 0, noHeat ? 221 : 201, 169, 19);
-        draw.drawString(Minecraft.getInstance().font, CreateLang.translateDirect(requiredHeat.getTranslationKey()),
-                17, 146, requiredHeat.getColor(), false);
-
-        if (requiredHeat != HeatCondition.NONE) {
-            MACHINE_DISPLAY.drawHeater(draw, WIDTH / 2 - 5, 105, requiredHeat.visualizeAsBlazeBurner());
-        }
-        MACHINE_DISPLAY.drawMachine(draw, WIDTH / 2 - 5, 32);
-        draw.drawString(Minecraft.getInstance().font, Component.translatable("guguaddons.emi.abyss_catalysis.stage_1"),
-                8, 166, 0x8DD1D1, false);
-        draw.drawString(Minecraft.getInstance().font, Component.translatable("guguaddons.emi.abyss_catalysis.stage_2"),
-                8, 177, 0x8DD1D1, false);
-        draw.drawString(Minecraft.getInstance().font, Component.translatable("guguaddons.emi.abyss_catalysis.stage_3"),
-                8, 188, 0x8DD1D1, false);
-    }
-
-    private List<Component> machineTooltip() {
-        return List.of(
-                Component.translatable("guguaddons.emi.abyss_catalysis.machine"),
-                Component.translatable("guguaddons.emi.abyss_catalysis.timing"),
-                Component.translatable("guguaddons.emi.abyss_catalysis.waiting"),
-                Component.translatable("guguaddons.emi.abyss_catalysis.failure").withStyle(ChatFormatting.RED),
-                Component.translatable("guguaddons.emi.abyss_catalysis.heat",
-                        CreateLang.translateDirect(recipe.getRequiredHeat().getTranslationKey()))
-        );
-    }
-
-    private static int slotX(int startX, int columns, int slotIndex, int displaySize, boolean rightAlignSmall,
-            boolean centerSmall) {
-        int offset = 0;
-        if (displaySize < columns) {
-            if (rightAlignSmall) {
-                offset = (columns - displaySize) * SLOT_STEP;
-            } else if (centerSmall) {
-                offset = (columns - displaySize) * SLOT_STEP / 2;
-            }
-        }
-        return startX + offset + slotIndex % columns * SLOT_STEP;
-    }
-
-    private static int slotY(int startY, int columns, int slotIndex) {
-        return startY - slotIndex / columns * SLOT_STEP;
-    }
-
-    private static int visibleRows(List<DisplayEntry> entries, int columns, int maxSlots) {
-        int visible = entries.isEmpty() ? 1 : Math.min(entries.size(), maxSlots);
-        return (visible - 1) / columns + 1;
-    }
-
-    private static void addCreateSlotBackground(WidgetHolder widgets, int x, int y, boolean chance) {
-        AllGuiTextures texture = chance ? AllGuiTextures.JEI_CHANCE_SLOT : AllGuiTextures.JEI_SLOT;
-        widgets.addDrawable(x, y, 18, 18, (draw, mouseX, mouseY, delta) -> texture.render(draw, 0, 0));
-    }
-
-    private void addHeatCatalysts(WidgetHolder widgets) {
-        HeatCondition requiredHeat = recipe.getRequiredHeat();
-        if (!requiredHeat.testBlazeBurner(BlazeBurnerBlock.HeatLevel.NONE)) {
-            widgets.addSlot(EmiStack.of(AllBlocks.BLAZE_BURNER.get()), 134, 141);
-        }
-        if (!requiredHeat.testBlazeBurner(BlazeBurnerBlock.HeatLevel.KINDLED)) {
-            widgets.addSlot(EmiStack.of(AllItems.BLAZE_CAKE.get()), 153, 141);
-        }
+    private static String percent(float chance) {
+        return chance == 0F ? "0%" : chance < 0.01F ? "<1%" : (int) (chance * 100F) + "%";
     }
 
     private static void appendStochasticTooltip(SlotWidget slot, float chance) {
