@@ -11,6 +11,7 @@
     "create.CrushingWheelControllerBlockEntityMixin",
     "create.DeployerBlockEntityMixin",
     "create.ItemDrainBlockEntityMixin",
+    "create.ManualApplicationRecipeMixin",
     "create.MechanicalCrafterBlockEntityMixin",
     "create.MechanicalPressBlockEntityMixin",
     "create.OthersideRailwayMixin",
