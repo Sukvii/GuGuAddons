@@ -16,10 +16,12 @@ public class CompressorRecipeParams extends ProcessingRecipeParams {
             Codec.INT.optionalFieldOf("secondaryFluidOutput", -1)
                     .forGetter(CompressorRecipeParams::secondaryFluidOutput),
             Codec.INT.optionalFieldOf("secondaryFluidInput", -1)
-                    .forGetter(CompressorRecipeParams::secondaryFluidInput)
-    ).apply(instance, (params, secondaryFluidOutput, secondaryFluidInput) -> {
+                    .forGetter(CompressorRecipeParams::secondaryFluidInput),
+            Codec.BOOL.optionalFieldOf("allowSuperheated", true).forGetter(params -> params.allowSuperheated)
+    ).apply(instance, (params, secondaryFluidOutput, secondaryFluidInput, allowSuperheated) -> {
         params.secondaryFluidOutput = secondaryFluidOutput;
         params.secondaryFluidInput = secondaryFluidInput;
+        params.allowSuperheated = allowSuperheated;
         return params;
     }));
 
@@ -28,6 +30,7 @@ public class CompressorRecipeParams extends ProcessingRecipeParams {
 
     protected int secondaryFluidOutput = -1;
     protected int secondaryFluidInput = -1;
+    protected boolean allowSuperheated = true;
 
     protected final int secondaryFluidOutput() {
         return secondaryFluidOutput;
@@ -42,6 +45,7 @@ public class CompressorRecipeParams extends ProcessingRecipeParams {
         super.encode(buffer);
         ByteBufCodecs.INT.encode(buffer, secondaryFluidOutput);
         ByteBufCodecs.INT.encode(buffer, secondaryFluidInput);
+        buffer.writeBoolean(allowSuperheated);
     }
 
     @Override
@@ -49,5 +53,6 @@ public class CompressorRecipeParams extends ProcessingRecipeParams {
         super.decode(buffer);
         secondaryFluidOutput = ByteBufCodecs.INT.decode(buffer);
         secondaryFluidInput = ByteBufCodecs.INT.decode(buffer);
+        allowSuperheated = buffer.readBoolean();
     }
 }

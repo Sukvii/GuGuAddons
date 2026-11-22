@@ -2,6 +2,11 @@
   "parent": "create:base/processing",
   "keys": [
     {
+      "name": "allowSuperheated",
+      "type": "boolean",
+      "optional": true
+    },
+    {
       "name": "secondaryFluidOutput",
       "type": "int",
       "optional": -1,

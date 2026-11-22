@@ -29,11 +29,13 @@ import java.util.List;
 public abstract class CompressorRecipe extends BasinRecipe {
     private final int secondaryFluidOutput;
     private final int secondaryFluidInput;
+    private final boolean allowSuperheated;
 
     protected CompressorRecipe(IRecipeTypeInfo typeInfo, CompressorRecipeParams params) {
         super(typeInfo, params);
         this.secondaryFluidOutput = params.secondaryFluidOutput;
         this.secondaryFluidInput = params.secondaryFluidInput;
+        this.allowSuperheated = params.allowSuperheated;
     }
 
     @Override
@@ -80,7 +82,7 @@ public abstract class CompressorRecipe extends BasinRecipe {
 
         BlazeBurnerBlock.HeatLevel heat = BasinBlockEntity
                 .getHeatLevelOf(basin.getLevel().getBlockState(basin.getBlockPos().below()));
-        if (!getRequiredHeat().testBlazeBurner(heat)) {
+        if (!getRequiredHeat().testBlazeBurner(heat) || (!allowSuperheated && heat == BlazeBurnerBlock.HeatLevel.SEETHING)) {
             return false;
         }
 
